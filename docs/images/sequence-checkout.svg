@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 1442" width="1560" height="1442"><rect width="1560" height="1442" fill="#f5f4ee"/>
+<defs><marker id="arr_req" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#33393f"/></marker><marker id="arr_resp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5d5b55"/></marker></defs>
+<text x="780.0" y="42" font-family="DejaVu Sans, Verdana, sans-serif" font-size="23" fill="#0f766e" font-weight="bold" text-anchor="middle">Сценарий: добавление в корзину, оформление заказа и оплата</text>
+<rect x="190" y="150" width="1330" height="248" rx="10" fill="#e8f1fb" stroke="none" stroke-width="1"/>
+<rect x="190" y="410" width="1330" height="248" rx="10" fill="#fdf0df" stroke="none" stroke-width="1"/>
+<rect x="190" y="670" width="1330" height="233" rx="10" fill="#f1eaf9" stroke="none" stroke-width="1"/>
+<rect x="190" y="915" width="1330" height="146" rx="10" fill="#e6f5ec" stroke="none" stroke-width="1"/>
+<rect x="190" y="1073" width="1330" height="299" rx="10" fill="#efeee7" stroke="none" stroke-width="1"/>
+<rect x="195.0" y="78" width="190" height="42" rx="10" fill="#0f766e" stroke="none" stroke-width="1"/>
+<text x="290.0" y="104" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#ffffff" font-weight="bold" text-anchor="middle">Приложение (CMP)</text>
+<line x1="290.0" y1="120" x2="290.0" y2="1388" stroke="#33393f" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="575.0" y="78" width="190" height="42" rx="10" fill="#0f766e" stroke="none" stroke-width="1"/>
+<text x="670.0" y="104" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#ffffff" font-weight="bold" text-anchor="middle">Backend API</text>
+<line x1="670.0" y1="120" x2="670.0" y2="1388" stroke="#33393f" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="955.0" y="78" width="190" height="42" rx="10" fill="#0f766e" stroke="none" stroke-width="1"/>
+<text x="1050.0" y="104" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#ffffff" font-weight="bold" text-anchor="middle">PostgreSQL</text>
+<line x1="1050.0" y1="120" x2="1050.0" y2="1388" stroke="#33393f" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="1335.0" y="78" width="190" height="42" rx="10" fill="#0f766e" stroke="none" stroke-width="1"/>
+<text x="1430.0" y="104" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#ffffff" font-weight="bold" text-anchor="middle">Платёжный шлюз</text>
+<line x1="1430.0" y1="120" x2="1430.0" y2="1388" stroke="#33393f" stroke-width="1.2" stroke-dasharray="5 5"/>
+<text x="15" y="269.0" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">Добавление</text>
+<text x="15" y="287.0" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">в корзину</text>
+<text x="15" y="529.0" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">Оформление</text>
+<text x="15" y="547.0" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">заказа</text>
+<text x="15" y="781.5" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">Инициализация</text>
+<text x="15" y="799.5" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">оплаты</text>
+<text x="15" y="983.0" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">Оплата</text>
+<text x="15" y="1001.0" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">(внешний браузер)</text>
+<text x="15" y="1217.5" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">Подтверждение</text>
+<text x="15" y="1235.5" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">оплаты</text>
+<text x="480.0" y="175" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">POST /api/v1/cart/items {productId, quantity:</text>
+<text x="480.0" y="190" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">1}</text>
+<line x1="290.0" y1="210" x2="670.0" y2="210" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="241" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">INSERT INTO cart_items (cart_id, product_id,</text>
+<text x="860.0" y="256" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">qty, price_snapshot)</text>
+<line x1="670.0" y1="276" x2="1050.0" y2="276" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="307" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">OK</text>
+<line x1="1050.0" y1="327" x2="670.0" y2="327" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="480.0" y="358" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">200 {cart: {items: [...], totalAmount: &quot;11480.00&quot;}}</text>
+<line x1="670.0" y1="378" x2="290.0" y2="378" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="480.0" y="435" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">POST /api/v1/orders {deliveryAddressId,</text>
+<text x="480.0" y="450" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">paymentMethod: CARD}</text>
+<line x1="290.0" y1="470" x2="670.0" y2="470" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="501" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">BEGIN; INSERT order, order_items; UPDATE</text>
+<text x="860.0" y="516" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">products SET stock = stock - qty</text>
+<line x1="670.0" y1="536" x2="1050.0" y2="536" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="567" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">COMMIT OK</text>
+<line x1="1050.0" y1="587" x2="670.0" y2="587" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="480.0" y="618" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">201 {orderId, paymentId, status: CREATED}</text>
+<line x1="670.0" y1="638" x2="290.0" y2="638" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="480.0" y="695" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">POST /api/v1/payments/{paymentId}/confirm</text>
+<line x1="290.0" y1="715" x2="670.0" y2="715" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="1050.0" y="746" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">createPayment(merchantId: SHOPKMP-01, orderId,</text>
+<text x="1050.0" y="761" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">amount: 11480, returnUrl)</text>
+<line x1="670.0" y1="781" x2="1430.0" y2="781" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="1050.0" y="812" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">200 {paymentUrl, gatewayTxId: TX-88213}</text>
+<line x1="1430.0" y1="832" x2="670.0" y2="832" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="480.0" y="863" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">200 {paymentUrl}</text>
+<line x1="670.0" y1="883" x2="290.0" y2="883" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="860.0" y="940" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">openSystemBrowser(url: paymentUrl, merchantId:</text>
+<text x="860.0" y="955" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">SHOPKMP-01, orderId, amount: 11480)</text>
+<line x1="290.0" y1="975" x2="1430.0" y2="975" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="1006" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">redirect</text>
+<text x="860.0" y="1021" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">returnUrl?status=success&amp;gatewayTxId=TX-88213</text>
+<line x1="1430.0" y1="1041" x2="290.0" y2="1041" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="1050.0" y="1098" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">POST /api/v1/payments/webhook {gatewayTxId,</text>
+<text x="1050.0" y="1113" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">status: CAPTURED, signature}</text>
+<line x1="1430.0" y1="1133" x2="670.0" y2="1133" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="1164" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">UPDATE payments SET status=CAPTURED; UPDATE</text>
+<text x="860.0" y="1179" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">orders SET status=PAID</text>
+<line x1="670.0" y1="1199" x2="1050.0" y2="1199" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="1230" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">OK</text>
+<line x1="1050.0" y1="1250" x2="670.0" y2="1250" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="480.0" y="1281" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">GET /api/v1/payments/{paymentId}</text>
+<line x1="290.0" y1="1301" x2="670.0" y2="1301" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="480.0" y="1332" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">200 {status: CAPTURED}</text>
+<line x1="670.0" y1="1352" x2="290.0" y2="1352" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/></svg>

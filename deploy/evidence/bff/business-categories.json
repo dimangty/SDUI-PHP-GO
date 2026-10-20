@@ -1,0 +1,1451 @@
+[
+  {
+    "id": "00b3f659-0075-4e3a-a354-a81c73a9e732",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "016fc678-8595-4c2b-b463-b58d0db386cc",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "01b2da84-a092-4b43-99f7-23fa9abdcd38",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "01f1c936-36d3-4532-9510-791aaf384c51",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "02bf4ab2-50df-4bad-b60e-cdd0ff754a90",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "048d9553-7227-4dba-9875-1b6d5439dbfd",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "04f75326-36cf-4824-9ac4-255d1be74ed9",
+    "name": "Provider category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "0691de18-91ee-4174-8e20-d7916b5b12ab",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "0b0195be-cb56-40be-beb1-bbf3101b5f7e",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "0b617039-2e25-48cb-a5ca-e02e07290f61",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "0c3ead6c-2618-47c0-8dc5-7411ade32b93",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "0c98fd3d-3d44-4210-954f-14810d46c2ed",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "0ffaab3c-68f5-4f79-a0b4-71ac8609033e",
+    "name": "Race category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "10191ce6-fcbf-40f6-af8e-f8a7ab4a62d9",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "11092741-72de-46c3-8e9f-c150514bbf34",
+    "name": "Signed category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "11832a46-78fb-48b2-bb70-227bee3c724b",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "128febc5-fba7-4ed6-8fe4-2295bd214845",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "142ad178-4565-4fbb-a28e-bca368667f36",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "14e3ff66-f934-44a1-b0d7-e1032826d150",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "173c8249-1276-4734-8d63-56e7a0b8048c",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "1a2c14fd-ba9b-46ae-8dc4-eba7352637fa",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "1ca6efdd-be6d-4279-99f5-8cd62f24d56f",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "1d15b850-60ad-4c3f-849e-84681d817176",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "1ec5ebc9-c2bc-4310-a175-c2be2a9e06f8",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "22a916e4-b8dd-4805-a2b5-15cd51c9a436",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "253b9bb2-40f9-4d98-bdf3-75b577b24ba4",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "25fce383-8593-4914-a3a6-2463504d8f77",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "28711a22-665e-446c-b837-32aba486634f",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "28c6a705-9e02-4a41-ac3f-a5eb1073058e",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "29a85bd0-a188-48cf-a012-78e108e2a89f",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "2af88f6a-46ed-4711-8f1e-b46f1e6061f0",
+    "name": "Search root",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "2b79d1a9-4267-45a8-9b93-d32b31af8075",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "2cbca385-8243-44d9-9f65-d7fa7dc53e84",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "2dfab732-2cd9-4c2f-ba19-4a80464368ee",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "30cf497a-bccc-4586-9883-232c3a534d36",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "32a63fc4-6db7-4c7e-8721-10bff393a109",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "33a0c594-3f0c-473e-8162-bef0cead4c15",
+    "name": "Race category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "355a9726-ca1d-4526-8624-7a54cc12f690",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "366ae149-cc8e-4c3b-aa18-b2f3e1f1e90f",
+    "name": "Signed category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "37d6925c-08f0-41c3-8dda-bd41796bc403",
+    "name": "Signed category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "37d7fda7-6440-4ef0-bbad-c766ce5919cc",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "3a3504d2-4505-4cc6-a3ed-acff61c88c7b",
+    "name": "Signed category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "3b0ba9a8-7b80-43ba-a04d-6815bacb5c35",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "3b6aa360-4814-4f75-a5df-03e61833d52c",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "3e3f8f36-0937-4f32-8a8e-4a76f68598e7",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "40d1627e-b895-4542-abf2-466ada87467c",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "41841e5a-f966-40a8-b386-1c88a584b3ed",
+    "name": "Race category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "41d748fd-4121-4a8e-8088-91a591cb33af",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "421df52b-822d-44ce-b7b7-69f6900ce9f3",
+    "name": "Дом",
+    "parentId": null,
+    "iconUrl": "/icons/clock.svg",
+    "sortOrder": 0
+  },
+  {
+    "id": "444342e7-1e2f-48b7-88aa-2f51cc7bcb06",
+    "name": "Search root",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "4444245b-a483-4df0-9914-87573b62be03",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "450aec6b-e157-4ccb-a8d5-6aa7699a16fc",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "456f7b1f-034d-4d91-8210-789dba17d550",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "48104d89-5de9-47e9-abaa-3e309612e2bd",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "485d0448-93a1-4bf3-b8a6-6a68ba124097",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "48898f60-7002-40d0-9ebd-a912b0456b4d",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "48f7b974-d5b8-438b-a3f3-e9f296ab0427",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "4a98ac65-9677-4a7b-bca8-4d112a9edb39",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "4b906540-8fb0-47e9-a6d5-4804629da391",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "4daef066-a43e-4715-a264-a688bc9a6639",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "4fe216cb-a355-4ce7-a08a-e23c5cc5d69a",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "50bae35b-199b-4ced-9033-271294544bd8",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "5103e10f-b648-4c3f-84bf-5b5c4217b199",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "5643142e-06fd-4d6a-9e85-8b9091997a72",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "568feb3c-a0cd-4bbb-be76-79e21645f7e1",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "5860831a-48c6-4af9-a48b-60788e304e2a",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "589a5cec-f139-4bb1-8521-750c83d4da80",
+    "name": "Освещение",
+    "parentId": null,
+    "iconUrl": "/icons/lamp.svg",
+    "sortOrder": 0
+  },
+  {
+    "id": "5947d218-839d-4d55-afd5-eb450b40fbe3",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "5a1d3196-8b85-4bf8-957f-70ebadfa68e6",
+    "name": "Reference category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "5ad48152-0d48-4854-89ed-58ee59039204",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "5bf4585f-23a3-47f7-8ca1-36b740747fc8",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "5c425fc7-0c4d-46a3-ab65-9a7b084c80a8",
+    "name": "Provider category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "6070fa8a-de5f-4ad1-8939-879e5d4dc38b",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "63d79eec-b325-4b1a-824b-105f0f51f632",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "6601c516-7cd4-4dd7-b555-7f9de967b97a",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "693d4222-6dd0-4acb-aeee-2b3b6f19e5ea",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "69be70af-1377-48ab-88c4-2e6fa079b80b",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "69dc7459-abd5-48e2-85a5-da6af54ab0c5",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "6a500bda-eb1a-4462-9c7f-102a7aa8d6b2",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "6d3f7eaa-7601-4595-8d15-56610470c78c",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "6d45894b-b2aa-4ae7-bd2f-60ba212a1f31",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "6f24d5b8-8ac7-441b-9bdf-e37cf681ccb7",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "6f471a91-fbb3-4ead-9927-8c71708aa6b2",
+    "name": "Reference category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "6fa84305-1f4f-4159-9b4b-f74318972a57",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "71fdf23b-52e3-4dcb-af37-22b00cae212d",
+    "name": "Reference category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "7495b4aa-f41b-4e61-825a-a8f735983c57",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "755dfbc0-be1b-411b-bfbe-f30057400ba6",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "7736db8b-86fd-46b5-913e-512e818cbc19",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "781d0923-f52e-4932-9ab3-0f4cabb60a42",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "7910ee87-6b44-43e9-962f-f9605807d77d",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "7913f041-7987-41fe-a7ef-c7be8728c305",
+    "name": "Signed category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "79593498-2e77-4807-939d-663afd203917",
+    "name": "Signed category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "7aec0c04-ccd1-4759-8188-28c727e4cf1a",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "7cc661b9-ebed-491f-87c0-6892934cdd3a",
+    "name": "Cross category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "7dbc3aec-9de8-46b3-83d1-d9d79ba1e050",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "819ceb92-b3f6-4efa-841d-fb3882e38cfb",
+    "name": "Race category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "8226bfc9-24a7-4fd4-9c09-92b06cb35b1e",
+    "name": "Race category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "82698c5f-6321-4db4-a42f-f75486fc1364",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "828f5580-1945-4b80-a9b3-3c006f07c6ab",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "8303ca7e-0497-48e8-93de-3e9d4276fd4f",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "8318577d-2eda-4d02-99d7-e0956b7c5679",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "84d805a0-4de1-4909-b8f5-206b4994a67e",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "85aa495d-661e-488f-a0ee-026d65eae33d",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "85ac0a17-fcc6-4f48-bdda-f5e37ee7d076",
+    "name": "Race category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "85b9202e-a212-4e5e-ac18-a3d692161316",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "886318c3-c73a-462e-8bbc-46fa7a1eb1e9",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "88769130-2464-4be3-aa1c-d3dc67dd6d21",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "8c044102-1704-4217-a918-3575aff3f4fb",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "8c09df8d-38e8-4ef2-a31f-7fe1485e4d77",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "8c6ab278-5232-443e-b444-834c122197d4",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "8cb2f9b6-3da7-458b-93ef-48b18d194bcf",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "8d827db1-d5c2-4dd9-b81a-5496a686a36e",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "8e2675c9-a4e9-4fab-acfe-a06e5afd8ea7",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "8e8da381-2dc8-45bc-abbe-e42b3dfc229f",
+    "name": "Cross category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "8f6e2799-ba1a-4d96-a716-1d577affd764",
+    "name": "Reference category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "9159b809-6714-44b5-914f-1cca6525925b",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "92154228-fcc4-47ec-aa67-fa17dbeb693c",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "93f73698-2df8-4ea2-aa9c-87cbf72d5d74",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "94ecee3f-e9d6-42f2-af2d-04f55ec4c769",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "954a544a-2a55-4505-ae1b-901af93aedfd",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "97057bb5-30a9-405c-b4c4-018d7b6ff99e",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "9a9c768c-32cd-48fb-af8e-635b17a6b93f",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "9aa60142-0ffc-4a28-8726-f7867885fab6",
+    "name": "Race category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "9aaeff52-d4ca-45d2-adb8-060f2bf4a0f1",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "9bf18f08-b535-4bb2-a503-f44138efa71f",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "9c1c1234-3dd0-4aba-a3c1-ff959ea5b51b",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "a1d081c3-38b3-4d93-ac6b-be27d75d530b",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "a8485c27-873a-4ca5-a2e6-17454d732c96",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "a86dcce9-729c-452a-95ca-f2e8bce7b397",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "a8859fad-8bd9-4d7d-b2e0-0aa167bd8d7c",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "aa0aebfa-b36d-415a-8c2d-44363229c71c",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "aa0d9667-ba8a-4a36-9d3c-c6abc8791dad",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "abc3c902-f72c-4a7e-b3b3-2c13022c6489",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "acce10bf-2918-4d20-a158-5007cc13862d",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "af8dd7bc-b50d-4278-8d0c-408260e91e3c",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "b03eb97d-d280-4ad9-8702-0ed3c5c86828",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "b17cf0ad-d109-4a86-b471-b6161822dcfc",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "b1a06dcd-42a2-4083-b32b-2ba3df9e00b2",
+    "name": "Signed category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "b278d84d-a876-453d-90f5-27e1facb1af4",
+    "name": "Cross category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "b3c745b3-ec70-41b4-af0a-0474d1594b04",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "b60ab807-f56c-4c60-83b8-0a4710cbd00e",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "b811238c-f034-4915-9844-7828a4a5d1ef",
+    "name": "Cross category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "ba520077-e9b9-44d1-8849-3c4fe86d42a3",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "bb668734-38d1-43a9-a75b-2a9025c664c2",
+    "name": "Cross category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "bb87a777-867c-40d8-9b08-1a5f2c088017",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "bba0f3fb-4a0b-4694-a26e-dbdf29f3c9aa",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "c1fc136f-6e5e-41d2-bb1c-eb17ade66b62",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "c237029e-9e98-4508-836f-77f297440cc9",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "c2df68fe-cde2-4c0b-b31e-56597c6bc730",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "c4c4111c-13a7-44b1-98c7-3538c12cbc0f",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "c678021f-1dfc-4384-b787-d307829f6f11",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "c8e97902-b594-45aa-9f4c-e2ce81fef279",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "c9881f9c-fb98-46b7-a8cd-b0b2f0613ca3",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "caf1396e-0654-4262-addc-0739abec592d",
+    "name": "Provider category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "cc61e705-e4ef-40a3-8a32-7fa366cc172b",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "ce86d2bb-e140-44aa-a477-90050f83301b",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "d1bfcfe1-6386-46d6-93be-ed3a4f84adaa",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "d1e80f86-1029-428d-9f00-0994dd2d6b78",
+    "name": "Provider category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "d4ad881f-4e48-4635-a539-3f5eb8f7df0d",
+    "name": "Signed category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "d4adbc6c-ce1c-4ed2-8bd0-fa7cbe987199",
+    "name": "Race category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "d4deb471-8943-4bef-835e-34501c615c8f",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "d59d810d-598c-4f7d-aaf4-5798fd0cdfaa",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "d5d81b79-d8ac-40b8-b36a-66e18bb4479d",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "d66b421d-7128-4166-9b2d-277434d95e2d",
+    "name": "Cross category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "d6c87f91-a663-4e36-ae5d-cbe4be55446a",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "d9420e33-05c8-4da8-a4df-3c656182dead",
+    "name": "Signed category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "d9514f65-81d4-46c7-b5e4-54bb1612e051",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "d99ac175-e6e2-4d95-b3a1-8373d44ada5f",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "dd7c1df5-0a4f-45a8-ab20-93964c5a5fea",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "dd9949fe-2906-412f-b46b-b7f584670374",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "de8640c6-0377-4878-bd2b-08d5752f660c",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "dfc82e22-58c8-405f-939c-3d9037ced221",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "e0d7dd70-90b8-4561-9d8d-b987ba978ce6",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "e103c1db-3c9a-412b-8526-2a98ebea220a",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "e1509a01-26fa-4e3b-a213-a1bb8b29fb34",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "e30bf059-71d3-4d17-bb43-caf3974fbc47",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "e3229a87-e944-4b88-a057-9b2e307944c4",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "e3d7afb8-0224-40cb-aa16-8a37e86764b8",
+    "name": "Cross category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "e86eb57a-f212-4de2-bb90-c5fbf9e0e81e",
+    "name": "Signed category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "e86f2235-ec18-489a-8f53-072d2d9c89ca",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "e934753e-9c20-44de-9cff-dc42bfe5f660",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "e93deb47-054c-4189-94de-c4e469c32c60",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "ea13d40d-8e92-4a05-b9ef-89c9c2ff52e0",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "ea8b1706-dce8-4a32-bde7-23e80de26bc6",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "eb90dd7d-e066-44d6-8a42-056464df78ad",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "ebb7ba1f-149e-426a-aa38-0ae55ba26a3a",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "ec992cb4-41a8-491c-a81d-0857b6ad6dc7",
+    "name": "Race category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "ed2a8ce4-c94a-4622-8613-cd84226fa1dc",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "ef8b00c6-a97a-4a45-8e38-956867915bc3",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "f0c54fad-89ae-4c63-8762-003aca409adf",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "f22a5582-1f17-4015-93da-889772bcdd1c",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "f2e6babc-a10d-4e84-8383-7983ab2d8284",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "f308b524-116a-4a58-a655-9548b084faf0",
+    "name": "API Category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "f43cda5a-1de9-4408-8616-6137a0d6ead7",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "f4c8b330-f8de-4b3e-929c-8aa7452759bd",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "f50132ec-c58a-4427-8d0d-44e0e7241e83",
+    "name": "Search root",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "f5b0974e-ea44-4c17-804f-a9cf56b0129b",
+    "name": "Race category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "f8340f64-3c01-440d-8fc2-92fac274108d",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "f8592e56-0a53-4781-ae9e-5e70e70bfc44",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "f97320b6-e814-442a-9b21-90c8224c1a87",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "fc6df008-57b2-457b-bdd8-cc9ababfe306",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "fd17e8ec-e0b6-4f4a-88d3-e73afb1e1881",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "fde04bd2-5b24-4623-9956-92d5f7ea6edd",
+    "name": "Cross category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "fde609a0-6a5c-4ac1-8968-24ca59f856eb",
+    "name": "Search root",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "fdfd2336-b636-4a95-b8bb-e2baedd2ff09",
+    "name": "Concurrent",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "fed158c7-ffb1-4290-a983-7299c5ba6b31",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  },
+  {
+    "id": "ff8f02bf-c19c-4bfa-967a-b2a16dfba375",
+    "name": "Test category",
+    "parentId": null,
+    "iconUrl": "",
+    "sortOrder": 0
+  }
+]

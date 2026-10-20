@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "screenId": "devices",
+  "revision": "0c41c73809c9aa863ef3bdffce03503ea551e42a4bb2f322871d571c1fd47db4",
+  "components": [
+    {
+      "id": "screen.content",
+      "type": "LazyColumn",
+      "props": {
+        "spacing": "m",
+        "padding": "m",
+        "align": "Start"
+      },
+      "children": [
+        {
+          "id": "devices.title",
+          "type": "Text",
+          "props": {
+            "text": "Устройства быстрого входа",
+            "style": "ScreenTitle"
+          }
+        },
+        {
+          "id": "devices.empty",
+          "type": "Empty",
+          "props": {
+            "title": "Нет устройств",
+            "message": "Настройте PIN или биометрию на устройстве"
+          }
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "screen.refresh",
+      "type": "Refresh",
+      "destination": {
+        "screen": "devices"
+      }
+    }
+  ],
+  "state": {
+    "authenticated": true,
+    "fields": {},
+    "cartItemsCount": 0
+  },
+  "metadata": {
+    "title": "Устройства",
+    "locale": "ru-RU",
+    "accountId": "00e831b3-5c58-4471-93ef-e03b9bf4cb07",
+    "partial": false
+  }
+}

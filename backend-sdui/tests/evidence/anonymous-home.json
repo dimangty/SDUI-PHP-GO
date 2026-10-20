@@ -1,0 +1,1569 @@
+{
+  "schemaVersion": 1,
+  "screenId": "home",
+  "revision": "7e03213c5ad1dbca24e11463de1a71ce6406bb846c1cdbea3edc02395ee1012f",
+  "components": [
+    {
+      "id": "screen.content",
+      "type": "LazyColumn",
+      "props": {
+        "spacing": "m",
+        "padding": "m",
+        "align": "Start"
+      },
+      "children": [
+        {
+          "id": "home.title",
+          "type": "Text",
+          "props": {
+            "text": "Магазин",
+            "style": "ScreenTitle"
+          }
+        },
+        {
+          "id": "home.catalog",
+          "type": "Button",
+          "props": {
+            "label": "Каталог",
+            "actionId": "home.catalog.navigate",
+            "style": "Primary",
+            "enabled": true
+          }
+        },
+        {
+          "id": "home.search.form",
+          "type": "Form",
+          "props": {
+            "formId": "catalog",
+            "title": "Поиск",
+            "submitAction": "home.search.submit"
+          },
+          "children": [
+            {
+              "id": "catalog.q",
+              "type": "SearchField",
+              "props": {
+                "fieldId": "catalog.q",
+                "label": "Поиск товаров",
+                "input": "Text",
+                "required": false,
+                "readOnly": false,
+                "maxLength": 200,
+                "maxUtf8Bytes": 200,
+                "changeAction": "field.catalog.q"
+              }
+            },
+            {
+              "id": "home.search.button",
+              "type": "Button",
+              "props": {
+                "label": "Найти",
+                "actionId": "home.search.submit",
+                "style": "Primary",
+                "enabled": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "home.login",
+          "type": "Button",
+          "props": {
+            "label": "Войти",
+            "actionId": "home.login.action",
+            "style": "Primary",
+            "enabled": true
+          }
+        },
+        {
+          "id": "home.categories.title",
+          "type": "Text",
+          "props": {
+            "text": "Категории",
+            "style": "SectionTitle"
+          }
+        },
+        {
+          "id": "catalog.categories",
+          "type": "CategoryList",
+          "props": {
+            "items": [
+              {
+                "id": "01eea7d2-25b3-46aa-b7c4-7b04450b4b89",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.01eea7d2-25b3-46aa-b7c4-7b04450b4b89",
+                "selected": false
+              },
+              {
+                "id": "025878a5-29eb-4e96-ab4c-2d00c1f9298a",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.025878a5-29eb-4e96-ab4c-2d00c1f9298a",
+                "selected": false
+              },
+              {
+                "id": "02bda1e8-4175-4f41-9ff6-522f0f164e07",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.02bda1e8-4175-4f41-9ff6-522f0f164e07",
+                "selected": false
+              },
+              {
+                "id": "032f58a2-1163-4c05-81c6-8eddc2b1b934",
+                "label": "Concurrent",
+                "image": null,
+                "actionId": "category.032f58a2-1163-4c05-81c6-8eddc2b1b934",
+                "selected": false
+              },
+              {
+                "id": "0405ec24-7572-4e81-870c-e97977d820b1",
+                "label": "Provider category",
+                "image": null,
+                "actionId": "category.0405ec24-7572-4e81-870c-e97977d820b1",
+                "selected": false
+              },
+              {
+                "id": "04488803-21df-480b-8b2a-ec93f277f442",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.04488803-21df-480b-8b2a-ec93f277f442",
+                "selected": false
+              },
+              {
+                "id": "04f8d100-d5b2-409f-aebc-29474205e1aa",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.04f8d100-d5b2-409f-aebc-29474205e1aa",
+                "selected": false
+              },
+              {
+                "id": "055041ba-2b3c-43c5-a681-b1329f76b054",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.055041ba-2b3c-43c5-a681-b1329f76b054",
+                "selected": false
+              },
+              {
+                "id": "05564293-1f5a-47a2-9b7b-18b3c5ac53bd",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.05564293-1f5a-47a2-9b7b-18b3c5ac53bd",
+                "selected": false
+              },
+              {
+                "id": "06521497-7862-4519-8448-8077fcfccc88",
+                "label": "Race category",
+                "image": null,
+                "actionId": "category.06521497-7862-4519-8448-8077fcfccc88",
+                "selected": false
+              },
+              {
+                "id": "075a41a0-33b4-41c9-bed6-277f57321706",
+                "label": "Cross category",
+                "image": null,
+                "actionId": "category.075a41a0-33b4-41c9-bed6-277f57321706",
+                "selected": false
+              },
+              {
+                "id": "07bc38bf-0db4-4650-87d2-85b99a303a61",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.07bc38bf-0db4-4650-87d2-85b99a303a61",
+                "selected": false
+              },
+              {
+                "id": "07bd3b79-aaf3-4c74-8806-87f8a45d20a7",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.07bd3b79-aaf3-4c74-8806-87f8a45d20a7",
+                "selected": false
+              },
+              {
+                "id": "08905b6e-0fa4-45fd-acf4-0f5af45a5753",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.08905b6e-0fa4-45fd-acf4-0f5af45a5753",
+                "selected": false
+              },
+              {
+                "id": "095087f0-0d9b-4bea-9ebd-fad57b95deea",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.095087f0-0d9b-4bea-9ebd-fad57b95deea",
+                "selected": false
+              },
+              {
+                "id": "09c450fc-6f4a-42a3-9050-9add3aaf856c",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.09c450fc-6f4a-42a3-9050-9add3aaf856c",
+                "selected": false
+              },
+              {
+                "id": "0b6cd880-b9e0-4713-9bf3-206aabb6f6e3",
+                "label": "Concurrent",
+                "image": null,
+                "actionId": "category.0b6cd880-b9e0-4713-9bf3-206aabb6f6e3",
+                "selected": false
+              },
+              {
+                "id": "0ccef65d-dfd9-411f-973a-46c9c075e823",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.0ccef65d-dfd9-411f-973a-46c9c075e823",
+                "selected": false
+              },
+              {
+                "id": "0cfea9e7-2598-4412-a262-dc72e91191dc",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.0cfea9e7-2598-4412-a262-dc72e91191dc",
+                "selected": false
+              },
+              {
+                "id": "0e1a0287-ad08-4667-a986-e96bf9e0f57a",
+                "label": "Concurrent",
+                "image": null,
+                "actionId": "category.0e1a0287-ad08-4667-a986-e96bf9e0f57a",
+                "selected": false
+              },
+              {
+                "id": "0fad348d-b2b8-40f3-b7a1-6940c2085ccf",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.0fad348d-b2b8-40f3-b7a1-6940c2085ccf",
+                "selected": false
+              },
+              {
+                "id": "14088663-46f5-40f7-994d-66c8085fa6ac",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.14088663-46f5-40f7-994d-66c8085fa6ac",
+                "selected": false
+              },
+              {
+                "id": "14738c2d-500c-480e-9151-2c140efd600f",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.14738c2d-500c-480e-9151-2c140efd600f",
+                "selected": false
+              },
+              {
+                "id": "164fdef8-2c06-446d-ae3e-00871228d347",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.164fdef8-2c06-446d-ae3e-00871228d347",
+                "selected": false
+              },
+              {
+                "id": "16bc68fa-3391-49dc-9ecd-760c4977a674",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.16bc68fa-3391-49dc-9ecd-760c4977a674",
+                "selected": false
+              },
+              {
+                "id": "1761884a-0f16-4670-8160-27358d0457ce",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.1761884a-0f16-4670-8160-27358d0457ce",
+                "selected": false
+              },
+              {
+                "id": "194fec3b-b160-4807-9845-07507d4777e3",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.194fec3b-b160-4807-9845-07507d4777e3",
+                "selected": false
+              },
+              {
+                "id": "1a3e58b4-dd6f-4418-a68e-c6e35f05ccb8",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.1a3e58b4-dd6f-4418-a68e-c6e35f05ccb8",
+                "selected": false
+              },
+              {
+                "id": "1c567ff5-549a-41a1-946c-a66571400404",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.1c567ff5-549a-41a1-946c-a66571400404",
+                "selected": false
+              },
+              {
+                "id": "1e676edf-942e-47ca-a92a-013a407ad1f8",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.1e676edf-942e-47ca-a92a-013a407ad1f8",
+                "selected": false
+              },
+              {
+                "id": "202e5873-0501-4c52-8858-003eea940e1c",
+                "label": "Signed category",
+                "image": null,
+                "actionId": "category.202e5873-0501-4c52-8858-003eea940e1c",
+                "selected": false
+              },
+              {
+                "id": "21515b5f-74b8-451a-9b1f-6e1f0cb62566",
+                "label": "Race category",
+                "image": null,
+                "actionId": "category.21515b5f-74b8-451a-9b1f-6e1f0cb62566",
+                "selected": false
+              },
+              {
+                "id": "22e255f2-b1f5-49bd-974e-ae7260a60396",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.22e255f2-b1f5-49bd-974e-ae7260a60396",
+                "selected": false
+              },
+              {
+                "id": "23c521b7-d20f-48c8-aef4-72653ba7a5f1",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.23c521b7-d20f-48c8-aef4-72653ba7a5f1",
+                "selected": false
+              },
+              {
+                "id": "24436328-8beb-480b-b3a7-552abc19d67e",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.24436328-8beb-480b-b3a7-552abc19d67e",
+                "selected": false
+              },
+              {
+                "id": "245a6293-a073-4ba0-a4c4-9d5baeaa13be",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.245a6293-a073-4ba0-a4c4-9d5baeaa13be",
+                "selected": false
+              },
+              {
+                "id": "26149bbc-f539-410d-b9fc-4487e278f077",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.26149bbc-f539-410d-b9fc-4487e278f077",
+                "selected": false
+              },
+              {
+                "id": "26226a68-434e-46d2-af24-880114efb712",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.26226a68-434e-46d2-af24-880114efb712",
+                "selected": false
+              },
+              {
+                "id": "27405161-06a0-4d7d-ba31-d7dde39b7cb9",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.27405161-06a0-4d7d-ba31-d7dde39b7cb9",
+                "selected": false
+              },
+              {
+                "id": "290ae0ca-e4e0-46d2-b3c1-5c57c31a85e4",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.290ae0ca-e4e0-46d2-b3c1-5c57c31a85e4",
+                "selected": false
+              },
+              {
+                "id": "2a4a913b-eb94-4822-b5e0-383a30f8fd8e",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.2a4a913b-eb94-4822-b5e0-383a30f8fd8e",
+                "selected": false
+              },
+              {
+                "id": "2a71b988-b621-48e3-b065-2a0d004f7c46",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.2a71b988-b621-48e3-b065-2a0d004f7c46",
+                "selected": false
+              },
+              {
+                "id": "2aa0ce77-5be4-4315-838f-ba16a8f32048",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.2aa0ce77-5be4-4315-838f-ba16a8f32048",
+                "selected": false
+              },
+              {
+                "id": "2b7df10d-2fbe-4833-b60a-d6023f67f579",
+                "label": "Search root",
+                "image": null,
+                "actionId": "category.2b7df10d-2fbe-4833-b60a-d6023f67f579",
+                "selected": false
+              },
+              {
+                "id": "2d5266ea-cd8a-4f6c-9152-29d07983a526",
+                "label": "Concurrent",
+                "image": null,
+                "actionId": "category.2d5266ea-cd8a-4f6c-9152-29d07983a526",
+                "selected": false
+              },
+              {
+                "id": "2d656dcb-0522-4212-97d6-9c8ca6cbfbe0",
+                "label": "Test category",
+                "image": null,
+                "actionId": "category.2d656dcb-0522-4212-97d6-9c8ca6cbfbe0",
+                "selected": false
+              },
+              {
+                "id": "31db10e4-65fc-410b-abfb-7dc2434f1c4b",
+                "label": "Concurrent",
+                "image": null,
+                "actionId": "category.31db10e4-65fc-410b-abfb-7dc2434f1c4b",
+                "selected": false
+              },
+              {
+                "id": "322b224d-c4ab-4c2e-b7ce-4db53bbfc416",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.322b224d-c4ab-4c2e-b7ce-4db53bbfc416",
+                "selected": false
+              },
+              {
+                "id": "3352e298-9092-42af-8558-ef1472d87e6a",
+                "label": "Concurrent",
+                "image": null,
+                "actionId": "category.3352e298-9092-42af-8558-ef1472d87e6a",
+                "selected": false
+              },
+              {
+                "id": "337c42c8-055b-4db3-a29a-ff6c6cf0b961",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.337c42c8-055b-4db3-a29a-ff6c6cf0b961",
+                "selected": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "collection.categories.range",
+          "type": "Text",
+          "props": {
+            "text": "Категории: 1–50 из 246",
+            "style": "Secondary"
+          }
+        },
+        {
+          "id": "collection.categories.next.button",
+          "type": "Button",
+          "props": {
+            "label": "Следующие",
+            "actionId": "collection.categories.next",
+            "style": "Primary",
+            "enabled": true
+          }
+        },
+        {
+          "id": "home.popular.title",
+          "type": "Text",
+          "props": {
+            "text": "Популярные товары",
+            "style": "SectionTitle"
+          }
+        },
+        {
+          "id": "catalog.products",
+          "type": "ProductGrid",
+          "props": {
+            "columns": 2
+          },
+          "children": [
+            {
+              "id": "product.212d743a-ac24-4087-b4cf-845d3d66d728",
+              "type": "ProductCard",
+              "props": {
+                "productId": "212d743a-ac24-4087-b4cf-845d3d66d728",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.212d743a-ac24-4087-b4cf-845d3d66d728.open"
+              }
+            },
+            {
+              "id": "product.26b0a45b-0aef-49fc-b651-cb577bc269fb",
+              "type": "ProductCard",
+              "props": {
+                "productId": "26b0a45b-0aef-49fc-b651-cb577bc269fb",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.26b0a45b-0aef-49fc-b651-cb577bc269fb.open"
+              }
+            },
+            {
+              "id": "product.3ace47ea-9b1d-4294-97db-d55b80acc68a",
+              "type": "ProductCard",
+              "props": {
+                "productId": "3ace47ea-9b1d-4294-97db-d55b80acc68a",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.3ace47ea-9b1d-4294-97db-d55b80acc68a.open"
+              }
+            },
+            {
+              "id": "product.617df156-6f9d-44fa-8d76-80ef0effb50a",
+              "type": "ProductCard",
+              "props": {
+                "productId": "617df156-6f9d-44fa-8d76-80ef0effb50a",
+                "name": "Cross product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "1.25",
+                "discountPrice": null,
+                "image": null,
+                "stock": 19,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.617df156-6f9d-44fa-8d76-80ef0effb50a.open"
+              }
+            },
+            {
+              "id": "product.74989a84-e0a2-4ad9-9292-bc402a8ccede",
+              "type": "ProductCard",
+              "props": {
+                "productId": "74989a84-e0a2-4ad9-9292-bc402a8ccede",
+                "name": "Reference product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 4,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.74989a84-e0a2-4ad9-9292-bc402a8ccede.open"
+              }
+            },
+            {
+              "id": "product.7b0b6cda-034f-4a6e-b12f-7db3ef2e7fbb",
+              "type": "ProductCard",
+              "props": {
+                "productId": "7b0b6cda-034f-4a6e-b12f-7db3ef2e7fbb",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.7b0b6cda-034f-4a6e-b12f-7db3ef2e7fbb.open"
+              }
+            },
+            {
+              "id": "product.96de6597-683e-497e-8d21-4e00b9a7e54b",
+              "type": "ProductCard",
+              "props": {
+                "productId": "96de6597-683e-497e-8d21-4e00b9a7e54b",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.96de6597-683e-497e-8d21-4e00b9a7e54b.open"
+              }
+            },
+            {
+              "id": "product.9db46473-12ac-4c75-a048-93d47c8bbbec",
+              "type": "ProductCard",
+              "props": {
+                "productId": "9db46473-12ac-4c75-a048-93d47c8bbbec",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.9db46473-12ac-4c75-a048-93d47c8bbbec.open"
+              }
+            },
+            {
+              "id": "product.abf2d288-f4bf-46f8-8ee5-83e643cee35a",
+              "type": "ProductCard",
+              "props": {
+                "productId": "abf2d288-f4bf-46f8-8ee5-83e643cee35a",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.abf2d288-f4bf-46f8-8ee5-83e643cee35a.open"
+              }
+            },
+            {
+              "id": "product.cfd77bf6-b42c-44df-806f-d76ca37b3f3b",
+              "type": "ProductCard",
+              "props": {
+                "productId": "cfd77bf6-b42c-44df-806f-d76ca37b3f3b",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.cfd77bf6-b42c-44df-806f-d76ca37b3f3b.open"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "screen.refresh",
+      "type": "Refresh",
+      "destination": {
+        "screen": "home",
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "home.catalog.navigate",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog"
+      }
+    },
+    {
+      "id": "home.search.submit",
+      "type": "SubmitForm",
+      "formId": "catalog"
+    },
+    {
+      "id": "field.catalog.q",
+      "type": "UpdateField",
+      "fieldId": "catalog.q"
+    },
+    {
+      "id": "home.login.action",
+      "type": "Login"
+    },
+    {
+      "id": "category.01eea7d2-25b3-46aa-b7c4-7b04450b4b89",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "01eea7d2-25b3-46aa-b7c4-7b04450b4b89",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.025878a5-29eb-4e96-ab4c-2d00c1f9298a",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "025878a5-29eb-4e96-ab4c-2d00c1f9298a",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.02bda1e8-4175-4f41-9ff6-522f0f164e07",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "02bda1e8-4175-4f41-9ff6-522f0f164e07",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.032f58a2-1163-4c05-81c6-8eddc2b1b934",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "032f58a2-1163-4c05-81c6-8eddc2b1b934",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.0405ec24-7572-4e81-870c-e97977d820b1",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "0405ec24-7572-4e81-870c-e97977d820b1",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.04488803-21df-480b-8b2a-ec93f277f442",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "04488803-21df-480b-8b2a-ec93f277f442",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.04f8d100-d5b2-409f-aebc-29474205e1aa",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "04f8d100-d5b2-409f-aebc-29474205e1aa",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.055041ba-2b3c-43c5-a681-b1329f76b054",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "055041ba-2b3c-43c5-a681-b1329f76b054",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.05564293-1f5a-47a2-9b7b-18b3c5ac53bd",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "05564293-1f5a-47a2-9b7b-18b3c5ac53bd",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.06521497-7862-4519-8448-8077fcfccc88",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "06521497-7862-4519-8448-8077fcfccc88",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.075a41a0-33b4-41c9-bed6-277f57321706",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "075a41a0-33b4-41c9-bed6-277f57321706",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.07bc38bf-0db4-4650-87d2-85b99a303a61",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "07bc38bf-0db4-4650-87d2-85b99a303a61",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.07bd3b79-aaf3-4c74-8806-87f8a45d20a7",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "07bd3b79-aaf3-4c74-8806-87f8a45d20a7",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.08905b6e-0fa4-45fd-acf4-0f5af45a5753",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "08905b6e-0fa4-45fd-acf4-0f5af45a5753",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.095087f0-0d9b-4bea-9ebd-fad57b95deea",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "095087f0-0d9b-4bea-9ebd-fad57b95deea",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.09c450fc-6f4a-42a3-9050-9add3aaf856c",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "09c450fc-6f4a-42a3-9050-9add3aaf856c",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.0b6cd880-b9e0-4713-9bf3-206aabb6f6e3",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "0b6cd880-b9e0-4713-9bf3-206aabb6f6e3",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.0ccef65d-dfd9-411f-973a-46c9c075e823",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "0ccef65d-dfd9-411f-973a-46c9c075e823",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.0cfea9e7-2598-4412-a262-dc72e91191dc",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "0cfea9e7-2598-4412-a262-dc72e91191dc",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.0e1a0287-ad08-4667-a986-e96bf9e0f57a",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "0e1a0287-ad08-4667-a986-e96bf9e0f57a",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.0fad348d-b2b8-40f3-b7a1-6940c2085ccf",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "0fad348d-b2b8-40f3-b7a1-6940c2085ccf",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.14088663-46f5-40f7-994d-66c8085fa6ac",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "14088663-46f5-40f7-994d-66c8085fa6ac",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.14738c2d-500c-480e-9151-2c140efd600f",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "14738c2d-500c-480e-9151-2c140efd600f",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.164fdef8-2c06-446d-ae3e-00871228d347",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "164fdef8-2c06-446d-ae3e-00871228d347",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.16bc68fa-3391-49dc-9ecd-760c4977a674",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "16bc68fa-3391-49dc-9ecd-760c4977a674",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.1761884a-0f16-4670-8160-27358d0457ce",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "1761884a-0f16-4670-8160-27358d0457ce",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.194fec3b-b160-4807-9845-07507d4777e3",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "194fec3b-b160-4807-9845-07507d4777e3",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.1a3e58b4-dd6f-4418-a68e-c6e35f05ccb8",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "1a3e58b4-dd6f-4418-a68e-c6e35f05ccb8",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.1c567ff5-549a-41a1-946c-a66571400404",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "1c567ff5-549a-41a1-946c-a66571400404",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.1e676edf-942e-47ca-a92a-013a407ad1f8",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "1e676edf-942e-47ca-a92a-013a407ad1f8",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.202e5873-0501-4c52-8858-003eea940e1c",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "202e5873-0501-4c52-8858-003eea940e1c",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.21515b5f-74b8-451a-9b1f-6e1f0cb62566",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "21515b5f-74b8-451a-9b1f-6e1f0cb62566",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.22e255f2-b1f5-49bd-974e-ae7260a60396",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "22e255f2-b1f5-49bd-974e-ae7260a60396",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.23c521b7-d20f-48c8-aef4-72653ba7a5f1",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "23c521b7-d20f-48c8-aef4-72653ba7a5f1",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.24436328-8beb-480b-b3a7-552abc19d67e",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "24436328-8beb-480b-b3a7-552abc19d67e",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.245a6293-a073-4ba0-a4c4-9d5baeaa13be",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "245a6293-a073-4ba0-a4c4-9d5baeaa13be",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.26149bbc-f539-410d-b9fc-4487e278f077",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "26149bbc-f539-410d-b9fc-4487e278f077",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.26226a68-434e-46d2-af24-880114efb712",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "26226a68-434e-46d2-af24-880114efb712",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.27405161-06a0-4d7d-ba31-d7dde39b7cb9",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "27405161-06a0-4d7d-ba31-d7dde39b7cb9",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.290ae0ca-e4e0-46d2-b3c1-5c57c31a85e4",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "290ae0ca-e4e0-46d2-b3c1-5c57c31a85e4",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.2a4a913b-eb94-4822-b5e0-383a30f8fd8e",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "2a4a913b-eb94-4822-b5e0-383a30f8fd8e",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.2a71b988-b621-48e3-b065-2a0d004f7c46",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "2a71b988-b621-48e3-b065-2a0d004f7c46",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.2aa0ce77-5be4-4315-838f-ba16a8f32048",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "2aa0ce77-5be4-4315-838f-ba16a8f32048",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.2b7df10d-2fbe-4833-b60a-d6023f67f579",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "2b7df10d-2fbe-4833-b60a-d6023f67f579",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.2d5266ea-cd8a-4f6c-9152-29d07983a526",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "2d5266ea-cd8a-4f6c-9152-29d07983a526",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.2d656dcb-0522-4212-97d6-9c8ca6cbfbe0",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "2d656dcb-0522-4212-97d6-9c8ca6cbfbe0",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.31db10e4-65fc-410b-abfb-7dc2434f1c4b",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "31db10e4-65fc-410b-abfb-7dc2434f1c4b",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.322b224d-c4ab-4c2e-b7ce-4db53bbfc416",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "322b224d-c4ab-4c2e-b7ce-4db53bbfc416",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.3352e298-9092-42af-8558-ef1472d87e6a",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "3352e298-9092-42af-8558-ef1472d87e6a",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "category.337c42c8-055b-4db3-a29a-ff6c6cf0b961",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "337c42c8-055b-4db3-a29a-ff6c6cf0b961",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "collection.categories.next",
+      "type": "Navigate",
+      "destination": {
+        "screen": "home",
+        "categories": {
+          "page": 1,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "product.212d743a-ac24-4087-b4cf-845d3d66d728.open",
+      "type": "OpenProduct",
+      "productId": "212d743a-ac24-4087-b4cf-845d3d66d728"
+    },
+    {
+      "id": "product.26b0a45b-0aef-49fc-b651-cb577bc269fb.open",
+      "type": "OpenProduct",
+      "productId": "26b0a45b-0aef-49fc-b651-cb577bc269fb"
+    },
+    {
+      "id": "product.3ace47ea-9b1d-4294-97db-d55b80acc68a.open",
+      "type": "OpenProduct",
+      "productId": "3ace47ea-9b1d-4294-97db-d55b80acc68a"
+    },
+    {
+      "id": "product.617df156-6f9d-44fa-8d76-80ef0effb50a.open",
+      "type": "OpenProduct",
+      "productId": "617df156-6f9d-44fa-8d76-80ef0effb50a"
+    },
+    {
+      "id": "product.74989a84-e0a2-4ad9-9292-bc402a8ccede.open",
+      "type": "OpenProduct",
+      "productId": "74989a84-e0a2-4ad9-9292-bc402a8ccede"
+    },
+    {
+      "id": "product.7b0b6cda-034f-4a6e-b12f-7db3ef2e7fbb.open",
+      "type": "OpenProduct",
+      "productId": "7b0b6cda-034f-4a6e-b12f-7db3ef2e7fbb"
+    },
+    {
+      "id": "product.96de6597-683e-497e-8d21-4e00b9a7e54b.open",
+      "type": "OpenProduct",
+      "productId": "96de6597-683e-497e-8d21-4e00b9a7e54b"
+    },
+    {
+      "id": "product.9db46473-12ac-4c75-a048-93d47c8bbbec.open",
+      "type": "OpenProduct",
+      "productId": "9db46473-12ac-4c75-a048-93d47c8bbbec"
+    },
+    {
+      "id": "product.abf2d288-f4bf-46f8-8ee5-83e643cee35a.open",
+      "type": "OpenProduct",
+      "productId": "abf2d288-f4bf-46f8-8ee5-83e643cee35a"
+    },
+    {
+      "id": "product.cfd77bf6-b42c-44df-806f-d76ca37b3f3b.open",
+      "type": "OpenProduct",
+      "productId": "cfd77bf6-b42c-44df-806f-d76ca37b3f3b"
+    }
+  ],
+  "state": {
+    "authenticated": false,
+    "fields": {
+      "catalog.page": "0",
+      "catalog.q": "",
+      "catalog.size": "20"
+    },
+    "cartItemsCount": 0,
+    "collections": {
+      "categories": {
+        "page": 0,
+        "size": 50,
+        "totalPages": 5,
+        "totalItems": 246
+      }
+    }
+  },
+  "metadata": {
+    "title": "Магазин",
+    "locale": "ru-RU",
+    "partial": false
+  }
+}

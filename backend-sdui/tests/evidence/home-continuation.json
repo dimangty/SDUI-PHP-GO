@@ -1,0 +1,477 @@
+{
+  "schemaVersion": 1,
+  "screenId": "home",
+  "revision": "16ec9ea59fd5e4b89600a0464af5f193cbd147d2f2fc9a65268bbb813ef0bdee",
+  "components": [
+    {
+      "id": "screen.content",
+      "type": "LazyColumn",
+      "props": {
+        "spacing": "m",
+        "padding": "m",
+        "align": "Start"
+      },
+      "children": [
+        {
+          "id": "home.title",
+          "type": "Text",
+          "props": {
+            "text": "Магазин",
+            "style": "ScreenTitle"
+          }
+        },
+        {
+          "id": "home.catalog",
+          "type": "Button",
+          "props": {
+            "label": "Каталог",
+            "actionId": "home.catalog.navigate",
+            "style": "Primary",
+            "enabled": true
+          }
+        },
+        {
+          "id": "home.search.form",
+          "type": "Form",
+          "props": {
+            "formId": "catalog",
+            "title": "Поиск",
+            "submitAction": "home.search.submit"
+          },
+          "children": [
+            {
+              "id": "catalog.q",
+              "type": "SearchField",
+              "props": {
+                "fieldId": "catalog.q",
+                "label": "Поиск товаров",
+                "input": "Text",
+                "required": false,
+                "readOnly": false,
+                "maxLength": 200,
+                "maxUtf8Bytes": 200,
+                "changeAction": "field.catalog.q"
+              }
+            },
+            {
+              "id": "home.search.button",
+              "type": "Button",
+              "props": {
+                "label": "Найти",
+                "actionId": "home.search.submit",
+                "style": "Primary",
+                "enabled": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "home.profile",
+          "type": "ProfileHeader",
+          "props": {
+            "fullName": "SDUI Live Buyer",
+            "email": "sdui-9d9f8a504d661105@example.org",
+            "phone": "+79991234567",
+            "avatar": null
+          }
+        },
+        {
+          "id": "home.cart",
+          "type": "Button",
+          "props": {
+            "label": "Корзина (0)",
+            "actionId": "home.cart.navigate",
+            "style": "Primary",
+            "enabled": true
+          }
+        },
+        {
+          "id": "home.categories.title",
+          "type": "Text",
+          "props": {
+            "text": "Категории",
+            "style": "SectionTitle"
+          }
+        },
+        {
+          "id": "catalog.categories",
+          "type": "CategoryList",
+          "props": {
+            "items": [
+              {
+                "id": "025878a5-29eb-4e96-ab4c-2d00c1f9298a",
+                "label": "API Category",
+                "image": null,
+                "actionId": "category.025878a5-29eb-4e96-ab4c-2d00c1f9298a",
+                "selected": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "collection.categories.range",
+          "type": "Text",
+          "props": {
+            "text": "Категории: 2–2 из 246",
+            "style": "Secondary"
+          }
+        },
+        {
+          "id": "collection.categories.previous.button",
+          "type": "Button",
+          "props": {
+            "label": "Предыдущие",
+            "actionId": "collection.categories.previous",
+            "style": "Primary",
+            "enabled": true
+          }
+        },
+        {
+          "id": "collection.categories.next.button",
+          "type": "Button",
+          "props": {
+            "label": "Следующие",
+            "actionId": "collection.categories.next",
+            "style": "Primary",
+            "enabled": true
+          }
+        },
+        {
+          "id": "home.popular.title",
+          "type": "Text",
+          "props": {
+            "text": "Популярные товары",
+            "style": "SectionTitle"
+          }
+        },
+        {
+          "id": "catalog.products",
+          "type": "ProductGrid",
+          "props": {
+            "columns": 2
+          },
+          "children": [
+            {
+              "id": "product.212d743a-ac24-4087-b4cf-845d3d66d728",
+              "type": "ProductCard",
+              "props": {
+                "productId": "212d743a-ac24-4087-b4cf-845d3d66d728",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.212d743a-ac24-4087-b4cf-845d3d66d728.open"
+              }
+            },
+            {
+              "id": "product.26b0a45b-0aef-49fc-b651-cb577bc269fb",
+              "type": "ProductCard",
+              "props": {
+                "productId": "26b0a45b-0aef-49fc-b651-cb577bc269fb",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.26b0a45b-0aef-49fc-b651-cb577bc269fb.open"
+              }
+            },
+            {
+              "id": "product.3ace47ea-9b1d-4294-97db-d55b80acc68a",
+              "type": "ProductCard",
+              "props": {
+                "productId": "3ace47ea-9b1d-4294-97db-d55b80acc68a",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.3ace47ea-9b1d-4294-97db-d55b80acc68a.open"
+              }
+            },
+            {
+              "id": "product.617df156-6f9d-44fa-8d76-80ef0effb50a",
+              "type": "ProductCard",
+              "props": {
+                "productId": "617df156-6f9d-44fa-8d76-80ef0effb50a",
+                "name": "Cross product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "1.25",
+                "discountPrice": null,
+                "image": null,
+                "stock": 19,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.617df156-6f9d-44fa-8d76-80ef0effb50a.open"
+              }
+            },
+            {
+              "id": "product.74989a84-e0a2-4ad9-9292-bc402a8ccede",
+              "type": "ProductCard",
+              "props": {
+                "productId": "74989a84-e0a2-4ad9-9292-bc402a8ccede",
+                "name": "Reference product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 4,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.74989a84-e0a2-4ad9-9292-bc402a8ccede.open"
+              }
+            },
+            {
+              "id": "product.7b0b6cda-034f-4a6e-b12f-7db3ef2e7fbb",
+              "type": "ProductCard",
+              "props": {
+                "productId": "7b0b6cda-034f-4a6e-b12f-7db3ef2e7fbb",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.7b0b6cda-034f-4a6e-b12f-7db3ef2e7fbb.open"
+              }
+            },
+            {
+              "id": "product.96de6597-683e-497e-8d21-4e00b9a7e54b",
+              "type": "ProductCard",
+              "props": {
+                "productId": "96de6597-683e-497e-8d21-4e00b9a7e54b",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.96de6597-683e-497e-8d21-4e00b9a7e54b.open"
+              }
+            },
+            {
+              "id": "product.9db46473-12ac-4c75-a048-93d47c8bbbec",
+              "type": "ProductCard",
+              "props": {
+                "productId": "9db46473-12ac-4c75-a048-93d47c8bbbec",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.9db46473-12ac-4c75-a048-93d47c8bbbec.open"
+              }
+            },
+            {
+              "id": "product.abf2d288-f4bf-46f8-8ee5-83e643cee35a",
+              "type": "ProductCard",
+              "props": {
+                "productId": "abf2d288-f4bf-46f8-8ee5-83e643cee35a",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.abf2d288-f4bf-46f8-8ee5-83e643cee35a.open"
+              }
+            },
+            {
+              "id": "product.cfd77bf6-b42c-44df-806f-d76ca37b3f3b",
+              "type": "ProductCard",
+              "props": {
+                "productId": "cfd77bf6-b42c-44df-806f-d76ca37b3f3b",
+                "name": "Exact product",
+                "description": "",
+                "descriptionTruncated": false,
+                "price": "0.10",
+                "discountPrice": null,
+                "image": null,
+                "stock": 9,
+                "rating": null,
+                "reviewsCount": 0,
+                "openAction": "product.cfd77bf6-b42c-44df-806f-d76ca37b3f3b.open"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "screen.refresh",
+      "type": "Refresh",
+      "destination": {
+        "screen": "home",
+        "categories": {
+          "page": 1,
+          "size": 1
+        }
+      }
+    },
+    {
+      "id": "home.catalog.navigate",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog"
+      }
+    },
+    {
+      "id": "home.search.submit",
+      "type": "SubmitForm",
+      "formId": "catalog"
+    },
+    {
+      "id": "field.catalog.q",
+      "type": "UpdateField",
+      "fieldId": "catalog.q"
+    },
+    {
+      "id": "home.cart.navigate",
+      "type": "Navigate",
+      "destination": {
+        "screen": "cart"
+      }
+    },
+    {
+      "id": "category.025878a5-29eb-4e96-ab4c-2d00c1f9298a",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "025878a5-29eb-4e96-ab4c-2d00c1f9298a",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 1,
+          "size": 1
+        }
+      }
+    },
+    {
+      "id": "collection.categories.previous",
+      "type": "Navigate",
+      "destination": {
+        "screen": "home",
+        "categories": {
+          "page": 0,
+          "size": 1
+        }
+      }
+    },
+    {
+      "id": "collection.categories.next",
+      "type": "Navigate",
+      "destination": {
+        "screen": "home",
+        "categories": {
+          "page": 2,
+          "size": 1
+        }
+      }
+    },
+    {
+      "id": "product.212d743a-ac24-4087-b4cf-845d3d66d728.open",
+      "type": "OpenProduct",
+      "productId": "212d743a-ac24-4087-b4cf-845d3d66d728"
+    },
+    {
+      "id": "product.26b0a45b-0aef-49fc-b651-cb577bc269fb.open",
+      "type": "OpenProduct",
+      "productId": "26b0a45b-0aef-49fc-b651-cb577bc269fb"
+    },
+    {
+      "id": "product.3ace47ea-9b1d-4294-97db-d55b80acc68a.open",
+      "type": "OpenProduct",
+      "productId": "3ace47ea-9b1d-4294-97db-d55b80acc68a"
+    },
+    {
+      "id": "product.617df156-6f9d-44fa-8d76-80ef0effb50a.open",
+      "type": "OpenProduct",
+      "productId": "617df156-6f9d-44fa-8d76-80ef0effb50a"
+    },
+    {
+      "id": "product.74989a84-e0a2-4ad9-9292-bc402a8ccede.open",
+      "type": "OpenProduct",
+      "productId": "74989a84-e0a2-4ad9-9292-bc402a8ccede"
+    },
+    {
+      "id": "product.7b0b6cda-034f-4a6e-b12f-7db3ef2e7fbb.open",
+      "type": "OpenProduct",
+      "productId": "7b0b6cda-034f-4a6e-b12f-7db3ef2e7fbb"
+    },
+    {
+      "id": "product.96de6597-683e-497e-8d21-4e00b9a7e54b.open",
+      "type": "OpenProduct",
+      "productId": "96de6597-683e-497e-8d21-4e00b9a7e54b"
+    },
+    {
+      "id": "product.9db46473-12ac-4c75-a048-93d47c8bbbec.open",
+      "type": "OpenProduct",
+      "productId": "9db46473-12ac-4c75-a048-93d47c8bbbec"
+    },
+    {
+      "id": "product.abf2d288-f4bf-46f8-8ee5-83e643cee35a.open",
+      "type": "OpenProduct",
+      "productId": "abf2d288-f4bf-46f8-8ee5-83e643cee35a"
+    },
+    {
+      "id": "product.cfd77bf6-b42c-44df-806f-d76ca37b3f3b.open",
+      "type": "OpenProduct",
+      "productId": "cfd77bf6-b42c-44df-806f-d76ca37b3f3b"
+    }
+  ],
+  "state": {
+    "authenticated": true,
+    "fields": {
+      "catalog.page": "0",
+      "catalog.q": "",
+      "catalog.size": "20"
+    },
+    "cartItemsCount": 0,
+    "collections": {
+      "categories": {
+        "page": 1,
+        "size": 1,
+        "totalPages": 246,
+        "totalItems": 246
+      }
+    }
+  },
+  "metadata": {
+    "title": "Магазин",
+    "locale": "ru-RU",
+    "accountId": "00e831b3-5c58-4471-93ef-e03b9bf4cb07",
+    "partial": false
+  }
+}

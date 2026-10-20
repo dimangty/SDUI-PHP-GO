@@ -1,0 +1,30 @@
+<?php
+declare(strict_types=1);
+namespace Shop\domain;
+
+final class ApiError extends \RuntimeException
+{
+    public function __construct(public readonly string $errorCode, string $message, public readonly array $details = [], public readonly ?int $httpStatus = null)
+    { parent::__construct($message); }
+
+    public function status(): int
+    {
+        if ($this->httpStatus !== null) { return $this->httpStatus; }
+        return match ($this->errorCode) {
+            'UNAUTHORIZED','INVALID_CREDENTIALS','INVALID_REFRESH_TOKEN','INVALID_PIN','INVALID_ASSERTION','BIOMETRIC_REVOKED','INVALID_SIGNATURE' => 401,
+            'ADMIN_REQUIRED','ADMIN_BOOTSTRAP_REQUIRED','PIN_FORBIDDEN_FOR_ADMIN','FORBIDDEN','PURCHASE_REQUIRED','WEBHOOK_SOURCE_DENIED','DEMO_PAYMENT_FORBIDDEN' => 403,
+            'USER_NOT_FOUND','PIN_NOT_SET','BIOMETRIC_NOT_SET','CATEGORY_NOT_FOUND','PRODUCT_NOT_FOUND','CART_ITEM_NOT_FOUND','ADDRESS_NOT_FOUND','ORDER_NOT_FOUND','PAYMENT_NOT_FOUND','REVIEW_NOT_FOUND','FILE_NOT_FOUND','NOT_FOUND' => 404,
+            'EMAIL_ALREADY_EXISTS','USER_ALREADY_EXISTS','PIN_ALREADY_SET','BIOMETRIC_ALREADY_SET','ADDRESS_IN_USE','ALREADY_PROCESSED','CANCEL_NOT_ALLOWED','CART_ITEM_INVALID','IDEMPOTENCY_KEY_REUSED','INSUFFICIENT_STOCK','INVALID_ORDER_STATUS','INVALID_PAYMENT_STATUS','OUT_OF_STOCK','PASSWORD_CHANGED','REVIEW_EXISTS' => 409,
+            'ACCOUNT_LOCKED','PIN_LOCKED','BIOMETRIC_LOCKED' => 423,
+            'CHALLENGE_EXPIRED' => 410,
+            'DATABASE_UNAVAILABLE','ADMIN_BOOTSTRAP_NOT_CONFIGURED','WEBHOOK_NOT_CONFIGURED','IDENTITY_PROVIDER_UNAVAILABLE','UPLOAD_STORAGE_UNAVAILABLE','SEARCH_UNAVAILABLE' => 503,
+            'UNSUPPORTED_MEDIA_TYPE','INVALID_FILE_TYPE' => 415,
+            'REQUEST_TOO_LARGE','FILE_TOO_LARGE' => 413,
+            'METHOD_NOT_ALLOWED' => 405,
+            'RATE_LIMITED' => 429,
+            'INTERNAL_ERROR' => 500,
+            'IDENTITY_PROVIDER_ERROR' => 502,
+            default => 400,
+        };
+    }
+}

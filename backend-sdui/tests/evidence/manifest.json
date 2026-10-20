@@ -1,0 +1,508 @@
+{
+  "executedAt": "2026-10-18T06:15:17Z",
+  "yiiOrigin": "http://127.0.0.1:58088",
+  "bffOrigin": "http://127.0.0.1:58091",
+  "userId": "00e831b3-5c58-4471-93ef-e03b9bf4cb07",
+  "productId": "0001db9b-0ab1-470f-a555-a23ffe9e5c0a",
+  "orderId": "6cd31259-fcba-4278-a17f-cf8f5175ab7a",
+  "unitPrice": "0.10",
+  "orderTotal": "0.20",
+  "steps": [
+    {
+      "name": "screen anonymous-home",
+      "method": "GET",
+      "path": "/api/v1/screens/home",
+      "status": 200,
+      "bytes": 26632,
+      "sha256": "9c9535b5d4aecde73f179da3299908e13321abe57fbed51463d5e446b906bacf"
+    },
+    {
+      "name": "screen anonymous-catalog",
+      "method": "GET",
+      "path": "/api/v1/screens/catalog?size=2",
+      "status": 200,
+      "bytes": 27591,
+      "sha256": "690fcb8e028668e4b6bc8cef4bba923c390ee78ce93b10a5c02d15f6bc18134c"
+    },
+    {
+      "name": "SQL-backed product selection",
+      "method": "GET",
+      "path": "/api/v1/products?size=100\u0026sort=price_asc",
+      "status": 200,
+      "bytes": 24809,
+      "sha256": "df6c978cfae24ec27d30fe24739f68efd9cd383c428f76c7efc4040525af8aee"
+    },
+    {
+      "name": "product before",
+      "method": "GET",
+      "path": "/api/v1/products/0001db9b-0ab1-470f-a555-a23ffe9e5c0a",
+      "status": 200,
+      "bytes": 246,
+      "sha256": "8777b5bae88427f80eecb62b1b58fed4d780653407d9bc86c00bcfdc4d2caf16"
+    },
+    {
+      "name": "screen anonymous-product",
+      "method": "GET",
+      "path": "/api/v1/screens/product/0001db9b-0ab1-470f-a555-a23ffe9e5c0a",
+      "status": 200,
+      "bytes": 1338,
+      "sha256": "a732a95ffae6ea7ea03d58bf9b129f1c3b960cf230f88b4ff19d5c63e6782ace"
+    },
+    {
+      "name": "PHP register",
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "status": 201,
+      "bytes": 2271
+    },
+    {
+      "name": "PHP login",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "bytes": 2271
+    },
+    {
+      "name": "native set PIN",
+      "method": "POST",
+      "path": "/api/v1/auth/pin",
+      "status": 201,
+      "bytes": 0
+    },
+    {
+      "name": "native PIN login",
+      "method": "POST",
+      "path": "/api/v1/auth/pin/login",
+      "status": 200,
+      "bytes": 209
+    },
+    {
+      "name": "native enroll biometric",
+      "method": "POST",
+      "path": "/api/v1/auth/biometric",
+      "status": 201,
+      "bytes": 55
+    },
+    {
+      "name": "screen home",
+      "method": "GET",
+      "path": "/api/v1/screens/home?deviceId=sdui-9d9f8a504d661105",
+      "status": 200,
+      "bytes": 26891,
+      "sha256": "75b7f627312ab49383a0eb2cbf3810368efc23c0e4db4d3b40b512e8b4724b75"
+    },
+    {
+      "name": "screen catalog",
+      "method": "GET",
+      "path": "/api/v1/screens/catalog?size=2",
+      "status": 200,
+      "bytes": 27641,
+      "sha256": "38544fcec43847b5eb4b281ce1eed7943e1f24e044c10ac2732d47f9663e4959"
+    },
+    {
+      "name": "screen catalog-search",
+      "method": "GET",
+      "path": "/api/v1/screens/catalog?categoryId=a8b8dbfc-3adb-48a8-b133-005b4178c1ad\u0026priceMax=0.10\u0026priceMin=0.10\u0026q=Exact+product\u0026size=2",
+      "status": 200,
+      "bytes": 30034,
+      "sha256": "b15dacb0af1de5fb551d56a402f287ea39f179506a3ec6778897487abd242204"
+    },
+    {
+      "name": "screen catalog-page-1",
+      "method": "GET",
+      "path": "/api/v1/screens/catalog?page=1\u0026size=1",
+      "status": 200,
+      "bytes": 27420,
+      "sha256": "ffb5d65013309379d8c767c5321acf3c6913fb9d82bf9e30f01dfa3e4ce33785"
+    },
+    {
+      "name": "SQL-backed category collection",
+      "method": "GET",
+      "path": "/api/v1/categories",
+      "status": 200,
+      "bytes": 27425,
+      "sha256": "ca3b80bd30e58e6fd6d3714aff43efbd4e67bbd87ea9e399a5e8041e1e30a655"
+    },
+    {
+      "name": "screen catalog-category-page-0",
+      "method": "GET",
+      "path": "/api/v1/screens/catalog?size=100\u0026categoryPage=0\u0026categorySize=50",
+      "status": 200,
+      "bytes": 76097,
+      "sha256": "04afb328460b0237bec94d8df24affe62342b629ab33df3aca6ec48baa1f99e9"
+    },
+    {
+      "name": "screen catalog-category-page-1",
+      "method": "GET",
+      "path": "/api/v1/screens/catalog?size=100\u0026categoryPage=1\u0026categorySize=50",
+      "status": 200,
+      "bytes": 76477,
+      "sha256": "0de432fce0859decaa869fbcb867eabf828742e6eaa22ee7b42477c9c1d09b5e"
+    },
+    {
+      "name": "screen catalog-category-page-2",
+      "method": "GET",
+      "path": "/api/v1/screens/catalog?size=100\u0026categoryPage=2\u0026categorySize=50",
+      "status": 200,
+      "bytes": 76454,
+      "sha256": "8fb665d84347b22bc15aed5835f1014a251efee17281edf94053a8efcb1d4b0c"
+    },
+    {
+      "name": "screen catalog-category-page-3",
+      "method": "GET",
+      "path": "/api/v1/screens/catalog?size=100\u0026categoryPage=3\u0026categorySize=50",
+      "status": 200,
+      "bytes": 76414,
+      "sha256": "e58594def9be22ff3bb9ffe53edda896c0fafb187ca073f27e2bffb3ea1dab99"
+    },
+    {
+      "name": "screen catalog-category-page-4",
+      "method": "GET",
+      "path": "/api/v1/screens/catalog?size=100\u0026categoryPage=4\u0026categorySize=50",
+      "status": 200,
+      "bytes": 74320,
+      "sha256": "358f5098a20068d163570b43a8169b6447c80feef7a4d8fa9dcd5acb1d813a02"
+    },
+    {
+      "name": "screen home-continuation",
+      "method": "GET",
+      "path": "/api/v1/screens/home?deviceId=sdui-9d9f8a504d661105\u0026categoryPage=1\u0026categorySize=1",
+      "status": 200,
+      "bytes": 8407,
+      "sha256": "27b8f8bed5abf99bea6a3444fe5b0f2def21e846ed7469cefb06a55f2e3b3829"
+    },
+    {
+      "name": "screen product",
+      "method": "GET",
+      "path": "/api/v1/screens/product/0001db9b-0ab1-470f-a555-a23ffe9e5c0a",
+      "status": 200,
+      "bytes": 1478,
+      "sha256": "cc6a2d3c58f2aebf4b8c15d038ef28d6d434903dac2e29cf5546973851be8012"
+    },
+    {
+      "name": "screen empty-cart",
+      "method": "GET",
+      "path": "/api/v1/screens/cart",
+      "status": 200,
+      "bytes": 1204,
+      "sha256": "d6057d3e75f23b1d4078b18390bc97f557eea3d0032ca6a9f3f797a85d83d79e"
+    },
+    {
+      "name": "command AddToCart",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 89,
+      "sha256": "61e2388ddf46aa95df486b36b9d784dcb63a4b8e9d34b74335d9d76a9dfda13e"
+    },
+    {
+      "name": "command AddToCart",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 89,
+      "sha256": "61e2388ddf46aa95df486b36b9d784dcb63a4b8e9d34b74335d9d76a9dfda13e"
+    },
+    {
+      "name": "idempotent add readback",
+      "method": "GET",
+      "path": "/api/v1/cart",
+      "status": 200,
+      "bytes": 336,
+      "sha256": "0889f198ddc275c049bcc3c9af956b3039caa796c755851e695d087bcfa88e46"
+    },
+    {
+      "name": "conflicting idempotency fingerprint",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 409,
+      "bytes": 134,
+      "sha256": "0ec69ec7c1644bc448b98c1039f530a3a0700491264dcf31fdab1c078308a679"
+    },
+    {
+      "name": "command UpdateQuantity",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 94,
+      "sha256": "f1d43b3abea99cd6fe63258125c1395345592a391a1495fa18b5e29b63c96927"
+    },
+    {
+      "name": "quantity replacement readback",
+      "method": "GET",
+      "path": "/api/v1/cart",
+      "status": 200,
+      "bytes": 334,
+      "sha256": "c55bbb6e95edeea09398ad6f16563b1a93b7f9b2b917d02e8adc446d49d9565e"
+    },
+    {
+      "name": "command RemoveFromCart",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 94,
+      "sha256": "697a18a72cc5f0d046460a530a941ccd72d5cfc097bc0851af78dec606434edb"
+    },
+    {
+      "name": "remove readback",
+      "method": "GET",
+      "path": "/api/v1/cart",
+      "status": 200,
+      "bytes": 171,
+      "sha256": "4427698d1b4484fcb9d67bc1bed5c97132966a92b22f8be9f5c02261c52ba929"
+    },
+    {
+      "name": "command AddToCart",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 89,
+      "sha256": "61e2388ddf46aa95df486b36b9d784dcb63a4b8e9d34b74335d9d76a9dfda13e"
+    },
+    {
+      "name": "command UpdateProfile",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 96,
+      "sha256": "6b345f0e1d66e7b747717d4b1baa169abfa44c7d87b1c3ef4e008809d5b15ac5"
+    },
+    {
+      "name": "native address creation",
+      "method": "POST",
+      "path": "/api/v1/addresses",
+      "status": 201,
+      "bytes": 181,
+      "sha256": "ba92082a46a3cc1b40418f960186d788c2e214937f5851ccb657fb6275d0a185"
+    },
+    {
+      "name": "command AddToCart",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 89,
+      "sha256": "61e2388ddf46aa95df486b36b9d784dcb63a4b8e9d34b74335d9d76a9dfda13e"
+    },
+    {
+      "name": "screen cart-continuation",
+      "method": "GET",
+      "path": "/api/v1/screens/cart?page=1\u0026size=1",
+      "status": 200,
+      "bytes": 4187,
+      "sha256": "d146f76ca8fcb5e38c15118e46550b061d9f1e4ba2259e6b3036a6707fd89a0b"
+    },
+    {
+      "name": "command RemoveFromCart",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 94,
+      "sha256": "697a18a72cc5f0d046460a530a941ccd72d5cfc097bc0851af78dec606434edb"
+    },
+    {
+      "name": "screen cart-after-continuation-remove",
+      "method": "GET",
+      "path": "/api/v1/screens/cart?page=1\u0026size=1",
+      "status": 200,
+      "bytes": 3908,
+      "sha256": "48c308165859a30e4ad659a2fb1b3c45aff2248c4398dace294c3ccc032b7ead"
+    },
+    {
+      "name": "screen cart",
+      "method": "GET",
+      "path": "/api/v1/screens/cart",
+      "status": 200,
+      "bytes": 3910,
+      "sha256": "a58eed5ddc165e098fba4673ba046a1888cef0594d54dd6817e1e48b06719a39"
+    },
+    {
+      "name": "screen profile",
+      "method": "GET",
+      "path": "/api/v1/screens/profile",
+      "status": 200,
+      "bytes": 3147,
+      "sha256": "915d16950195be14597ef349774235f32506e0b52f6b6e1574410708fa63cb44"
+    },
+    {
+      "name": "screen devices",
+      "method": "GET",
+      "path": "/api/v1/screens/devices",
+      "status": 200,
+      "bytes": 2559,
+      "sha256": "4e24db0e08f5be698803e6b53f1db225f8ce53843ab1f5576f2946a4baa30124"
+    },
+    {
+      "name": "command RevokeDevice",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 95,
+      "sha256": "db09a7a40534bb40d8f521565b052ec8a2fe85138a65944a1b9034fb3d9153da"
+    },
+    {
+      "name": "command RevokeDevice",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 95,
+      "sha256": "db09a7a40534bb40d8f521565b052ec8a2fe85138a65944a1b9034fb3d9153da"
+    },
+    {
+      "name": "screen empty-devices",
+      "method": "GET",
+      "path": "/api/v1/screens/devices",
+      "status": 200,
+      "bytes": 820,
+      "sha256": "ba399b3700749eec7f9a4d798212b20f77429b0c1f4259fcbd991a9978d669bb"
+    },
+    {
+      "name": "native checkout",
+      "method": "POST",
+      "path": "/api/v1/orders",
+      "status": 201,
+      "bytes": 560,
+      "sha256": "6b3c36b639b297e4d1457801434b6366f429e4802ccb046fc429d80e72004a98"
+    },
+    {
+      "name": "native checkout idempotent replay",
+      "method": "POST",
+      "path": "/api/v1/orders",
+      "status": 201,
+      "bytes": 560,
+      "sha256": "e984ededb44a50075ad4d61db718bcfbea35bd9ad9630eb4aa0f41dc38738121"
+    },
+    {
+      "name": "native payment confirmation",
+      "method": "POST",
+      "path": "/api/v1/payments/220da0a6-1cd7-4435-8ac7-df2ae9a94682/confirm",
+      "status": 200,
+      "bytes": 92,
+      "sha256": "027c526b1e1e765066649ca102f5d83ba2be44ff3eb314136b66c4fd4d04abae"
+    },
+    {
+      "name": "screen orders",
+      "method": "GET",
+      "path": "/api/v1/screens/orders",
+      "status": 200,
+      "bytes": 2150,
+      "sha256": "dea7f3ad419dc66e62548bfc06ce4f1d782a1f65b7ac9854bffa017d69f04893"
+    },
+    {
+      "name": "screen order",
+      "method": "GET",
+      "path": "/api/v1/screens/order/6cd31259-fcba-4278-a17f-cf8f5175ab7a",
+      "status": 200,
+      "bytes": 2361,
+      "sha256": "241b6d7c3c5513bdd2342e352f6f2b00341c0ef0f77e3f3bbe20ddae406c33a3"
+    },
+    {
+      "name": "reserved stock readback",
+      "method": "GET",
+      "path": "/api/v1/products/0001db9b-0ab1-470f-a555-a23ffe9e5c0a",
+      "status": 200,
+      "bytes": 245,
+      "sha256": "736dcd258582f3492e18bd191d3e2a48aabb5895b5cc81a9960f13c75fc39d6a"
+    },
+    {
+      "name": "command CancelOrder",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 136,
+      "sha256": "24daf7088a40b53169c56cce60a59c48e8e5625dc13a7538c059114e808af13f"
+    },
+    {
+      "name": "cancellation readback",
+      "method": "GET",
+      "path": "/api/v1/orders/6cd31259-fcba-4278-a17f-cf8f5175ab7a",
+      "status": 200,
+      "bytes": 562,
+      "sha256": "94b6d0a4fed6c943e18aa38c168c68da64f2713f7fa83a5d9bdd278ecaaceef5"
+    },
+    {
+      "name": "restored stock readback",
+      "method": "GET",
+      "path": "/api/v1/products/0001db9b-0ab1-470f-a555-a23ffe9e5c0a",
+      "status": 200,
+      "bytes": 246,
+      "sha256": "8777b5bae88427f80eecb62b1b58fed4d780653407d9bc86c00bcfdc4d2caf16"
+    },
+    {
+      "name": "screen cancelled-order",
+      "method": "GET",
+      "path": "/api/v1/screens/order/6cd31259-fcba-4278-a17f-cf8f5175ab7a",
+      "status": 200,
+      "bytes": 1912,
+      "sha256": "e8099cc88854ebc8db631ffa62d0dab3a9a64480838eecf318194002019da3a9"
+    },
+    {
+      "name": "screen orders-cancelled-filter",
+      "method": "GET",
+      "path": "/api/v1/screens/orders?status=CANCELLED\u0026page=0\u0026size=1",
+      "status": 200,
+      "bytes": 2179,
+      "sha256": "2cc60347b6380e25acf9938653e0e1cf561ccb3fce422f44c7a28ff02d9b1389"
+    },
+    {
+      "name": "screen cart-after-checkout",
+      "method": "GET",
+      "path": "/api/v1/screens/cart",
+      "status": 200,
+      "bytes": 1204,
+      "sha256": "d6057d3e75f23b1d4078b18390bc97f557eea3d0032ca6a9f3f797a85d83d79e"
+    },
+    {
+      "name": "PHP register",
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "status": 201,
+      "bytes": 2271
+    },
+    {
+      "name": "PHP login",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "bytes": 2271
+    },
+    {
+      "name": "cross-account order rejected",
+      "method": "GET",
+      "path": "/api/v1/screens/order/6cd31259-fcba-4278-a17f-cf8f5175ab7a",
+      "status": 404,
+      "bytes": 90,
+      "sha256": "efb1893c539d159a9a7db8aeb7fd802df57647dd5fa0924a9f47d30e941b94ba"
+    },
+    {
+      "name": "cross-account cancellation rejected",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 404,
+      "bytes": 90,
+      "sha256": "145dad01bd056c8a2a04a3e29a9ea166c381babd2fbc70c1ff31292c2241834e"
+    },
+    {
+      "name": "critical remote checkout rejected",
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 400,
+      "bytes": 99,
+      "sha256": "d037d9182346d43570e1cae0136de7addf8b10abff1235dd463dc0dee574a588"
+    },
+    {
+      "name": "native logout",
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "status": 204,
+      "bytes": 0
+    },
+    {
+      "name": "revoked opaque session rejected",
+      "method": "GET",
+      "path": "/api/v1/screens/profile",
+      "status": 401,
+      "bytes": 103,
+      "sha256": "f1f963421696c0f8c8ff540e45820578790e9f85d6315116b09b56f35dca4be0"
+    }
+  ]
+}

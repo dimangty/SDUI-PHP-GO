@@ -1,0 +1,40 @@
+version: "2"
+linters:
+  # Explicit set keeps upgrades reproducible instead of silently enabling new
+  # default linters with unrelated legacy findings.
+  default: none
+  enable:
+    - bodyclose
+    - errcheck
+    - errorlint
+    - gosec
+    - gocyclo
+    - ineffassign
+    - nilerr
+    - noctx
+    - staticcheck
+    - unused
+  settings:
+    gocyclo:
+      min-complexity: 20
+  exclusions:
+    rules:
+      # Test code intentionally keeps full user journeys in one function and
+      # uses httptest helpers; production code remains subject to these checks.
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - gosec
+          - noctx
+      # Closed grandfather set. The ordered removal plan is documented in
+      # docs/ARCHITECTURE.md; adding new function names here is forbidden.
+      - text: 'cyclomatic complexity .* of func `(run|main|.*Products|.*UpdateProduct|LoadConfig|.*bootstrapNormalized|.*hydrateNormalizedProjection|.*hydrateRuntimeState|.*createOrderRelational|.*avatar)`'
+        linters:
+          - gocyclo
+formatters:
+  enable:
+    - gofmt
+    - goimports
+run:
+  timeout: 5m
+  modules-download-mode: readonly

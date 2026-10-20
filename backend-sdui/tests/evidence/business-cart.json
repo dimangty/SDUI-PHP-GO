@@ -1,0 +1,17 @@
+{
+  "id": "cart-00e831b3-5c58-4471-93ef-e03b9bf4cb07",
+  "userId": "00e831b3-5c58-4471-93ef-e03b9bf4cb07",
+  "items": [
+    {
+      "productId": "0001db9b-0ab1-470f-a555-a23ffe9e5c0a",
+      "productName": "Exact product",
+      "quantity": 2,
+      "priceSnapshot": "0.10",
+      "imageUrl": null,
+      "isAvailable": true,
+      "stock": 10
+    }
+  ],
+  "totalAmount": "0.20",
+  "updatedAt": "2026-10-18T06:15:16.520207Z"
+}

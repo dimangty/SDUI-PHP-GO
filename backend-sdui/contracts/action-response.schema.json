@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shopkmp.local/contracts/sdui/v1/action-response.schema.json",
+  "title": "Successful finite command acknowledgement",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "command", "outcome", "refresh"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "command": {"enum": ["AddToCart", "RemoveFromCart", "UpdateQuantity", "CancelOrder", "UpdateProfile", "RevokeDevice"]},
+    "outcome": {"const": "applied"},
+    "refresh": {"$ref": "screen.schema.json#/$defs/destination"}
+  }
+}

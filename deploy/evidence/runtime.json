@@ -1,0 +1,187 @@
+{
+  "actualClientIP": "172.30.95.1",
+  "phpRatePrincipal": "read:network-172.30.95.0/24",
+  "spoofedAddressIgnored": "203.0.113.77",
+  "schemaMigrationCount": 11,
+  "yiiHistoryCount": 1,
+  "services": {
+    "edge": {
+      "image": "sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+      "status": "running",
+      "health": "healthy"
+    },
+    "fixture": {
+      "image": "sha256:5da9eadda09aad80a8c293dccd5d56675d977039ae8716d7e086775f3433285f",
+      "status": "exited",
+      "health": null
+    },
+    "keycloak": {
+      "image": "sha256:93a39261cebdc47dcca9ee71749b8c28a6177c38e7ec7d729281a2651e3deda4",
+      "status": "running",
+      "health": "healthy"
+    },
+    "keycloak-postgres": {
+      "image": "sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193",
+      "status": "running",
+      "health": "healthy"
+    },
+    "maintenance": {
+      "image": "sha256:ff7363e2a173095ff4e89c3ec005d3aed88f6f63b7ab9d77464a38598affdf05",
+      "status": "running",
+      "health": "healthy"
+    },
+    "migrate": {
+      "image": "sha256:cd6426ecf4fb41a87b31aa9170bf47dbb25afa5bb89f47cdc9aad043725fd963",
+      "status": "exited",
+      "health": null
+    },
+    "opensearch": {
+      "image": "sha256:e96cc6ae1500a073d973c0906f30f7cf4d9c461f32f855f9242a2da933660cdd",
+      "status": "running",
+      "health": "healthy"
+    },
+    "postgres": {
+      "image": "sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193",
+      "status": "running",
+      "health": "healthy"
+    },
+    "reconcile": {
+      "image": "sha256:ff7363e2a173095ff4e89c3ec005d3aed88f6f63b7ab9d77464a38598affdf05",
+      "status": "running",
+      "health": "healthy"
+    },
+    "reindex": {
+      "image": "sha256:95ec9ddbd9b416624c1adc7e18926841c318624ae791af1b889d77f453293f8d",
+      "status": "exited",
+      "health": null
+    },
+    "sdui": {
+      "image": "sha256:d0cc54051b04801de1996789a8e3fd4bcc87dcc9a9c1b060a60d4baf25b3e587",
+      "status": "running",
+      "health": "healthy"
+    },
+    "yii-migrate": {
+      "image": "sha256:95ec9ddbd9b416624c1adc7e18926841c318624ae791af1b889d77f453293f8d",
+      "status": "exited",
+      "health": null
+    },
+    "yii2": {
+      "image": "sha256:5da9eadda09aad80a8c293dccd5d56675d977039ae8716d7e086775f3433285f",
+      "status": "running",
+      "health": "healthy"
+    },
+    "yii2-http": {
+      "image": "sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+      "status": "running",
+      "health": "healthy"
+    }
+  },
+  "workerReadiness": {
+    "maintenance": {
+      "live": true,
+      "ready": true,
+      "state": {
+        "version": 1,
+        "pid": 1,
+        "command": "maintenance/run",
+        "phase": "waiting",
+        "intervalSeconds": 60,
+        "jobTimeoutSeconds": 120,
+        "successMaxAgeSeconds": 185,
+        "runningPid": null,
+        "runStartedMonotonic": 502941.000875521,
+        "lastStartedAt": 1792502486.790924,
+        "lastFinishedAt": 1792502486.994154,
+        "lastExitCode": 0,
+        "childExitCode": 0,
+        "lastResult": "success",
+        "lastSuccessAt": 1792502486.994156,
+        "lastSuccessMonotonic": 502941.204042521,
+        "heartbeatAt": 1792502540.976233,
+        "heartbeatMonotonic": 502995.186251503
+      }
+    },
+    "reconcile": {
+      "live": true,
+      "ready": true,
+      "state": {
+        "version": 1,
+        "pid": 1,
+        "command": "maintenance/reindex",
+        "phase": "running",
+        "intervalSeconds": 300,
+        "jobTimeoutSeconds": 1800,
+        "successMaxAgeSeconds": 2105,
+        "runningPid": 21739,
+        "runStartedMonotonic": 502861.673929067,
+        "lastStartedAt": 1792502407.46349,
+        "lastFinishedAt": 1792502281.871458,
+        "lastExitCode": 0,
+        "childExitCode": 0,
+        "lastResult": "success",
+        "lastSuccessAt": 1792502281.87146,
+        "lastSuccessMonotonic": 502736.054069426,
+        "heartbeatAt": 1792502541.181045,
+        "heartbeatMonotonic": 502995.391062295
+      }
+    }
+  },
+  "gracefulStopExitCodes": {
+    "edge": 0,
+    "maintenance": 0,
+    "reconcile": 0,
+    "sdui": 0,
+    "yii2": 0,
+    "yii2-http": 0
+  },
+  "workerReadinessAfterRestart": {
+    "maintenance": {
+      "live": true,
+      "ready": true,
+      "state": {
+        "version": 1,
+        "pid": 1,
+        "command": "maintenance/run",
+        "phase": "waiting",
+        "intervalSeconds": 60,
+        "jobTimeoutSeconds": 120,
+        "successMaxAgeSeconds": 185,
+        "runningPid": null,
+        "runStartedMonotonic": 503188.741242799,
+        "lastStartedAt": 1792502734.531935,
+        "lastFinishedAt": 1792502734.735197,
+        "lastExitCode": 0,
+        "childExitCode": 0,
+        "lastResult": "success",
+        "lastSuccessAt": 1792502734.735198,
+        "lastSuccessMonotonic": 503188.944477924,
+        "heartbeatAt": 1792502761.369988,
+        "heartbeatMonotonic": 503215.579193145
+      }
+    },
+    "reconcile": {
+      "live": true,
+      "ready": true,
+      "state": {
+        "version": 1,
+        "pid": 1,
+        "command": "maintenance/reindex",
+        "phase": "waiting",
+        "intervalSeconds": 300,
+        "jobTimeoutSeconds": 1800,
+        "successMaxAgeSeconds": 2105,
+        "runningPid": null,
+        "runStartedMonotonic": 503008.547980342,
+        "lastStartedAt": 1792502554.338143,
+        "lastFinishedAt": 1792502758.713855,
+        "lastExitCode": 0,
+        "childExitCode": 0,
+        "lastResult": "success",
+        "lastSuccessAt": 1792502758.713859,
+        "lastSuccessMonotonic": 503212.92303306,
+        "heartbeatAt": 1792502761.566909,
+        "heartbeatMonotonic": 503215.776113645
+      }
+    }
+  }
+}

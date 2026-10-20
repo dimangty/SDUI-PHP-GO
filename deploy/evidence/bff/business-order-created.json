@@ -1,0 +1,21 @@
+{
+  "id": "11100dbb-ee36-4535-9c71-8cf7a5ffae0d",
+  "number": 145,
+  "userId": "3e53341d-252a-4d3c-8664-2f808ea1862c",
+  "status": "CREATED",
+  "items": [
+    {
+      "productId": "0271c915-2087-4b67-ad93-a2d1bf6cfc7c",
+      "productName": "Reference product",
+      "quantity": 2,
+      "priceSnapshot": "0.10"
+    }
+  ],
+  "totalAmount": "0.20",
+  "deliveryAddressId": "beeee7f3-603d-40c6-97ca-f4806f5361f0",
+  "deliveryAddress": "Moscow, SDUI integration, 18, 2",
+  "paymentId": "82b6ab4a-0bc1-4b25-a5e1-97b64cf49352",
+  "paymentMethod": "ON_DELIVERY",
+  "createdAt": "2026-10-20T13:21:33.396818Z",
+  "comment": "Task2 native adapter HTTP verification"
+}

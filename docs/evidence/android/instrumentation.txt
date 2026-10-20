@@ -1,0 +1,52 @@
+Started UTC: 2026-10-20T11:37:06.059519+00:00
+Device: emulator-5554
+INSTRUMENTATION_STATUS: class=com.shopkmp.InstalledJourneyTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.shopkmp.InstalledJourneyTest:
+INSTRUMENTATION_STATUS: test=realCardJourney
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: stream=E2E: UI registration reached native PIN setup
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: stream=E2E: Authenticated Home SDUI and persisted PIN device verified
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: stream=E2E: UI logout and real password login returned to authenticated Home
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: stream=E2E: Catalog search → Product → AddToCart → Cart; canonical quantity/total verified
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: stream=E2E: Native checkout confirmed: one CREATED CARD order, exact total, stock -1, empty cart; order=bbf0fce7-eb88-4948-b0c2-a1f7db0993ca
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: stream=E2E: System browser Complete payment → canonical CAPTURED / PAID
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: stream=E2E: App Orders/PAID → order detail → Profile → Devices verified
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: stream=E2E: Final logout stays at Login; order=bbf0fce7-eb88-4948-b0c2-a1f7db0993ca product=96be9e50-793e-433f-82eb-689f5927b355; payment=CAPTURED
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: stream=E2E: PASS Android full installed CARD journey
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.shopkmp.InstalledJourneyTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=realCardJourney
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 30.789
+
+OK (1 test)
+
+
+INSTRUMENTATION_CODE: -1

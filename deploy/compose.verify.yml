@@ -1,0 +1,10 @@
+# TEST ONLY. Explicitly invoked by scripts/verify.py on a disposable project.
+# No published ports and never loaded by the production wrapper.
+services:
+  yii2:
+    networks: [ingress, application, data]
+  fixture:
+    image: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}-yii2
+    command: [php, -S, 0.0.0.0:8080, /app/tests/upstream-router.php]
+    profiles: [verification]
+    networks: [application]

@@ -1,0 +1,17 @@
+{
+  "id": "cart-3e53341d-252a-4d3c-8664-2f808ea1862c",
+  "userId": "3e53341d-252a-4d3c-8664-2f808ea1862c",
+  "items": [
+    {
+      "productId": "0271c915-2087-4b67-ad93-a2d1bf6cfc7c",
+      "productName": "Reference product",
+      "quantity": 2,
+      "priceSnapshot": "0.10",
+      "imageUrl": null,
+      "isAvailable": true,
+      "stock": 5
+    }
+  ],
+  "totalAmount": "0.20",
+  "updatedAt": "2026-10-20T13:21:32.982216Z"
+}

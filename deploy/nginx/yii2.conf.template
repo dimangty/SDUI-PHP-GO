@@ -1,0 +1,32 @@
+log_format internal '$remote_addr "$request_method $uri" $status $request_time';
+access_log /dev/stdout internal;
+server {
+    listen 8080;
+    server_name _;
+    # Only this edge address can assert an original client address.
+    set_real_ip_from ${EDGE_IP};
+    real_ip_header X-Real-IP;
+    real_ip_recursive off;
+    client_max_body_size 6m;
+    client_header_timeout 5s;
+    client_body_timeout 10s;
+    keepalive_timeout 30s;
+    server_tokens off;
+    resolver 127.0.0.11 valid=5s ipv6=off;
+    set $fpm_upstream yii2:9000;
+    location / {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME /app/web/index.php;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_param HTTP_AUTHORIZATION $http_authorization;
+        fastcgi_param HTTP_PROXY "";
+        fastcgi_param HTTP_X_FORWARDED_FOR "";
+        fastcgi_param HTTP_FORWARDED "";
+        fastcgi_pass $fpm_upstream;
+        fastcgi_connect_timeout 3s;
+        fastcgi_send_timeout 15s;
+        fastcgi_read_timeout 32s;
+        fastcgi_next_upstream off;
+        fastcgi_hide_header X-Powered-By;
+    }
+}

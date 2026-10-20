@@ -1,0 +1,30 @@
+Observed affected checks — 2026-10-19, after InitialSessionRouter correction
+
+Environment:
+JAVA_HOME=/Users/dmitrijbykov/Library/Java/JavaVirtualMachines/jbr-17.0.9/Contents/Home
+ANDROID_HOME=/Users/dmitrijbykov/Library/Android/sdk
+
+RED, before production router edit:
+./gradlew :feature:main:testDebugUnitTest --tests com.shopkmp.main.InitialSessionRouterTest --console=plain
+6 tests, 2 failed; BUILD FAILED in 22s.
+Expected failures:
+loggedOutSessionWithPersistedPinStartsAtLogin
+loggedOutSessionDoesNotAutomaticallyAuthenticateWithBiometrics
+
+GREEN, after production router edit:
+./gradlew :feature:main:testDebugUnitTest :feature:main:linkDebugTestIosSimulatorArm64 :composeApp:assembleDebug -PSHOPKMP_DEBUG_SERVER_URL=http://10.0.2.2:58095 --console=plain --quiet
+Gradle process exit0. Full feature/main JVM suite: 31 tests, zero failures/errors/skips.
+Fresh XML timestamps 2026-10-19T13:36:51.821Z through 13:36:54.147Z.
+InitialSessionRouterTest6; MainNavigationReducerTest2; CartIntentRecoveryTest3;
+NativeCheckoutAdapterTest3; SduiViewModelTest17.
+XML: feature/main/build/test-results/testDebugUnitTest/TEST-*.xml
+APK regression artifact: composeApp/build/outputs/apk/debug/composeApp-debug.apk
+
+Real native execution:
+xcrun simctl spawn 16B71172-52E2-47E6-A951-EFAB9627917B /Users/dmitrijbykov/Documents/GoLang/SDUI/feature/main/build/bin/iosSimulatorArm64/debugTest/test.kexe --ktest_logger=SIMPLE
+Process exit0. All same 31 common tests printed Passed; no failed test cases.
+
+Installed journey after final assertion/runner self-review:
+python3 scripts/run_ios_installed_journey.py
+XCTest1 passed / failures0; actual test156.525s, build/test wall164.212s.
+xcodebuild0, helper0. Full milestone and image evidence: xctest-summary.txt.

@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 1,
+  "screenId": "cart",
+  "revision": "2eed58ee3c343e86fea81b1e3b968d9635b8e466143b48447ed6adaf3e518db7",
+  "components": [
+    {
+      "id": "screen.content",
+      "type": "LazyColumn",
+      "props": {
+        "spacing": "m",
+        "padding": "m",
+        "align": "Start"
+      },
+      "children": [
+        {
+          "id": "cart.title",
+          "type": "Text",
+          "props": {
+            "text": "Корзина",
+            "style": "ScreenTitle"
+          }
+        },
+        {
+          "id": "cart.068e1db8-03b9-4b3d-8f9f-6ec2eab64a46",
+          "type": "CartItem",
+          "props": {
+            "productId": "068e1db8-03b9-4b3d-8f9f-6ec2eab64a46",
+            "name": "Exact product",
+            "quantity": 1,
+            "price": "0.10",
+            "image": null,
+            "available": true,
+            "stock": 8,
+            "openAction": "cart.068e1db8-03b9-4b3d-8f9f-6ec2eab64a46.open",
+            "quantityAction": "cart.068e1db8-03b9-4b3d-8f9f-6ec2eab64a46.quantity",
+            "removeAction": "cart.068e1db8-03b9-4b3d-8f9f-6ec2eab64a46.remove"
+          }
+        },
+        {
+          "id": "collection.cart.range",
+          "type": "Text",
+          "props": {
+            "text": "Товары в корзине: 2–2 из 2",
+            "style": "Secondary"
+          }
+        },
+        {
+          "id": "collection.cart.previous.button",
+          "type": "Button",
+          "props": {
+            "label": "Предыдущие",
+            "actionId": "collection.cart.previous",
+            "style": "Primary",
+            "enabled": true
+          }
+        },
+        {
+          "id": "cart.divider",
+          "type": "Divider",
+          "props": {}
+        },
+        {
+          "id": "cart.total",
+          "type": "Price",
+          "props": {
+            "amount": "0.30",
+            "currency": "RUB"
+          }
+        },
+        {
+          "id": "checkout.form",
+          "type": "Form",
+          "props": {
+            "formId": "checkout",
+            "title": "Доставка и оплата",
+            "submitAction": "checkout.submit"
+          },
+          "children": [
+            {
+              "id": "checkout.city",
+              "type": "FormField",
+              "props": {
+                "fieldId": "checkout.city",
+                "label": "Город",
+                "input": "Text",
+                "required": true,
+                "readOnly": false,
+                "maxLength": 255,
+                "changeAction": "field.checkout.city"
+              }
+            },
+            {
+              "id": "checkout.street",
+              "type": "FormField",
+              "props": {
+                "fieldId": "checkout.street",
+                "label": "Улица",
+                "input": "Text",
+                "required": true,
+                "readOnly": false,
+                "maxLength": 255,
+                "changeAction": "field.checkout.street"
+              }
+            },
+            {
+              "id": "checkout.house",
+              "type": "FormField",
+              "props": {
+                "fieldId": "checkout.house",
+                "label": "Дом",
+                "input": "Text",
+                "required": true,
+                "readOnly": false,
+                "maxLength": 64,
+                "changeAction": "field.checkout.house"
+              }
+            },
+            {
+              "id": "checkout.apartment",
+              "type": "FormField",
+              "props": {
+                "fieldId": "checkout.apartment",
+                "label": "Квартира",
+                "input": "Text",
+                "required": false,
+                "readOnly": false,
+                "maxLength": 64,
+                "changeAction": "field.checkout.apartment"
+              }
+            },
+            {
+              "id": "checkout.paymentMethod",
+              "type": "FormField",
+              "props": {
+                "fieldId": "checkout.paymentMethod",
+                "label": "Способ оплаты",
+                "input": "Select",
+                "required": true,
+                "readOnly": false,
+                "maxLength": 20,
+                "options": [
+                  {
+                    "value": "CARD",
+                    "label": "Карта"
+                  },
+                  {
+                    "value": "SBP",
+                    "label": "СБП"
+                  },
+                  {
+                    "value": "ON_DELIVERY",
+                    "label": "При получении"
+                  }
+                ],
+                "changeAction": "field.checkout.paymentMethod"
+              }
+            },
+            {
+              "id": "checkout.button",
+              "type": "Button",
+              "props": {
+                "label": "Оформить заказ",
+                "actionId": "checkout.submit",
+                "style": "Primary",
+                "enabled": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "screen.refresh",
+      "type": "Refresh",
+      "destination": {
+        "screen": "cart",
+        "cart": {
+          "page": 1,
+          "size": 1
+        }
+      }
+    },
+    {
+      "id": "cart.068e1db8-03b9-4b3d-8f9f-6ec2eab64a46.open",
+      "type": "OpenProduct",
+      "productId": "068e1db8-03b9-4b3d-8f9f-6ec2eab64a46"
+    },
+    {
+      "id": "cart.068e1db8-03b9-4b3d-8f9f-6ec2eab64a46.quantity",
+      "type": "UpdateQuantity",
+      "productId": "068e1db8-03b9-4b3d-8f9f-6ec2eab64a46"
+    },
+    {
+      "id": "cart.068e1db8-03b9-4b3d-8f9f-6ec2eab64a46.remove",
+      "type": "RemoveFromCart",
+      "productId": "068e1db8-03b9-4b3d-8f9f-6ec2eab64a46"
+    },
+    {
+      "id": "collection.cart.previous",
+      "type": "Navigate",
+      "destination": {
+        "screen": "cart",
+        "cart": {
+          "page": 0,
+          "size": 1
+        }
+      }
+    },
+    {
+      "id": "checkout.submit",
+      "type": "Checkout",
+      "formId": "checkout"
+    },
+    {
+      "id": "field.checkout.city",
+      "type": "UpdateField",
+      "fieldId": "checkout.city"
+    },
+    {
+      "id": "field.checkout.street",
+      "type": "UpdateField",
+      "fieldId": "checkout.street"
+    },
+    {
+      "id": "field.checkout.house",
+      "type": "UpdateField",
+      "fieldId": "checkout.house"
+    },
+    {
+      "id": "field.checkout.apartment",
+      "type": "UpdateField",
+      "fieldId": "checkout.apartment"
+    },
+    {
+      "id": "field.checkout.paymentMethod",
+      "type": "UpdateField",
+      "fieldId": "checkout.paymentMethod"
+    }
+  ],
+  "state": {
+    "authenticated": true,
+    "fields": {
+      "checkout.apartment": "2",
+      "checkout.city": "Moscow",
+      "checkout.house": "18",
+      "checkout.paymentMethod": "CARD",
+      "checkout.street": "SDUI integration"
+    },
+    "cartItemsCount": 3,
+    "collections": {
+      "cart": {
+        "page": 1,
+        "size": 1,
+        "totalPages": 2,
+        "totalItems": 2
+      }
+    }
+  },
+  "metadata": {
+    "title": "Корзина",
+    "locale": "ru-RU",
+    "accountId": "3e53341d-252a-4d3c-8664-2f808ea1862c",
+    "partial": false
+  }
+}

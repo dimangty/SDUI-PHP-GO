@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "command": "RevokeDevice",
+  "outcome": "applied",
+  "refresh": {
+    "screen": "devices"
+  }
+}

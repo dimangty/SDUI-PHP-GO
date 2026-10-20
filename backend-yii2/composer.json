@@ -1,0 +1,27 @@
+{
+  "name": "shopkmp/business-api",
+  "description": "Independent Yii2 business API over the canonical ShopKMP PostgreSQL schema",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": ">=8.3",
+    "ext-pdo_pgsql": "*",
+    "ext-intl": "*",
+    "ext-mbstring": "*",
+    "ext-sodium": "*",
+    "ext-openssl": "*",
+    "ext-gd": "*",
+    "ext-curl": "*",
+    "yiisoft/yii2": "^2.0.53",
+    "firebase/php-jwt": "^7.2"
+  },
+  "replace": {
+    "bower-asset/jquery": "*",
+    "bower-asset/inputmask": "*",
+    "bower-asset/punycode": "*",
+    "bower-asset/yii2-pjax": "*"
+  },
+  "autoload": {"psr-4": {"Shop\\": ""}},
+  "config": {"allow-plugins": {"yiisoft/yii2-composer": true}, "sort-packages": true},
+  "scripts": {"test": "php tests/run.php", "test:integration": "php tests/integration.php", "test:all": "php tests/all.php", "lint": "php tests/lint.php"}
+}

@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "screenId": "cart",
+  "revision": "dd251971b1fc2dde9ed0efb885b7a1865606c57cdaefe5f99e9dea739b158ac9",
+  "components": [
+    {
+      "id": "screen.content",
+      "type": "LazyColumn",
+      "props": {
+        "spacing": "m",
+        "padding": "m",
+        "align": "Start"
+      },
+      "children": [
+        {
+          "id": "cart.title",
+          "type": "Text",
+          "props": {
+            "text": "Корзина",
+            "style": "ScreenTitle"
+          }
+        },
+        {
+          "id": "collection.cart.range",
+          "type": "Text",
+          "props": {
+            "text": "Товары в корзине: 0–0 из 0",
+            "style": "Secondary"
+          }
+        },
+        {
+          "id": "cart.empty",
+          "type": "Empty",
+          "props": {
+            "title": "Корзина пуста",
+            "message": "Добавьте товары из каталога"
+          }
+        },
+        {
+          "id": "cart.catalog",
+          "type": "Button",
+          "props": {
+            "label": "В каталог",
+            "actionId": "cart.catalog.navigate",
+            "style": "Primary",
+            "enabled": true
+          }
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "screen.refresh",
+      "type": "Refresh",
+      "destination": {
+        "screen": "cart",
+        "cart": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "cart.catalog.navigate",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog"
+      }
+    }
+  ],
+  "state": {
+    "authenticated": true,
+    "fields": {},
+    "cartItemsCount": 0,
+    "collections": {
+      "cart": {
+        "page": 0,
+        "size": 50,
+        "totalPages": 0,
+        "totalItems": 0
+      }
+    }
+  },
+  "metadata": {
+    "title": "Корзина",
+    "locale": "ru-RU",
+    "accountId": "00e831b3-5c58-4471-93ef-e03b9bf4cb07",
+    "partial": false
+  }
+}

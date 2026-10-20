@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shopkmp.local/contracts/sdui/v1/screen.schema.json",
+  "title": "ShopKMP SDUI v1 screen",
+  "description": "Additionally enforce 1 MiB UTF-8, 500 total nodes, depth 16, unique node/action IDs and resolved action references. No remote executable instructions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "screenId", "revision", "components", "actions", "state", "metadata"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "screenId": {"$ref": "#/$defs/screenName"},
+    "revision": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "components": {"type": "array", "maxItems": 500, "items": {"$ref": "#/$defs/node"}},
+    "actions": {"type": "array", "maxItems": 500, "items": {"$ref": "#/$defs/action"}},
+    "state": {
+      "type": "object", "additionalProperties": false,
+      "required": ["authenticated", "fields", "cartItemsCount"],
+      "properties": {
+        "authenticated": {"type": "boolean"},
+        "fields": {"type": "object", "propertyNames": {"$ref": "#/$defs/fieldId"}, "additionalProperties": {"$ref": "#/$defs/text"}},
+        "cartItemsCount": {"type": "integer", "minimum": 0},
+        "pagination": {"$ref": "#/$defs/pagination"},
+        "collections": {"type":"object","additionalProperties":false,"properties":{"categories":{"$ref":"#/$defs/pagination","properties":{"size":{"maximum":50}}},"cart":{"$ref":"#/$defs/pagination"}}}
+      }
+    },
+    "metadata": {
+      "type": "object", "additionalProperties": false,
+      "required": ["title", "locale", "partial"],
+      "properties": {
+        "title": {"$ref": "#/$defs/text"}, "locale": {"const": "ru-RU"},
+        "accountId": {"$ref": "#/$defs/uuid"}, "partial": {"type": "boolean"},
+        "warnings": {"type": "array", "maxItems": 3, "uniqueItems": true, "items": {"enum": ["categories_unavailable", "popular_unavailable", "session_unavailable"]}}
+      }
+    }
+  },
+  "$defs": {
+    "text": {"type": "string", "maxLength": 8192},
+    "uuid": {"type": "string", "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"},
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "deviceId": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,255}$", "not": {"enum": [".", ".."]}},
+    "money": {"type": "string", "pattern": "^(0|[1-9][0-9]{0,9})\\.[0-9]{2}$"},
+    "screenName": {"enum": ["home", "catalog", "product", "cart", "orders", "order", "profile", "devices"]},
+    "fieldId": {"enum": ["catalog.q", "catalog.categoryId", "catalog.sort", "catalog.priceMin", "catalog.priceMax", "catalog.page", "catalog.size", "orders.status", "orders.page", "orders.size", "product.quantity", "checkout.city", "checkout.street", "checkout.house", "checkout.apartment", "checkout.paymentMethod", "profile.fullName", "profile.phone"]},
+    "space": {"enum": ["none", "xs", "s", "m", "l", "xl"]},
+    "media": {"type": "string", "maxLength": 8192, "pattern": "^/(images/products|icons|uploads/users)/[A-Za-z0-9/_.-]+$", "not": {"pattern": "\\.\\.|//"}},
+    "nullableMedia": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/media"}]},
+    "status": {"enum": ["CREATED", "PAID", "ASSEMBLING", "DELIVERING", "COMPLETED", "CANCELLED"]},
+    "pagination": {
+      "type": "object", "additionalProperties": false, "required": ["page", "size", "totalPages", "totalItems"],
+      "properties": {"page": {"type": "integer", "minimum": 0}, "size": {"type": "integer", "minimum": 1, "maximum": 100}, "totalPages": {"type": "integer", "minimum": 0}, "totalItems": {"type": "integer", "minimum": 0}}
+    },
+    "catalogQuery": {
+      "type": "object", "additionalProperties": false, "required": ["page", "size"],
+      "properties": {
+        "q": {"type": "string", "maxLength": 200, "x-maxUtf8Bytes": 200, "description": "Additionally enforce UTF-8 encoded length <=200 bytes"}, "categoryId": {"$ref": "#/$defs/uuid"},
+        "sort": {"enum": ["price_asc", "price_desc", "rating", "new"]},
+        "priceMin": {"$ref": "#/$defs/money"}, "priceMax": {"$ref": "#/$defs/money"},
+        "page": {"type": "integer", "minimum": 0, "maximum": 1000000}, "size": {"type": "integer", "minimum": 1, "maximum": 100}
+      },
+      "not": {"required": ["q", "sort"]}
+    },
+    "orderQuery": {
+      "type": "object", "additionalProperties": false, "required": ["page", "size"],
+      "properties": {"status": {"$ref": "#/$defs/status"}, "page": {"type": "integer", "minimum": 0, "maximum": 1000000}, "size": {"type": "integer", "minimum": 1, "maximum": 100}}
+    },
+    "categoryCollectionQuery": {"type":"object","additionalProperties":false,"required":["page","size"],"properties":{"page":{"type":"integer","minimum":0,"maximum":1000000},"size":{"type":"integer","minimum":1,"maximum":50}}},
+    "cartCollectionQuery": {"type":"object","additionalProperties":false,"required":["page","size"],"properties":{"page":{"type":"integer","minimum":0,"maximum":1000000},"size":{"type":"integer","minimum":1,"maximum":100}}},
+    "destination": {
+      "type": "object", "properties": {"screen": {"$ref": "#/$defs/screenName"}}, "required": ["screen"],
+      "oneOf": [
+        {"properties": {"screen": {"enum": ["profile", "devices"]}}},
+        {"properties": {"screen": {"const":"home"},"categories":{"$ref":"#/$defs/categoryCollectionQuery"}}},
+        {"properties": {"screen": {"const":"cart"},"cart":{"$ref":"#/$defs/cartCollectionQuery"}}},
+        {"properties": {"screen": {"enum": ["product", "order"]}, "id": {"$ref": "#/$defs/uuid"}}, "required": ["id"]},
+        {"properties": {"screen": {"const": "catalog"}, "catalog": {"$ref": "#/$defs/catalogQuery"},"categories":{"$ref":"#/$defs/categoryCollectionQuery"}}},
+        {"properties": {"screen": {"const": "orders"}, "orders": {"$ref": "#/$defs/orderQuery"}}}
+      ],
+      "unevaluatedProperties": false
+    },
+    "confirmation": {"type": "object", "additionalProperties": false, "required": ["title", "message", "confirmLabel"], "properties": {"title": {"$ref": "#/$defs/text"}, "message": {"$ref": "#/$defs/text"}, "confirmLabel": {"$ref": "#/$defs/text"}}},
+    "action": {
+      "type": "object", "required": ["id", "type"], "properties": {"id": {"$ref": "#/$defs/id"}, "type": {"type": "string"}},
+      "oneOf": [
+        {"properties": {"type": {"enum": ["Navigate", "Refresh", "Retry"]}, "destination": {"$ref": "#/$defs/destination"}}, "required": ["destination"]},
+        {"properties": {"type": {"const": "OpenProduct"}, "productId": {"$ref": "#/$defs/uuid"}}, "required": ["productId"]},
+        {"properties": {"type": {"const": "OpenOrder"}, "orderId": {"$ref": "#/$defs/uuid"}}, "required": ["orderId"]},
+        {"properties": {"type": {"const": "UpdateField"}, "fieldId": {"$ref": "#/$defs/fieldId"}}, "required": ["fieldId"]},
+        {"properties": {"type": {"const": "SubmitForm"}, "formId": {"enum": ["catalog", "orders", "profile"]}}, "required": ["formId"]},
+        {"properties": {"type": {"const": "AddToCart"}, "productId": {"$ref": "#/$defs/uuid"}, "quantityField": {"const": "product.quantity"}}, "required": ["productId"]},
+        {"properties": {"type": {"enum": ["RemoveFromCart", "UpdateQuantity"]}, "productId": {"$ref": "#/$defs/uuid"}}, "required": ["productId"]},
+        {"properties": {"type": {"const": "CancelOrder"}, "orderId": {"$ref": "#/$defs/uuid"}, "confirmation": {"$ref": "#/$defs/confirmation"}}, "required": ["orderId", "confirmation"]},
+        {"properties": {"type": {"const": "RevokeDevice"}, "deviceId": {"$ref": "#/$defs/deviceId"}, "deviceKind": {"enum": ["pin", "biometric"]}, "confirmation": {"$ref": "#/$defs/confirmation"}}, "required": ["deviceId", "deviceKind", "confirmation"]},
+        {"properties": {"type": {"const": "Checkout"}, "formId": {"const": "checkout"}}, "required": ["formId"]},
+        {"properties": {"type": {"enum": ["EditProfile", "Logout", "ChangePin", "ManageBiometric", "Login"]}}}
+      ],
+      "unevaluatedProperties": false
+    },
+    "node": {
+      "type": "object", "additionalProperties": false, "required": ["id", "type", "props"],
+      "properties": {"id": {"$ref": "#/$defs/id"}, "type": {"type": "string"}, "props": {"type": "object"}, "children": {"type": "array", "maxItems": 500, "items": {"$ref": "#/$defs/node"}}},
+      "oneOf": [
+        {"properties": {"type": {"const": "Text"}, "props": {"$ref": "#/$defs/textProps"}}},
+        {"properties": {"type": {"const": "Image"}, "props": {"$ref": "#/$defs/imageProps"}}},
+        {"properties": {"type": {"const": "Icon"}, "props": {"$ref": "#/$defs/iconProps"}}},
+        {"properties": {"type": {"enum": ["Column", "Row", "Box", "LazyColumn", "LazyRow"]}, "props": {"$ref": "#/$defs/layoutProps"}}},
+        {"properties": {"type": {"const": "Button"}, "props": {"$ref": "#/$defs/buttonProps"}}},
+        {"properties": {"type": {"enum": ["TextField", "SearchField", "FormField"]}, "props": {"$ref": "#/$defs/fieldProps"}}},
+        {"properties": {"type": {"const": "ProductCard"}, "props": {"$ref": "#/$defs/productProps"}}},
+        {"properties": {"type": {"const": "ProductGrid"}, "props": {"$ref": "#/$defs/gridProps"}}},
+        {"properties": {"type": {"const": "CategoryList"}, "props": {"$ref": "#/$defs/categoriesProps"}}},
+        {"properties": {"type": {"const": "Price"}, "props": {"$ref": "#/$defs/priceProps"}}},
+        {"properties": {"type": {"const": "QuantityStepper"}, "props": {"$ref": "#/$defs/stepperProps"}}},
+        {"properties": {"type": {"const": "CartItem"}, "props": {"$ref": "#/$defs/cartItemProps"}}},
+        {"properties": {"type": {"const": "OrderCard"}, "props": {"$ref": "#/$defs/orderProps"}}},
+        {"properties": {"type": {"const": "ProfileHeader"}, "props": {"$ref": "#/$defs/profileProps"}}},
+        {"properties": {"type": {"enum": ["Empty", "Loading", "Error"]}, "props": {"$ref": "#/$defs/statusProps"}}},
+        {"properties": {"type": {"const": "Spacer"}, "props": {"$ref": "#/$defs/spacerProps"}}},
+        {"properties": {"type": {"const": "Divider"}, "props": {"type": "object", "additionalProperties": false}}},
+        {"properties": {"type": {"const": "Form"}, "props": {"$ref": "#/$defs/formProps"}}}
+      ],
+      "allOf": [{"if": {"properties": {"type": {"enum": ["Column", "Row", "Box", "LazyColumn", "LazyRow", "ProductGrid", "Form"]}}}, "else": {"not": {"required": ["children"]}}}]
+    },
+    "textProps": {"type": "object", "additionalProperties": false, "required": ["text", "style"], "properties": {"text": {"$ref": "#/$defs/text"}, "style": {"enum": ["Body", "Secondary", "Title", "SectionTitle", "ScreenTitle", "HeroTitle", "Price", "Error", "Avatar"]}}},
+    "imageProps": {"type": "object", "additionalProperties": false, "required": ["source", "description", "aspect"], "properties": {"source": {"$ref": "#/$defs/media"}, "description": {"$ref": "#/$defs/text"}, "aspect": {"enum": ["Product", "Thumbnail", "Avatar"]}}},
+    "iconProps": {"type": "object", "additionalProperties": false, "required": ["name", "description"], "properties": {"name": {"enum": ["Search", "Cart", "Profile", "Back", "Check", "Device", "Warning"]}, "description": {"$ref": "#/$defs/text"}}},
+    "layoutProps": {"type": "object", "additionalProperties": false, "required": ["spacing", "padding", "align"], "properties": {"spacing": {"$ref": "#/$defs/space"}, "padding": {"$ref": "#/$defs/space"}, "align": {"enum": ["Start", "Center", "End"]}}},
+    "buttonProps": {"type": "object", "additionalProperties": false, "required": ["label", "actionId", "style", "enabled"], "properties": {"label": {"$ref": "#/$defs/text"}, "actionId": {"$ref": "#/$defs/id"}, "style": {"enum": ["Primary", "Secondary", "Text"]}, "enabled": {"type": "boolean"}}},
+    "option": {"type": "object", "additionalProperties": false, "required": ["value", "label"], "properties": {"value": {"$ref": "#/$defs/text"}, "label": {"$ref": "#/$defs/text"}}},
+    "fieldProps": {
+      "type": "object", "additionalProperties": false, "required": ["fieldId", "label", "input", "required", "readOnly", "maxLength", "changeAction"],
+      "properties": {"fieldId": {"$ref": "#/$defs/fieldId"}, "label": {"$ref": "#/$defs/text"}, "input": {"enum": ["Text", "Number", "Phone", "Select"]}, "required": {"type": "boolean"}, "readOnly": {"type": "boolean"}, "maxLength": {"type": "integer", "minimum": 1, "maximum": 2000}, "maxUtf8Bytes": {"const": 200}, "options": {"type": "array", "maxItems": 500, "items": {"$ref": "#/$defs/option"}}, "changeAction": {"$ref": "#/$defs/id"}},
+      "allOf": [{"if": {"properties": {"fieldId": {"const": "catalog.q"}}}, "then": {"required": ["maxUtf8Bytes"]}, "else": {"not": {"required": ["maxUtf8Bytes"]}}}]
+    },
+    "productProps": {
+      "type": "object", "additionalProperties": false, "required": ["productId", "name", "description", "descriptionTruncated", "price", "discountPrice", "image", "stock", "rating", "reviewsCount", "openAction"],
+      "properties": {"productId": {"$ref": "#/$defs/uuid"}, "name": {"$ref": "#/$defs/text"}, "description": {"type":"string","maxLength":256}, "descriptionTruncated": {"type":"boolean"}, "price": {"$ref": "#/$defs/money"}, "discountPrice": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/money"}]}, "image": {"$ref": "#/$defs/nullableMedia"}, "stock": {"type": "integer", "minimum": 0}, "rating": {"type": ["number", "null"], "minimum": 1, "maximum": 5}, "reviewsCount": {"type": "integer", "minimum": 0}, "openAction": {"$ref": "#/$defs/id"}, "addAction": {"$ref": "#/$defs/id"}}
+    },
+    "gridProps": {"type": "object", "additionalProperties": false, "required": ["columns"], "properties": {"columns": {"const": 2}}},
+    "categoriesProps": {
+      "type": "object", "additionalProperties": false, "required": ["items"],
+      "properties": {"items": {"type": "array", "maxItems": 50, "items": {"type": "object", "additionalProperties": false, "required": ["id", "label", "image", "actionId", "selected"], "properties": {"id": {"$ref": "#/$defs/uuid"}, "label": {"$ref": "#/$defs/text"}, "image": {"$ref": "#/$defs/nullableMedia"}, "actionId": {"$ref": "#/$defs/id"}, "selected": {"type": "boolean"}}}}}
+    },
+    "priceProps": {"type": "object", "additionalProperties": false, "required": ["amount", "currency"], "properties": {"amount": {"$ref": "#/$defs/money"}, "currency": {"const": "RUB"}}},
+    "stepperProps": {
+      "type": "object", "additionalProperties": false, "required": ["fieldId", "value", "min", "max", "actionId", "enabled"],
+      "properties": {"fieldId": {"$ref": "#/$defs/fieldId"}, "value": {"type": "integer", "minimum": 0, "maximum": 1000000}, "min": {"type": "integer", "minimum": 0, "maximum": 1000000}, "max": {"type": "integer", "minimum": 0, "maximum": 1000000}, "actionId": {"$ref": "#/$defs/id"}, "enabled": {"type": "boolean"}}
+    },
+    "cartItemProps": {
+      "type": "object", "additionalProperties": false, "required": ["productId", "name", "quantity", "price", "image", "available", "stock", "openAction", "quantityAction", "removeAction"],
+      "properties": {"productId": {"$ref": "#/$defs/uuid"}, "name": {"$ref": "#/$defs/text"}, "quantity": {"type": "integer", "minimum": 1, "maximum": 1000000}, "price": {"$ref": "#/$defs/money"}, "image": {"$ref": "#/$defs/nullableMedia"}, "available": {"type": "boolean"}, "stock": {"type": "integer", "minimum": 0}, "openAction": {"$ref": "#/$defs/id"}, "quantityAction": {"$ref": "#/$defs/id"}, "removeAction": {"$ref": "#/$defs/id"}}
+    },
+    "orderProps": {
+      "type": "object", "additionalProperties": false, "required": ["orderId", "number", "status", "total", "deliveryAddress", "paymentMethod", "createdAt", "openAction"],
+      "properties": {"orderId": {"$ref": "#/$defs/uuid"}, "number": {"type": "integer", "minimum": 1}, "status": {"$ref": "#/$defs/status"}, "total": {"$ref": "#/$defs/money"}, "deliveryAddress": {"$ref": "#/$defs/text"}, "paymentMethod": {"enum": ["CARD", "SBP", "ON_DELIVERY"]}, "createdAt": {"$ref": "#/$defs/text"}, "openAction": {"$ref": "#/$defs/id"}}
+    },
+    "profileProps": {"type": "object", "additionalProperties": false, "required": ["fullName", "email", "phone", "avatar"], "properties": {"fullName": {"$ref": "#/$defs/text"}, "email": {"$ref": "#/$defs/text"}, "phone": {"$ref": "#/$defs/text"}, "avatar": {"$ref": "#/$defs/nullableMedia"}}},
+    "statusProps": {"type": "object", "additionalProperties": false, "required": ["title", "message"], "properties": {"title": {"$ref": "#/$defs/text"}, "message": {"$ref": "#/$defs/text"}, "retryAction": {"$ref": "#/$defs/id"}}},
+    "spacerProps": {"type": "object", "additionalProperties": false, "required": ["size"], "properties": {"size": {"enum": ["xs", "s", "m", "l", "xl"]}}},
+    "formProps": {"type": "object", "additionalProperties": false, "required": ["formId", "title", "submitAction"], "properties": {"formId": {"enum": ["catalog", "orders", "checkout", "profile"]}, "title": {"$ref": "#/$defs/text"}, "submitAction": {"$ref": "#/$defs/id"}}}
+  }
+}

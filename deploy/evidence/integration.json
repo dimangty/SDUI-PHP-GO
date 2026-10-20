@@ -1,0 +1,572 @@
+{
+  "executedAt": "2026-10-20T13:21:29Z",
+  "origin": "http://127.0.0.1:58095",
+  "userId": "c7e6943b-befa-40c1-90ea-4cb470d16bb8",
+  "productId": "0e283d4d-50d3-4d7e-8db9-83609d176461",
+  "paidOrderId": "eb721610-b6b9-4e5f-97b0-1d38e9295a3c",
+  "canonicalUnauthenticatedPolicies": 39,
+  "adminPolicies": 7,
+  "concurrentSameKey": "identical snapshot, one order",
+  "concurrentDifferentKeys": "201 + 400 CART_IS_EMPTY, one reservation",
+  "headerAndBodyTimeouts": "passed",
+  "steps": [
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "status": 201,
+      "bytes": 2230
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200,
+      "bytes": 2230
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/pin",
+      "status": 201,
+      "bytes": 0
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/pin/login",
+      "status": 200,
+      "bytes": 209
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/home",
+      "status": 200,
+      "bytes": 27100
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/catalog",
+      "status": 200,
+      "bytes": 36593
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/products",
+      "status": 200,
+      "bytes": 24777
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/product/0e283d4d-50d3-4d7e-8db9-83609d176461",
+      "status": 200,
+      "bytes": 1478
+    },
+    {
+      "method": "GET",
+      "path": "/icons/lamp.svg",
+      "status": 200,
+      "bytes": 214
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 89
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 89
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/cart",
+      "status": 200,
+      "bytes": 336
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/cart",
+      "status": 200,
+      "bytes": 3885
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/addresses",
+      "status": 201,
+      "bytes": 169
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders",
+      "status": 201,
+      "bytes": 529
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders",
+      "status": 201,
+      "bytes": 529
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/orders",
+      "status": 200,
+      "bytes": 590
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/products/0e283d4d-50d3-4d7e-8db9-83609d176461",
+      "status": 200,
+      "bytes": 245
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/cart",
+      "status": 200,
+      "bytes": 172
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders",
+      "status": 409,
+      "bytes": 153
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payments/ac7178ef-6afc-445d-b2f0-2f585159f986/confirm",
+      "status": 200,
+      "bytes": 212
+    },
+    {
+      "method": "GET",
+      "path": "/demo/payments/ac7178ef-6afc-445d-b2f0-2f585159f986",
+      "status": 200,
+      "bytes": 205
+    },
+    {
+      "method": "POST",
+      "path": "/demo/payments/ac7178ef-6afc-445d-b2f0-2f585159f986",
+      "status": 200,
+      "bytes": 160
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payments/ac7178ef-6afc-445d-b2f0-2f585159f986",
+      "status": 200,
+      "bytes": 206
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/orders/eb721610-b6b9-4e5f-97b0-1d38e9295a3c",
+      "status": 200,
+      "bytes": 526
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/orders",
+      "status": 200,
+      "bytes": 2128
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/order/eb721610-b6b9-4e5f-97b0-1d38e9295a3c",
+      "status": 200,
+      "bytes": 2308
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/profile",
+      "status": 200,
+      "bytes": 3138
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/devices",
+      "status": 200,
+      "bytes": 1613
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 200,
+      "bytes": 89
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/orders",
+      "status": 200,
+      "bytes": 1117
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/products/0e283d4d-50d3-4d7e-8db9-83609d176461",
+      "status": 200,
+      "bytes": 245
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders/32dfc86b-73d1-41d5-8ee1-d708d6d1522e/cancel",
+      "status": 200,
+      "bytes": 531
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/products/0e283d4d-50d3-4d7e-8db9-83609d176461",
+      "status": 200,
+      "bytes": 245
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/session",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/pin",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/auth/pin",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/auth/pin",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/pin/devices",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/auth/pin/devices/12dc08a1-4938-43fc-89e8-521f20f62fd1",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/biometric",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/auth/biometric",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/biometric/devices",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/auth/biometric/devices/cb30a838-fd0a-4b16-9268-60ae141ceb48",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users/me",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/users/me",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/users/me/avatar",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/users/me/change-password",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/cart",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/cart/items",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/cart/items/a6296843-7356-462d-9afc-310e962d11fd",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/cart/items/ee03ab31-eecb-4b81-a0dc-ac97f20e9c4c",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/cart",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/addresses",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/addresses",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/addresses/1f9ba681-8d2f-405a-983a-4c4a70a877c9",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/addresses/c8b04079-e314-49a4-8f73-a4d7e5496166",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/orders",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/orders/eac048e2-37cd-4090-9f0c-8d86d3983762",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders/d3856f1b-db93-4b8c-905b-fbfa9e04a621/cancel",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/payments/51fd5223-ae92-4cf4-8119-8bf78c5915ad",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payments/f4d0e89f-c14f-47b8-8c88-1261d7ba8948/confirm",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/products/5cb481bc-06f5-413f-a367-3787756f9c61/reviews",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/reviews/2ff247b5-ffde-4a60-a323-293e3ed6105c",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders/f0205a7f-c267-4431-a0f2-706a853cb7c7/status",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/orders/f0205a7f-c267-4431-a0f2-706a853cb7c7/status",
+      "status": 403,
+      "bytes": 112
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payments/38da0600-ea14-4c33-a702-8d09d5923985/refund",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payments/38da0600-ea14-4c33-a702-8d09d5923985/refund",
+      "status": 403,
+      "bytes": 112
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payments/e7515061-1b4f-4abc-8cb8-bf5b3ed06d48/void",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payments/e7515061-1b4f-4abc-8cb8-bf5b3ed06d48/void",
+      "status": 403,
+      "bytes": 112
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/products/b632a317-cf80-4797-a4eb-18d42eae7788/stock",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/products/b632a317-cf80-4797-a4eb-18d42eae7788/stock",
+      "status": 403,
+      "bytes": 112
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/products",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/products",
+      "status": 403,
+      "bytes": 112
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/admin/products/9702cdf5-4725-4364-a6ef-aa1246bd83ee",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/admin/products/9702cdf5-4725-4364-a6ef-aa1246bd83ee",
+      "status": 403,
+      "bytes": 112
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/products/66f9694a-aa16-44cc-9173-063d53e765c9",
+      "status": 401,
+      "bytes": 129
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/products/66f9694a-aa16-44cc-9173-063d53e765c9",
+      "status": 403,
+      "bytes": 112
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/cart",
+      "status": 401,
+      "bytes": 123
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/profile",
+      "status": 401,
+      "bytes": 123
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/devices",
+      "status": 401,
+      "bytes": 123
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/orders",
+      "status": 401,
+      "bytes": 123
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 401,
+      "bytes": 127
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 400,
+      "bytes": 118
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/sdui/actions",
+      "status": 413,
+      "bytes": 137
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 413,
+      "bytes": 137
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 413,
+      "bytes": 137
+    },
+    {
+      "method": "GET",
+      "path": "/swagger/openapi.yaml",
+      "status": 200,
+      "bytes": 43872
+    },
+    {
+      "method": "GET",
+      "path": "/swagger/openapi.yaml",
+      "status": 200,
+      "bytes": 43872
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "status": 204,
+      "bytes": 0
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/profile",
+      "status": 401,
+      "bytes": 122
+    }
+  ]
+}

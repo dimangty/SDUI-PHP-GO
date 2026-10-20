@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 1323" width="1560" height="1323"><rect width="1560" height="1323" fill="#f5f4ee"/>
+<defs><marker id="arr_req" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#33393f"/></marker><marker id="arr_resp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5d5b55"/></marker></defs>
+<text x="780.0" y="42" font-family="DejaVu Sans, Verdana, sans-serif" font-size="23" fill="#0f766e" font-weight="bold" text-anchor="middle">Сценарий: запуск приложения, восстановление авторизации и обновление профиля</text>
+<rect x="190" y="150" width="1330" height="329" rx="10" fill="#e8f1fb" stroke="none" stroke-width="1"/>
+<rect x="190" y="491" width="1330" height="227" rx="10" fill="#fdf0df" stroke="none" stroke-width="1"/>
+<rect x="190" y="730" width="1330" height="263" rx="10" fill="#f1eaf9" stroke="none" stroke-width="1"/>
+<rect x="190" y="1005" width="1330" height="248" rx="10" fill="#e6f5ec" stroke="none" stroke-width="1"/>
+<rect x="195.0" y="78" width="190" height="42" rx="10" fill="#0f766e" stroke="none" stroke-width="1"/>
+<text x="290.0" y="104" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#ffffff" font-weight="bold" text-anchor="middle">Приложение (CMP)</text>
+<line x1="290.0" y1="120" x2="290.0" y2="1269" stroke="#33393f" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="575.0" y="78" width="190" height="42" rx="10" fill="#0f766e" stroke="none" stroke-width="1"/>
+<text x="670.0" y="104" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#ffffff" font-weight="bold" text-anchor="middle">Backend API</text>
+<line x1="670.0" y1="120" x2="670.0" y2="1269" stroke="#33393f" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="955.0" y="78" width="190" height="42" rx="10" fill="#0f766e" stroke="none" stroke-width="1"/>
+<text x="1050.0" y="104" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#ffffff" font-weight="bold" text-anchor="middle">PostgreSQL</text>
+<line x1="1050.0" y1="120" x2="1050.0" y2="1269" stroke="#33393f" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="1335.0" y="78" width="190" height="42" rx="10" fill="#0f766e" stroke="none" stroke-width="1"/>
+<text x="1430.0" y="104" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#ffffff" font-weight="bold" text-anchor="middle">Keycloak</text>
+<line x1="1430.0" y1="120" x2="1430.0" y2="1269" stroke="#33393f" stroke-width="1.2" stroke-dasharray="5 5"/>
+<text x="15" y="309.5" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">Вход</text>
+<text x="15" y="327.5" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">по PIN</text>
+<text x="15" y="599.5" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">Получение</text>
+<text x="15" y="617.5" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">токенов</text>
+<text x="15" y="856.5" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">Восстановление</text>
+<text x="15" y="874.5" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">сессии</text>
+<text x="15" y="1124.0" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">Обновление</text>
+<text x="15" y="1142.0" font-family="DejaVu Sans, Verdana, sans-serif" font-size="13" fill="#5d5b55" font-weight="bold" text-anchor="start">профиля</text>
+<text x="480.0" y="175" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">POST /api/v1/auth/pin/login {deviceId, pin:</text>
+<text x="480.0" y="190" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">4821}</text>
+<line x1="290.0" y1="210" x2="670.0" y2="210" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="241" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">SELECT pin_hash, failed_attempts, locked_until</text>
+<text x="860.0" y="256" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">FROM device_pins WHERE device_id=?</text>
+<line x1="670.0" y1="276" x2="1050.0" y2="276" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="307" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">200 {pinHash, failedAttempts: 0, lockedUntil:</text>
+<text x="860.0" y="322" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">null}</text>
+<line x1="1050.0" y1="342" x2="670.0" y2="342" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="860.0" y="373" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">UPDATE device_pins SET failed_attempts=0,</text>
+<text x="860.0" y="388" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">last_used_at=now()</text>
+<line x1="670.0" y1="408" x2="1050.0" y2="408" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="439" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">OK</text>
+<line x1="1050.0" y1="459" x2="670.0" y2="459" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="1050.0" y="516" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">INSERT access_sessions, refresh_sessions</text>
+<text x="1050.0" y="531" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">(hashed opaque application tokens)</text>
+<text x="1050.0" y="546" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">subject=userId</text>
+<line x1="670.0" y1="566" x2="1430.0" y2="566" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="1050.0" y="597" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">COMMIT OK; return app_access_... and</text>
+<text x="1050.0" y="612" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">app_refresh_...</text>
+<line x1="1430.0" y1="632" x2="670.0" y2="632" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="480.0" y="663" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">200 {accessToken, refreshToken, expiresIn:</text>
+<text x="480.0" y="678" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">300}</text>
+<line x1="670.0" y1="698" x2="290.0" y2="698" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="480.0" y="755" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">GET /api/v1/auth/session?deviceId={deviceId}</text>
+<text x="480.0" y="770" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">Bearer accessToken</text>
+<line x1="290.0" y1="790" x2="670.0" y2="790" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="821" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">SELECT u.*, c.total_amount FROM users u JOIN</text>
+<text x="860.0" y="836" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">carts c ON c.user_id=u.id</text>
+<line x1="670.0" y1="856" x2="1050.0" y2="856" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="887" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">200 {user, cart}</text>
+<line x1="1050.0" y1="907" x2="670.0" y2="907" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="480.0" y="938" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">200 {user: {id, fullName, email}, device:</text>
+<text x="480.0" y="953" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">{pinEnabled: true}, cartItemsCount: 2}</text>
+<line x1="670.0" y1="973" x2="290.0" y2="973" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="480.0" y="1030" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">PUT /api/v1/users/me {fullName, phone,</text>
+<text x="480.0" y="1045" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">defaultAddressId}</text>
+<line x1="290.0" y1="1065" x2="670.0" y2="1065" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="1096" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">UPDATE users SET full_name=?, phone=?,</text>
+<text x="860.0" y="1111" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#14140f" font-weight="normal" text-anchor="middle">default_address_id=? WHERE id=?</text>
+<line x1="670.0" y1="1131" x2="1050.0" y2="1131" stroke="#33393f" stroke-width="1.8" marker-end="url(#arr_req)"/>
+<text x="860.0" y="1162" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">OK</text>
+<line x1="1050.0" y1="1182" x2="670.0" y2="1182" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/>
+<text x="480.0" y="1213" font-family="DejaVu Sans Mono, Consolas, monospace" font-size="11.8" fill="#5d5b55" font-weight="normal" text-anchor="middle">200 {id, fullName, phone, defaultAddressId}</text>
+<line x1="670.0" y1="1233" x2="290.0" y2="1233" stroke="#5d5b55" stroke-width="1.8" stroke-dasharray="4 4" marker-end="url(#arr_resp)"/></svg>

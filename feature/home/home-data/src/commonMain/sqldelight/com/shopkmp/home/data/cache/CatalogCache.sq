@@ -1,0 +1,14 @@
+CREATE TABLE catalog_cache (
+    cache_key TEXT NOT NULL PRIMARY KEY,
+    payload TEXT NOT NULL,
+    cached_at INTEGER NOT NULL
+);
+
+getCache:
+SELECT payload, cached_at FROM catalog_cache WHERE cache_key = ?;
+
+upsertCache:
+INSERT OR REPLACE INTO catalog_cache(cache_key, payload, cached_at) VALUES (?, ?, ?);
+
+deleteExpired:
+DELETE FROM catalog_cache WHERE cached_at < ?;

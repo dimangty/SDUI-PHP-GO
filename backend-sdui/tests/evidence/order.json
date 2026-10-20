@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "screenId": "order",
+  "revision": "50047771e774d1b77398689ae720e4c63d78381bfdd5c47fab081a5e1a9b880d",
+  "components": [
+    {
+      "id": "screen.content",
+      "type": "LazyColumn",
+      "props": {
+        "spacing": "m",
+        "padding": "m",
+        "align": "Start"
+      },
+      "children": [
+        {
+          "id": "order.title",
+          "type": "Text",
+          "props": {
+            "text": "Заказ №119",
+            "style": "ScreenTitle"
+          }
+        },
+        {
+          "id": "order.6cd31259-fcba-4278-a17f-cf8f5175ab7a",
+          "type": "OrderCard",
+          "props": {
+            "orderId": "6cd31259-fcba-4278-a17f-cf8f5175ab7a",
+            "number": 119,
+            "status": "CREATED",
+            "total": "0.20",
+            "deliveryAddress": "Moscow, SDUI integration, 18, 2",
+            "paymentMethod": "ON_DELIVERY",
+            "createdAt": "2026-10-18T06:15:16.931399Z",
+            "openAction": "order.6cd31259-fcba-4278-a17f-cf8f5175ab7a.open"
+          }
+        },
+        {
+          "id": "order.address",
+          "type": "Text",
+          "props": {
+            "text": "Moscow, SDUI integration, 18, 2",
+            "style": "Body"
+          }
+        },
+        {
+          "id": "order.payment",
+          "type": "Text",
+          "props": {
+            "text": "ON_DELIVERY",
+            "style": "Secondary"
+          }
+        },
+        {
+          "id": "order.item.0001db9b-0ab1-470f-a555-a23ffe9e5c0a",
+          "type": "Row",
+          "props": {
+            "spacing": "s",
+            "padding": "none",
+            "align": "Start"
+          },
+          "children": [
+            {
+              "id": "order.item.0001db9b-0ab1-470f-a555-a23ffe9e5c0a.name",
+              "type": "Text",
+              "props": {
+                "text": "Exact product × 2",
+                "style": "Body"
+              }
+            },
+            {
+              "id": "order.item.0001db9b-0ab1-470f-a555-a23ffe9e5c0a.price",
+              "type": "Price",
+              "props": {
+                "amount": "0.10",
+                "currency": "RUB"
+              }
+            }
+          ]
+        },
+        {
+          "id": "order.total",
+          "type": "Price",
+          "props": {
+            "amount": "0.20",
+            "currency": "RUB"
+          }
+        },
+        {
+          "id": "order.comment",
+          "type": "Text",
+          "props": {
+            "text": "Task2 native adapter HTTP verification",
+            "style": "Secondary"
+          }
+        },
+        {
+          "id": "order.cancel.button",
+          "type": "Button",
+          "props": {
+            "label": "Отменить заказ",
+            "actionId": "order.cancel",
+            "style": "Primary",
+            "enabled": true
+          }
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "screen.refresh",
+      "type": "Refresh",
+      "destination": {
+        "screen": "order",
+        "id": "6cd31259-fcba-4278-a17f-cf8f5175ab7a"
+      }
+    },
+    {
+      "id": "order.6cd31259-fcba-4278-a17f-cf8f5175ab7a.open",
+      "type": "OpenOrder",
+      "orderId": "6cd31259-fcba-4278-a17f-cf8f5175ab7a"
+    },
+    {
+      "id": "order.cancel",
+      "type": "CancelOrder",
+      "orderId": "6cd31259-fcba-4278-a17f-cf8f5175ab7a",
+      "confirmation": {
+        "title": "Отменить заказ?",
+        "message": "Заказ будет отменён. Возврат обрабатывает магазин.",
+        "confirmLabel": "Отменить заказ"
+      }
+    }
+  ],
+  "state": {
+    "authenticated": true,
+    "fields": {},
+    "cartItemsCount": 0
+  },
+  "metadata": {
+    "title": "Заказ",
+    "locale": "ru-RU",
+    "accountId": "00e831b3-5c58-4471-93ef-e03b9bf4cb07",
+    "partial": false
+  }
+}

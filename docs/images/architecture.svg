@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" font-family="Helvetica, Arial, sans-serif">
+<rect width="1600" height="900" fill="#f5f4ee"/>
+<text x="800.0" y="46" font-size="26" font-weight="bold" fill="#0f766e" text-anchor="middle">Архитектурное видение ShopKMP</text>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#33393f"/></marker></defs>
+<polyline points="300,365 390,365" fill="none" stroke="#33393f" stroke-width="2.4" marker-end="url(#arr)"/>
+<polyline points="180,310 180,170 390,170" fill="none" stroke="#33393f" stroke-width="1.6" marker-end="url(#arr)"/>
+<rect x="140" y="229" width="80" height="18" rx="4" fill="#f5f4ee" opacity="0.92"/>
+<text x="180" y="244" font-size="12.5" fill="#5d5b55" text-anchor="middle">OIDC login</text>
+<polyline points="535,300 535,220" fill="none" stroke="#33393f" stroke-width="1.6" marker-end="url(#arr)"/>
+<rect x="474" y="249" width="122" height="18" rx="4" fill="#f5f4ee" opacity="0.92"/>
+<text x="535" y="264" font-size="12.5" fill="#5d5b55" text-anchor="middle">token validation</text>
+<polyline points="680,365 725,365 725,235 770,235" fill="none" stroke="#33393f" stroke-width="1.6" marker-end="url(#arr)"/>
+<rect x="657" y="289" width="136" height="18" rx="4" fill="#f5f4ee" opacity="0.92"/>
+<text x="725" y="304" font-size="12.5" fill="#5d5b55" text-anchor="middle">transactional data</text>
+<polyline points="680,395 725,395 725,395 770,395" fill="none" stroke="#33393f" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+<rect x="678" y="384" width="94" height="18" rx="4" fill="#f5f4ee" opacity="0.92"/>
+<text x="725" y="399" font-size="12.5" fill="#5d5b55" text-anchor="middle">search index</text>
+<polyline points="1160,395 1070,395" fill="none" stroke="#33393f" stroke-width="2.4" marker-end="url(#arr)"/>
+<polyline points="1290,520 1290,450" fill="none" stroke="#33393f" stroke-width="1.6" marker-end="url(#arr)"/>
+<rect x="1250" y="474" width="80" height="18" rx="4" fill="#f5f4ee" opacity="0.92"/>
+<text x="1290" y="489" font-size="12.5" fill="#5d5b55" text-anchor="middle">monitoring</text>
+<polyline points="390,170 300,170 300,165" fill="none" stroke="#33393f" stroke-width="1.6" marker-end="url(#arr)"/>
+<rect x="326" y="159" width="38" height="18" rx="4" fill="#f5f4ee" opacity="0.92"/>
+<text x="345" y="174" font-size="12.5" fill="#5d5b55" text-anchor="middle">JDBC</text>
+<polyline points="535,430 535,520" fill="none" stroke="#33393f" stroke-width="1.6" marker-end="url(#arr)"/>
+<rect x="502" y="464" width="66" height="18" rx="4" fill="#f5f4ee" opacity="0.92"/>
+<text x="535" y="479" font-size="12.5" fill="#5d5b55" text-anchor="middle">app logs</text>
+<polyline points="680,565 920,565 920,450" fill="none" stroke="#33393f" stroke-width="2.4" marker-end="url(#arr)"/>
+<rect x="764" y="554" width="73" height="18" rx="4" fill="#f5f4ee" opacity="0.92"/>
+<text x="800" y="569" font-size="12.5" fill="#5d5b55" text-anchor="middle">ship logs</text>
+<polyline points="680,410 725,410 725,565 770,565" fill="none" stroke="#33393f" stroke-width="2.4" marker-end="url(#arr)"/>
+<rect x="680" y="475" width="90" height="18" rx="4" fill="#f5f4ee" opacity="0.92"/>
+<text x="725" y="490" font-size="12.5" fill="#5d5b55" text-anchor="middle">/metrics :9091</text>
+<polyline points="1070,565 1160,565" fill="none" stroke="#33393f" stroke-width="2.4" marker-end="url(#arr)"/>
+<text x="1115" y="554" font-size="12.5" fill="#5d5b55" text-anchor="middle">PromQL</text>
+<polyline points="1290,720 1290,610" fill="none" stroke="#33393f" stroke-width="1.6" marker-end="url(#arr)"/>
+<text x="1320" y="670" font-size="12.5" fill="#5d5b55">metrics</text>
+<rect x="60" y="120" width="240" height="90" rx="12" fill="#f8cecc" stroke="#b85450" stroke-width="1.8"/>
+<text x="180" y="161" font-size="13" font-weight="bold" fill="#1f1f1b" text-anchor="middle">PostgreSQL (Keycloak)</text>
+<text x="180" y="176" font-size="10.9" fill="#33393f" text-anchor="middle">Realm / Users store</text>
+<rect x="390" y="120" width="290" height="100" rx="12" fill="#ffe6cc" stroke="#d79b00" stroke-width="1.8"/>
+<text x="535" y="166" font-size="15" font-weight="bold" fill="#1f1f1b" text-anchor="middle">Keycloak</text>
+<text x="535" y="183" font-size="12.6" fill="#33393f" text-anchor="middle">Authentication / Authorization</text>
+<rect x="770" y="180" width="300" height="110" rx="12" fill="#f8cecc" stroke="#b85450" stroke-width="1.8"/>
+<text x="920" y="231" font-size="15" font-weight="bold" fill="#1f1f1b" text-anchor="middle">PostgreSQL</text>
+<text x="920" y="248" font-size="12.6" fill="#33393f" text-anchor="middle">Users / Cart / Orders / Payments</text>
+<rect x="60" y="310" width="240" height="110" rx="12" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.8"/>
+<text x="180" y="361" font-size="16" font-weight="bold" fill="#1f1f1b" text-anchor="middle">Compose Multiplatform App</text>
+<text x="180" y="379" font-size="13.4" fill="#33393f" text-anchor="middle">iOS + Android</text>
+<rect x="390" y="300" width="290" height="130" rx="12" fill="#d5e8d4" stroke="#82b366" stroke-width="1.8"/>
+<text x="535" y="361" font-size="16" font-weight="bold" fill="#1f1f1b" text-anchor="middle">Backend API</text>
+<text x="535" y="379" font-size="13.4" fill="#33393f" text-anchor="middle">Catalog / Cart / Orders / Profile</text>
+<rect x="770" y="340" width="300" height="110" rx="12" fill="#fff2cc" stroke="#d6b656" stroke-width="1.8"/>
+<text x="920" y="391" font-size="15" font-weight="bold" fill="#1f1f1b" text-anchor="middle">OpenSearch</text>
+<text x="920" y="408" font-size="12.6" fill="#33393f" text-anchor="middle">Search Indexes / Logs / Technical Events</text>
+<rect x="1160" y="340" width="260" height="110" rx="12" fill="#e1d5e7" stroke="#9673a6" stroke-width="1.8"/>
+<text x="1290" y="391" font-size="15" font-weight="bold" fill="#1f1f1b" text-anchor="middle">OpenSearch Dashboards</text>
+<text x="1290" y="408" font-size="12.6" fill="#33393f" text-anchor="middle">Monitoring / Analysis</text>
+<rect x="390" y="520" width="290" height="90" rx="12" fill="#d5e8d4" stroke="#82b366" stroke-width="1.8"/>
+<text x="535" y="561" font-size="13" font-weight="bold" fill="#1f1f1b" text-anchor="middle">Fluent Bit</text>
+<text x="535" y="576" font-size="10.9" fill="#33393f" text-anchor="middle">Log Collector / Shipper</text>
+<rect x="770" y="520" width="300" height="90" rx="12" fill="#fff2cc" stroke="#d6b656" stroke-width="1.8"/>
+<text x="920" y="561" font-size="13" font-weight="bold" fill="#1f1f1b" text-anchor="middle">Prometheus</text>
+<text x="920" y="576" font-size="10.9" fill="#33393f" text-anchor="middle">Metrics scraper / TSDB</text>
+<rect x="1160" y="520" width="260" height="90" rx="12" fill="#e1d5e7" stroke="#9673a6" stroke-width="1.8"/>
+<text x="1290" y="561" font-size="13" font-weight="bold" fill="#1f1f1b" text-anchor="middle">Grafana</text>
+<text x="1290" y="576" font-size="10.9" fill="#33393f" text-anchor="middle">Metrics dashboards</text>
+<rect x="1160" y="720" width="260" height="90" rx="12" fill="#f5f5f5" stroke="#666666" stroke-width="1.8"/>
+<text x="1290" y="769" font-size="14" font-weight="bold" fill="#1f1f1b" text-anchor="middle">Development Team / Support</text>
+<text x="180" y="96" font-size="12" fill="#9a978f" text-anchor="middle" font-style="italic">Client</text>
+<text x="535" y="96" font-size="12" fill="#9a978f" text-anchor="middle" font-style="italic">Backend &amp; Auth</text>
+<text x="920" y="150" font-size="12" fill="#9a978f" text-anchor="middle" font-style="italic">Data</text>
+<text x="1290" y="300" font-size="12" fill="#9a978f" text-anchor="middle" font-style="italic">Observability</text>
+</svg>

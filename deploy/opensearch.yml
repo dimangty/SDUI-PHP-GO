@@ -1,0 +1,16 @@
+cluster.name: shopkmp
+network.host: 0.0.0.0
+discovery.type: single-node
+plugins.security.allow_unsafe_democertificates: false
+plugins.security.allow_default_init_securityindex: true
+plugins.security.ssl.http.enabled: true
+plugins.security.ssl.http.pemcert_filepath: certs/opensearch.crt
+plugins.security.ssl.http.pemkey_filepath: certs/opensearch.key
+plugins.security.ssl.http.pemtrustedcas_filepath: certs/ca.crt
+plugins.security.ssl.transport.pemcert_filepath: certs/opensearch.crt
+plugins.security.ssl.transport.pemkey_filepath: certs/opensearch.key
+plugins.security.ssl.transport.pemtrustedcas_filepath: certs/ca.crt
+plugins.security.ssl.transport.enforce_hostname_verification: true
+plugins.security.nodes_dn: ["CN=opensearch"]
+plugins.security.authcz.admin_dn: ["CN=shopkmp-security-admin"]
+plugins.security.restapi.roles_enabled: [all_access, security_rest_api_access]

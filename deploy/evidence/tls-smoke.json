@@ -1,0 +1,81 @@
+{
+  "domain": "api.shopkmp.test",
+  "steps": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/health/live",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/health/ready",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/swagger/",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/swagger/openapi.yaml",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/fpm-ping",
+      "status": 404
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/categories",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/home",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/payments/webhook",
+      "status": 403
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "status": 201
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/home?deviceId=task4-tls-smoke",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/screens/profile",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "status": 204
+    }
+  ],
+  "dbTLS": "verified; both DBs reject plaintext"
+}

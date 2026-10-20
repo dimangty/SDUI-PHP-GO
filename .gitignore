@@ -1,0 +1,15 @@
+.DS_Store
+.idea/
+.env
+.env.prod
+.gradle/
+.kotlin/
+**/build/
+local.properties
+xcuserdata/
+*.xcuserstate
+bin/
+coverage.out
+/shopkmp
+__pycache__/
+*.py[cod]

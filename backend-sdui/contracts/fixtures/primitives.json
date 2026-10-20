@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "screenId": "home",
+  "revision": "d10b81d6fc6cc92b92df4778fca94b51bb37a746f0e050e7969b04aae5748381",
+  "components": [
+    {
+      "id": "screen.content",
+      "type": "LazyColumn",
+      "props": {
+        "spacing": "m",
+        "padding": "m",
+        "align": "Start"
+      },
+      "children": [
+        {
+          "id": "example.column",
+          "type": "Column",
+          "props": {
+            "spacing": "m",
+            "padding": "none",
+            "align": "Start"
+          },
+          "children": [
+            {
+              "id": "example.row",
+              "type": "Row",
+              "props": {
+                "spacing": "s",
+                "padding": "none",
+                "align": "Center"
+              },
+              "children": [
+                {
+                  "id": "example.icon",
+                  "type": "Icon",
+                  "props": {
+                    "name": "Search",
+                    "description": "Поиск"
+                  }
+                },
+                {
+                  "id": "example.text",
+                  "type": "Text",
+                  "props": {
+                    "text": "Каталог",
+                    "style": "Title"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "example.box",
+              "type": "Box",
+              "props": {
+                "spacing": "none",
+                "padding": "s",
+                "align": "Center"
+              },
+              "children": [
+                {
+                  "id": "catalog.priceMin",
+                  "type": "TextField",
+                  "props": {
+                    "fieldId": "catalog.priceMin",
+                    "label": "Цена от",
+                    "input": "Text",
+                    "required": false,
+                    "readOnly": false,
+                    "maxLength": 13,
+                    "changeAction": "field.catalog.priceMin"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "example.lazyrow",
+              "type": "LazyRow",
+              "props": {
+                "spacing": "s",
+                "padding": "none",
+                "align": "Start"
+              },
+              "children": [
+                {
+                  "id": "example.lazytext",
+                  "type": "Text",
+                  "props": {
+                    "text": "Горизонтальный список",
+                    "style": "Secondary"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "example.empty",
+          "type": "Empty",
+          "props": {
+            "title": "Нет данных",
+            "message": "Измените фильтр"
+          }
+        },
+        {
+          "id": "example.loading",
+          "type": "Loading",
+          "props": {
+            "title": "Загрузка",
+            "message": "Подождите"
+          }
+        },
+        {
+          "id": "example.error",
+          "type": "Error",
+          "props": {
+            "title": "Ошибка",
+            "message": "Обновите экран",
+            "retryAction": "example.retry"
+          }
+        },
+        {
+          "id": "example.spacer",
+          "type": "Spacer",
+          "props": {
+            "size": "l"
+          }
+        },
+        {
+          "id": "example.divider",
+          "type": "Divider",
+          "props": {}
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "example.retry",
+      "type": "Retry",
+      "destination": {
+        "screen": "home"
+      }
+    },
+    {
+      "id": "field.catalog.priceMin",
+      "type": "UpdateField",
+      "fieldId": "catalog.priceMin"
+    }
+  ],
+  "state": {
+    "authenticated": false,
+    "fields": {
+      "catalog.priceMin": "50.01"
+    },
+    "cartItemsCount": 0
+  },
+  "metadata": {
+    "title": "Примитивы UIKit",
+    "locale": "ru-RU",
+    "partial": false
+  }
+}

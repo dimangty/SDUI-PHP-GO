@@ -1,0 +1,13 @@
+{
+  "id": "0001db9b-0ab1-470f-a555-a23ffe9e5c0a",
+  "categoryId": "a8b8dbfc-3adb-48a8-b133-005b4178c1ad",
+  "name": "Exact product",
+  "description": "",
+  "price": "0.10",
+  "discountPrice": null,
+  "stock": 10,
+  "rating": null,
+  "imageUrls": [],
+  "isActive": true,
+  "reviewsCount": 0
+}

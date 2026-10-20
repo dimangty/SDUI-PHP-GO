@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "screenId": "product",
+  "revision": "e4ca5494893526485ffd89e5a03b93d4b7a46ece1db11a029afca9201dba1e0b",
+  "components": [
+    {
+      "id": "screen.content",
+      "type": "LazyColumn",
+      "props": {
+        "spacing": "m",
+        "padding": "m",
+        "align": "Start"
+      },
+      "children": [
+        {
+          "id": "product.title",
+          "type": "Text",
+          "props": {
+            "text": "Exact product",
+            "style": "ScreenTitle"
+          }
+        },
+        {
+          "id": "product.price",
+          "type": "Price",
+          "props": {
+            "amount": "0.10",
+            "currency": "RUB"
+          }
+        },
+        {
+          "id": "product.rating",
+          "type": "Text",
+          "props": {
+            "text": "Нет оценок · Отзывов: 0",
+            "style": "Secondary"
+          }
+        },
+        {
+          "id": "product.stock",
+          "type": "Text",
+          "props": {
+            "text": "В наличии: 10",
+            "style": "Secondary"
+          }
+        },
+        {
+          "id": "product.quantity",
+          "type": "QuantityStepper",
+          "props": {
+            "fieldId": "product.quantity",
+            "value": 1,
+            "min": 1,
+            "max": 10,
+            "actionId": "product.quantity.change",
+            "enabled": true
+          }
+        },
+        {
+          "id": "product.buy",
+          "type": "Button",
+          "props": {
+            "label": "В корзину",
+            "actionId": "product.add",
+            "style": "Primary",
+            "enabled": true
+          }
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "screen.refresh",
+      "type": "Refresh",
+      "destination": {
+        "screen": "product",
+        "id": "0001db9b-0ab1-470f-a555-a23ffe9e5c0a"
+      }
+    },
+    {
+      "id": "product.quantity.change",
+      "type": "UpdateField",
+      "fieldId": "product.quantity"
+    },
+    {
+      "id": "product.add",
+      "type": "Login"
+    }
+  ],
+  "state": {
+    "authenticated": false,
+    "fields": {
+      "product.quantity": "1"
+    },
+    "cartItemsCount": 0
+  },
+  "metadata": {
+    "title": "Товар",
+    "locale": "ru-RU",
+    "partial": false
+  }
+}

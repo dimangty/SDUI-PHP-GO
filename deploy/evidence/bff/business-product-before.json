@@ -1,0 +1,13 @@
+{
+  "id": "0271c915-2087-4b67-ad93-a2d1bf6cfc7c",
+  "categoryId": "6f471a91-fbb3-4ead-9927-8c71708aa6b2",
+  "name": "Reference product",
+  "description": "",
+  "price": "0.10",
+  "discountPrice": null,
+  "stock": 5,
+  "rating": null,
+  "imageUrls": [],
+  "isActive": true,
+  "reviewsCount": 0
+}

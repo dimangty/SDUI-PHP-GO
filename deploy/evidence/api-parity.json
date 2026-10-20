@@ -1,0 +1,1712 @@
+{
+    "executedAt": "2026-10-20T11:48:38+00:00",
+    "successfulOperations": 54,
+    "matchingSuccessfulOperations": 54,
+    "counts": {
+        "comparisons": 194,
+        "matching": 189,
+        "successful": 108,
+        "negative": 86,
+        "missingBearer": 39,
+        "adminDenied": 7
+    },
+    "mutationChecks": [
+        "money",
+        "stock",
+        "status",
+        "rights",
+        "replay",
+        "reference",
+        "nullability",
+        "missing-key",
+        "business-string",
+        "pagination",
+        "ttl",
+        "empty-body-vs-json-null",
+        "empty-list-vs-object"
+    ],
+    "cases": {
+        "auth.register": {
+            "operation": "POST /auth/register",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "auth.register.authenticates": {
+            "operation": "GET /users/me",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "auth.duplicate": {
+            "operation": "POST /auth/register",
+            "goStatus": 409,
+            "yiiStatus": 409,
+            "result": "MATCH",
+            "differences": []
+        },
+        "auth.wrong-password": {
+            "operation": "POST /auth/login",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "auth.login": {
+            "operation": "POST /auth/login",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "auth.login.authenticates": {
+            "operation": "GET /users/me",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "auth.refresh": {
+            "operation": "POST /auth/refresh",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "auth.refresh.authenticates": {
+            "operation": "GET /users/me",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.getSession": {
+            "operation": "GET /auth/session",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.logout": {
+            "operation": "POST /auth/logout",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.createPin": {
+            "operation": "POST /auth/pin",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.changePin": {
+            "operation": "PUT /auth/pin",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.deleteCurrentPin": {
+            "operation": "DELETE /auth/pin",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.listPinDevices": {
+            "operation": "GET /auth/pin/devices",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.deletePinDevice": {
+            "operation": "DELETE /auth/pin/devices/{deviceID}",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.enrollBiometric": {
+            "operation": "POST /auth/biometric",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.deleteCurrentBiometric": {
+            "operation": "DELETE /auth/biometric",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.listBiometricDevices": {
+            "operation": "GET /auth/biometric/devices",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.deleteBiometricDevice": {
+            "operation": "DELETE /auth/biometric/devices/{deviceID}",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.getCurrentUser": {
+            "operation": "GET /users/me",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.updateCurrentUser": {
+            "operation": "PUT /users/me",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.updateCurrentUserAvatar": {
+            "operation": "PUT /users/me/avatar",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.changePassword": {
+            "operation": "POST /users/me/change-password",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.getCart": {
+            "operation": "GET /cart",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.addCartItem": {
+            "operation": "POST /cart/items",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.updateCartItem": {
+            "operation": "PATCH /cart/items/{productID}",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.removeCartItem": {
+            "operation": "DELETE /cart/items/{productID}",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.clearCart": {
+            "operation": "DELETE /cart",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.listAddresses": {
+            "operation": "GET /addresses",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.createAddress": {
+            "operation": "POST /addresses",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.updateAddress": {
+            "operation": "PUT /addresses/{addressID}",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.deleteAddress": {
+            "operation": "DELETE /addresses/{addressID}",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.createOrder": {
+            "operation": "POST /orders",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.listOrders": {
+            "operation": "GET /orders",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.getOrder": {
+            "operation": "GET /orders/{orderID}",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.cancelOrder": {
+            "operation": "POST /orders/{orderID}/cancel",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.getPayment": {
+            "operation": "GET /payments/{paymentID}",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.confirmPayment": {
+            "operation": "POST /payments/{paymentID}/confirm",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.createReview": {
+            "operation": "POST /products/{productID}/reviews",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.deleteReview": {
+            "operation": "DELETE /reviews/{reviewID}",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.transitionOrder": {
+            "operation": "POST /orders/{orderID}/status",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.admin.transitionOrder": {
+            "operation": "POST /orders/{orderID}/status",
+            "goStatus": 403,
+            "yiiStatus": 403,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.refundPayment": {
+            "operation": "POST /payments/{paymentID}/refund",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.admin.refundPayment": {
+            "operation": "POST /payments/{paymentID}/refund",
+            "goStatus": 403,
+            "yiiStatus": 403,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.voidPayment": {
+            "operation": "POST /payments/{paymentID}/void",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.admin.voidPayment": {
+            "operation": "POST /payments/{paymentID}/void",
+            "goStatus": 403,
+            "yiiStatus": 403,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.patchProductStock": {
+            "operation": "PATCH /products/{productID}/stock",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.admin.patchProductStock": {
+            "operation": "PATCH /products/{productID}/stock",
+            "goStatus": 403,
+            "yiiStatus": 403,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.createProduct": {
+            "operation": "POST /admin/products",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.admin.createProduct": {
+            "operation": "POST /admin/products",
+            "goStatus": 403,
+            "yiiStatus": 403,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.updateProduct": {
+            "operation": "PUT /admin/products/{productID}",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.admin.updateProduct": {
+            "operation": "PUT /admin/products/{productID}",
+            "goStatus": 403,
+            "yiiStatus": 403,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.missing.deleteProduct": {
+            "operation": "DELETE /admin/products/{productID}",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "policy.admin.deleteProduct": {
+            "operation": "DELETE /admin/products/{productID}",
+            "goStatus": 403,
+            "yiiStatus": 403,
+            "result": "MATCH",
+            "differences": []
+        },
+        "profile.initial": {
+            "operation": "GET /users/me",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "profile.email-immutable": {
+            "operation": "PUT /users/me",
+            "goStatus": 400,
+            "yiiStatus": 400,
+            "result": "MATCH",
+            "differences": []
+        },
+        "address.create": {
+            "operation": "POST /addresses",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "profile.default-auto": {
+            "operation": "GET /users/me",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "address.update": {
+            "operation": "PUT /addresses/{addressID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "address.other-owner": {
+            "operation": "PUT /addresses/{addressID}",
+            "goStatus": 404,
+            "yiiStatus": 404,
+            "result": "MATCH",
+            "differences": []
+        },
+        "address.list": {
+            "operation": "GET /addresses",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "profile.update-null": {
+            "operation": "PUT /users/me",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "profile.omitted-default": {
+            "operation": "PUT /users/me",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "profile.avatar-null": {
+            "operation": "PUT /users/me/avatar",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.set": {
+            "operation": "POST /auth/pin",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.wrong": {
+            "operation": "POST /auth/pin/login",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.change": {
+            "operation": "PUT /auth/pin",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.login": {
+            "operation": "POST /auth/pin/login",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.login.authenticates": {
+            "operation": "GET /users/me",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.refresh": {
+            "operation": "POST /auth/refresh",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.refresh.authenticates": {
+            "operation": "GET /users/me",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.refresh-replay": {
+            "operation": "POST /auth/refresh",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.devices": {
+            "operation": "GET /auth/pin/devices",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.enroll": {
+            "operation": "POST /auth/biometric",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.challenge": {
+            "operation": "POST /auth/biometric/challenge",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.login": {
+            "operation": "POST /auth/biometric/login",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.login.authenticates": {
+            "operation": "GET /users/me",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.replay": {
+            "operation": "POST /auth/biometric/login",
+            "goStatus": 410,
+            "yiiStatus": 410,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.challenge-for-invalid": {
+            "operation": "POST /auth/biometric/challenge",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.invalid-signature": {
+            "operation": "POST /auth/biometric/login",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.invalid-consumes-challenge": {
+            "operation": "POST /auth/biometric/login",
+            "goStatus": 410,
+            "yiiStatus": 410,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.devices": {
+            "operation": "GET /auth/biometric/devices",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "credentials.session": {
+            "operation": "GET /auth/session",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "credentials.session-missing-device": {
+            "operation": "GET /auth/session",
+            "goStatus": 400,
+            "yiiStatus": 400,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.delete-current": {
+            "operation": "DELETE /auth/biometric",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.deleted": {
+            "operation": "POST /auth/biometric/challenge",
+            "goStatus": 404,
+            "yiiStatus": 404,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.reenroll": {
+            "operation": "POST /auth/biometric",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.delete-device": {
+            "operation": "DELETE /auth/biometric/devices/{deviceID}",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "bio.devices-empty": {
+            "operation": "GET /auth/biometric/devices",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.delete-current": {
+            "operation": "DELETE /auth/pin",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.deleted": {
+            "operation": "POST /auth/pin/login",
+            "goStatus": 404,
+            "yiiStatus": 404,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.reset": {
+            "operation": "POST /auth/pin",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.delete-device": {
+            "operation": "DELETE /auth/pin/devices/{deviceID}",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "pin.devices-empty": {
+            "operation": "GET /auth/pin/devices",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.categories": {
+            "operation": "GET /categories",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.category": {
+            "operation": "GET /categories/{categoryID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.children": {
+            "operation": "GET /categories/{categoryID}/children",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.category-missing": {
+            "operation": "GET /categories/{categoryID}",
+            "goStatus": 404,
+            "yiiStatus": 404,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.create": {
+            "operation": "POST /admin/products",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.update": {
+            "operation": "PUT /admin/products/{productID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.stock": {
+            "operation": "PATCH /products/{productID}/stock",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.stock-negative": {
+            "operation": "PATCH /products/{productID}/stock",
+            "goStatus": 409,
+            "yiiStatus": 409,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.product": {
+            "operation": "GET /products/{productID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.page": {
+            "operation": "GET /products",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.page-second": {
+            "operation": "GET /products",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.search": {
+            "operation": "GET /products/search",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.bad-sort": {
+            "operation": "GET /products/search",
+            "goStatus": 400,
+            "yiiStatus": 400,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.query-byte-bound": {
+            "operation": "GET /products/search",
+            "goStatus": 400,
+            "yiiStatus": 400,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.negative-page": {
+            "operation": "GET /products",
+            "goStatus": 400,
+            "yiiStatus": 400,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cors.actual": {
+            "operation": "GET /categories",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cors.preflight": {
+            "operation": "OPTIONS /cart/items",
+            "goStatus": 403,
+            "yiiStatus": 403,
+            "result": "MATCH",
+            "differences": []
+        },
+        "reviews.purchase-required": {
+            "operation": "POST /products/{productID}/reviews",
+            "goStatus": 403,
+            "yiiStatus": 403,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cart.initial": {
+            "operation": "GET /cart",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cart.add": {
+            "operation": "POST /cart/items",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cart.patch": {
+            "operation": "PATCH /cart/items/{productID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cart.replay": {
+            "operation": "POST /cart/items",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cart.key-conflict": {
+            "operation": "POST /cart/items",
+            "goStatus": 409,
+            "yiiStatus": 409,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cart.replay-no-mutation": {
+            "operation": "GET /cart",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cart.stock": {
+            "operation": "POST /cart/items",
+            "goStatus": 409,
+            "yiiStatus": 409,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cart.other-missing-item": {
+            "operation": "PATCH /cart/items/{productID}",
+            "goStatus": 404,
+            "yiiStatus": 404,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cart.remove": {
+            "operation": "DELETE /cart/items/{productID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cart.add-for-clear": {
+            "operation": "POST /cart/items",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cart.clear": {
+            "operation": "DELETE /cart",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cart.cleared": {
+            "operation": "GET /cart",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.empty": {
+            "operation": "POST /orders",
+            "goStatus": 400,
+            "yiiStatus": 400,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cart.for-order": {
+            "operation": "POST /cart/items",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.create": {
+            "operation": "POST /orders",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.stock-reserved": {
+            "operation": "GET /products/{productID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.cart-cleared": {
+            "operation": "GET /cart",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.other-owner": {
+            "operation": "GET /orders/{orderID}",
+            "goStatus": 404,
+            "yiiStatus": 404,
+            "result": "MATCH",
+            "differences": []
+        },
+        "payment.other-owner": {
+            "operation": "GET /payments/{paymentID}",
+            "goStatus": 404,
+            "yiiStatus": 404,
+            "result": "MATCH",
+            "differences": []
+        },
+        "payment.confirm-other": {
+            "operation": "POST /payments/{paymentID}/confirm",
+            "goStatus": 404,
+            "yiiStatus": 404,
+            "result": "MATCH",
+            "differences": []
+        },
+        "payment.pending": {
+            "operation": "GET /payments/{paymentID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.invalid-transition": {
+            "operation": "POST /orders/{orderID}/status",
+            "goStatus": 409,
+            "yiiStatus": 409,
+            "result": "MATCH",
+            "differences": []
+        },
+        "payment.confirm": {
+            "operation": "POST /payments/{paymentID}/confirm",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "payment.unsigned-webhook": {
+            "operation": "POST /payments/webhook",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "payment.webhook": {
+            "operation": "POST /payments/webhook",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "payment.webhook-replay": {
+            "operation": "POST /payments/webhook",
+            "goStatus": 409,
+            "yiiStatus": 409,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.paid": {
+            "operation": "GET /orders/{orderID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "payment.captured": {
+            "operation": "GET /payments/{paymentID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "delta.search-stale-stock": {
+            "operation": "GET /products/search",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "SCOPED_DIFFERENCE",
+            "differences": {
+                "/data/items/0/stock": [
+                    22,
+                    19
+                ]
+            }
+        },
+        "order.replay": {
+            "operation": "POST /orders",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.key-conflict": {
+            "operation": "POST /orders",
+            "goStatus": 409,
+            "yiiStatus": 409,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.transition-ASSEMBLING": {
+            "operation": "POST /orders/{orderID}/status",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.transition-DELIVERING": {
+            "operation": "POST /orders/{orderID}/status",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.transition-COMPLETED": {
+            "operation": "POST /orders/{orderID}/status",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.page": {
+            "operation": "GET /orders",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.popular": {
+            "operation": "GET /products/popular",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "reviews.create": {
+            "operation": "POST /products/{productID}/reviews",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "reviews.page": {
+            "operation": "GET /products/{productID}/reviews",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "reviews.other-owner": {
+            "operation": "DELETE /reviews/{reviewID}",
+            "goStatus": 403,
+            "yiiStatus": 403,
+            "result": "MATCH",
+            "differences": []
+        },
+        "reviews.delete": {
+            "operation": "DELETE /reviews/{reviewID}",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "reviews.empty": {
+            "operation": "GET /products/{productID}/reviews",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "payment.refund": {
+            "operation": "POST /payments/{paymentID}/refund",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "payment.refund-twice": {
+            "operation": "POST /payments/{paymentID}/refund",
+            "goStatus": 409,
+            "yiiStatus": 409,
+            "result": "MATCH",
+            "differences": []
+        },
+        "payment.completed-refund-stock": {
+            "operation": "GET /products/{productID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "void.cart": {
+            "operation": "POST /cart/items",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "void.order": {
+            "operation": "POST /orders",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "void.confirm": {
+            "operation": "POST /payments/{paymentID}/confirm",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "payment.void": {
+            "operation": "POST /payments/{paymentID}/void",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "void.read-order": {
+            "operation": "GET /orders/{orderID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "void.read-payment": {
+            "operation": "GET /payments/{paymentID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "void.restored-stock": {
+            "operation": "GET /products/{productID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cancel.cart": {
+            "operation": "POST /cart/items",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cancel.order": {
+            "operation": "POST /orders",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.cancel": {
+            "operation": "POST /orders/{orderID}/cancel",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.cancel-twice": {
+            "operation": "POST /orders/{orderID}/cancel",
+            "goStatus": 409,
+            "yiiStatus": 409,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cancel.read-order": {
+            "operation": "GET /orders/{orderID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cancel.read-payment": {
+            "operation": "GET /payments/{paymentID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "cancel.restored-stock": {
+            "operation": "GET /products/{productID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "order.last-page": {
+            "operation": "GET /orders",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "delta.historical-address-delete": {
+            "operation": "DELETE /addresses/{addressID}",
+            "goStatus": 503,
+            "yiiStatus": 409,
+            "result": "SCOPED_DIFFERENCE",
+            "differences": {
+                "/status": [
+                    503,
+                    409
+                ],
+                "/data/error/code": [
+                    "DATABASE_UNAVAILABLE",
+                    "ADDRESS_IN_USE"
+                ],
+                "/data/error/message": [
+                    "database operation failed",
+                    "address is used by an order"
+                ]
+            }
+        },
+        "address.historical-preserved": {
+            "operation": "GET /addresses",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "empty-images.create": {
+            "operation": "POST /admin/products",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "delta.empty-images-update": {
+            "operation": "PUT /admin/products/{productID}",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "SCOPED_DIFFERENCE",
+            "differences": {
+                "/data/imageUrls": [
+                    null,
+                    []
+                ],
+                "/shape/object/imageUrls": [
+                    "null",
+                    {
+                        "list": []
+                    }
+                ]
+            }
+        },
+        "delta.empty-images-stock": {
+            "operation": "PATCH /products/{productID}/stock",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "SCOPED_DIFFERENCE",
+            "differences": {
+                "/data/imageUrls": [
+                    null,
+                    []
+                ],
+                "/shape/object/imageUrls": [
+                    "null",
+                    {
+                        "list": []
+                    }
+                ]
+            }
+        },
+        "delta.empty-images-search": {
+            "operation": "GET /products/search",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "SCOPED_DIFFERENCE",
+            "differences": {
+                "/data/items/0/imageUrls": [
+                    null,
+                    []
+                ],
+                "/shape/object/items/list/0/object/imageUrls": [
+                    "null",
+                    {
+                        "list": []
+                    }
+                ]
+            }
+        },
+        "empty-images.delete": {
+            "operation": "DELETE /admin/products/{productID}",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "address.unused": {
+            "operation": "POST /addresses",
+            "goStatus": 201,
+            "yiiStatus": 201,
+            "result": "MATCH",
+            "differences": []
+        },
+        "address.delete": {
+            "operation": "DELETE /addresses/{addressID}",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "address.after-delete": {
+            "operation": "GET /addresses",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.delete": {
+            "operation": "DELETE /admin/products/{productID}",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.deleted": {
+            "operation": "GET /products/{productID}",
+            "goStatus": 404,
+            "yiiStatus": 404,
+            "result": "MATCH",
+            "differences": []
+        },
+        "catalog.after-delete": {
+            "operation": "GET /products",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "auth.logout-opaque": {
+            "operation": "POST /auth/logout",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "auth.logout-access-rejected": {
+            "operation": "GET /users/me",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "password.wrong-old": {
+            "operation": "POST /users/me/change-password",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "password.change": {
+            "operation": "POST /users/me/change-password",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "password.old-rejected": {
+            "operation": "POST /auth/login",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "password.old-refresh-revoked": {
+            "operation": "POST /auth/refresh",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        },
+        "password.new-login": {
+            "operation": "POST /auth/login",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "password.new-login.authenticates": {
+            "operation": "GET /users/me",
+            "goStatus": 200,
+            "yiiStatus": 200,
+            "result": "MATCH",
+            "differences": []
+        },
+        "auth.logout-keycloak": {
+            "operation": "POST /auth/logout",
+            "goStatus": 204,
+            "yiiStatus": 204,
+            "result": "MATCH",
+            "differences": []
+        },
+        "auth.logout-refresh-rejected": {
+            "operation": "POST /auth/refresh",
+            "goStatus": 401,
+            "yiiStatus": 401,
+            "result": "MATCH",
+            "differences": []
+        }
+    },
+    "operations": {
+        "POST /auth/register": [
+            "auth.register"
+        ],
+        "GET /users/me": [
+            "auth.register.authenticates",
+            "auth.login.authenticates",
+            "auth.refresh.authenticates",
+            "profile.initial",
+            "profile.default-auto",
+            "pin.login.authenticates",
+            "pin.refresh.authenticates",
+            "bio.login.authenticates",
+            "password.new-login.authenticates"
+        ],
+        "POST /auth/login": [
+            "auth.login",
+            "password.new-login"
+        ],
+        "POST /auth/refresh": [
+            "auth.refresh",
+            "pin.refresh"
+        ],
+        "POST /addresses": [
+            "address.create",
+            "address.unused"
+        ],
+        "PUT /addresses/{addressID}": [
+            "address.update"
+        ],
+        "GET /addresses": [
+            "address.list",
+            "address.historical-preserved",
+            "address.after-delete"
+        ],
+        "PUT /users/me": [
+            "profile.update-null",
+            "profile.omitted-default"
+        ],
+        "PUT /users/me/avatar": [
+            "profile.avatar-null"
+        ],
+        "POST /auth/pin": [
+            "pin.set",
+            "pin.reset"
+        ],
+        "PUT /auth/pin": [
+            "pin.change"
+        ],
+        "POST /auth/pin/login": [
+            "pin.login"
+        ],
+        "GET /auth/pin/devices": [
+            "pin.devices",
+            "pin.devices-empty"
+        ],
+        "POST /auth/biometric": [
+            "bio.enroll",
+            "bio.reenroll"
+        ],
+        "POST /auth/biometric/challenge": [
+            "bio.challenge",
+            "bio.challenge-for-invalid"
+        ],
+        "POST /auth/biometric/login": [
+            "bio.login"
+        ],
+        "GET /auth/biometric/devices": [
+            "bio.devices",
+            "bio.devices-empty"
+        ],
+        "GET /auth/session": [
+            "credentials.session"
+        ],
+        "DELETE /auth/biometric": [
+            "bio.delete-current"
+        ],
+        "DELETE /auth/biometric/devices/{deviceID}": [
+            "bio.delete-device"
+        ],
+        "DELETE /auth/pin": [
+            "pin.delete-current"
+        ],
+        "DELETE /auth/pin/devices/{deviceID}": [
+            "pin.delete-device"
+        ],
+        "GET /categories": [
+            "catalog.categories",
+            "cors.actual"
+        ],
+        "GET /categories/{categoryID}": [
+            "catalog.category"
+        ],
+        "GET /categories/{categoryID}/children": [
+            "catalog.children"
+        ],
+        "POST /admin/products": [
+            "catalog.create",
+            "empty-images.create"
+        ],
+        "PUT /admin/products/{productID}": [
+            "catalog.update"
+        ],
+        "PATCH /products/{productID}/stock": [
+            "catalog.stock"
+        ],
+        "GET /products/{productID}": [
+            "catalog.product",
+            "order.stock-reserved",
+            "payment.completed-refund-stock",
+            "void.restored-stock",
+            "cancel.restored-stock"
+        ],
+        "GET /products": [
+            "catalog.page",
+            "catalog.page-second",
+            "catalog.after-delete"
+        ],
+        "GET /products/search": [
+            "catalog.search"
+        ],
+        "GET /cart": [
+            "cart.initial",
+            "cart.replay-no-mutation",
+            "cart.cleared",
+            "order.cart-cleared"
+        ],
+        "POST /cart/items": [
+            "cart.add",
+            "cart.replay",
+            "cart.add-for-clear",
+            "cart.for-order",
+            "void.cart",
+            "cancel.cart"
+        ],
+        "PATCH /cart/items/{productID}": [
+            "cart.patch"
+        ],
+        "DELETE /cart/items/{productID}": [
+            "cart.remove"
+        ],
+        "DELETE /cart": [
+            "cart.clear"
+        ],
+        "POST /orders": [
+            "order.create",
+            "order.replay",
+            "void.order",
+            "cancel.order"
+        ],
+        "GET /payments/{paymentID}": [
+            "payment.pending",
+            "payment.captured",
+            "void.read-payment",
+            "cancel.read-payment"
+        ],
+        "POST /payments/{paymentID}/confirm": [
+            "payment.confirm",
+            "void.confirm"
+        ],
+        "POST /payments/webhook": [
+            "payment.webhook"
+        ],
+        "GET /orders/{orderID}": [
+            "order.paid",
+            "void.read-order",
+            "cancel.read-order"
+        ],
+        "POST /orders/{orderID}/status": [
+            "order.transition-ASSEMBLING",
+            "order.transition-DELIVERING",
+            "order.transition-COMPLETED"
+        ],
+        "GET /orders": [
+            "order.page",
+            "order.last-page"
+        ],
+        "GET /products/popular": [
+            "catalog.popular"
+        ],
+        "POST /products/{productID}/reviews": [
+            "reviews.create"
+        ],
+        "GET /products/{productID}/reviews": [
+            "reviews.page",
+            "reviews.empty"
+        ],
+        "DELETE /reviews/{reviewID}": [
+            "reviews.delete"
+        ],
+        "POST /payments/{paymentID}/refund": [
+            "payment.refund"
+        ],
+        "POST /payments/{paymentID}/void": [
+            "payment.void"
+        ],
+        "POST /orders/{orderID}/cancel": [
+            "order.cancel"
+        ],
+        "DELETE /admin/products/{productID}": [
+            "empty-images.delete",
+            "catalog.delete"
+        ],
+        "DELETE /addresses/{addressID}": [
+            "address.delete"
+        ],
+        "POST /auth/logout": [
+            "auth.logout-opaque",
+            "auth.logout-keycloak"
+        ],
+        "POST /users/me/change-password": [
+            "password.change"
+        ]
+    },
+    "scopedDifferences": {
+        "delta.search-stale-stock": {
+            "/data/items/0/stock": [
+                22,
+                19
+            ]
+        },
+        "delta.historical-address-delete": {
+            "/status": [
+                503,
+                409
+            ],
+            "/data/error/code": [
+                "DATABASE_UNAVAILABLE",
+                "ADDRESS_IN_USE"
+            ],
+            "/data/error/message": [
+                "database operation failed",
+                "address is used by an order"
+            ]
+        },
+        "delta.empty-images-update": {
+            "/data/imageUrls": [
+                null,
+                []
+            ],
+            "/shape/object/imageUrls": [
+                "null",
+                {
+                    "list": []
+                }
+            ]
+        },
+        "delta.empty-images-stock": {
+            "/data/imageUrls": [
+                null,
+                []
+            ],
+            "/shape/object/imageUrls": [
+                "null",
+                {
+                    "list": []
+                }
+            ]
+        },
+        "delta.empty-images-search": {
+            "/data/items/0/imageUrls": [
+                null,
+                []
+            ],
+            "/shape/object/items/list/0/object/imageUrls": [
+                "null",
+                {
+                    "list": []
+                }
+            ]
+        }
+    },
+    "unexpected": []
+}

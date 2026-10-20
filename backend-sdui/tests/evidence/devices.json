@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "screenId": "devices",
+  "revision": "d77c1eae541b3d8550755edc776753d231b8ff1edf78463b52f2877bcaa13e97",
+  "components": [
+    {
+      "id": "screen.content",
+      "type": "LazyColumn",
+      "props": {
+        "spacing": "m",
+        "padding": "m",
+        "align": "Start"
+      },
+      "children": [
+        {
+          "id": "devices.title",
+          "type": "Text",
+          "props": {
+            "text": "Устройства быстрого входа",
+            "style": "ScreenTitle"
+          }
+        },
+        {
+          "id": "device.2532fab979cfecb2b7892d2d",
+          "type": "Column",
+          "props": {
+            "spacing": "s",
+            "padding": "s",
+            "align": "Start"
+          },
+          "children": [
+            {
+              "id": "device.2532fab979cfecb2b7892d2d.name",
+              "type": "Text",
+              "props": {
+                "text": "Task2 native test device",
+                "style": "Title"
+              }
+            },
+            {
+              "id": "device.2532fab979cfecb2b7892d2d.id",
+              "type": "Text",
+              "props": {
+                "text": "sdui-9d9f8a504d661105",
+                "style": "Secondary"
+              }
+            },
+            {
+              "id": "device.2532fab979cfecb2b7892d2d.last",
+              "type": "Text",
+              "props": {
+                "text": "pin · 2026-10-18T06:15:15.746699Z",
+                "style": "Secondary"
+              }
+            },
+            {
+              "id": "device.2532fab979cfecb2b7892d2d.button",
+              "type": "Button",
+              "props": {
+                "label": "Отозвать",
+                "actionId": "device.2532fab979cfecb2b7892d2d.revoke",
+                "style": "Primary",
+                "enabled": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "device.35a6136cba25e94bfbcf4740",
+          "type": "Column",
+          "props": {
+            "spacing": "s",
+            "padding": "s",
+            "align": "Start"
+          },
+          "children": [
+            {
+              "id": "device.35a6136cba25e94bfbcf4740.name",
+              "type": "Text",
+              "props": {
+                "text": "Task2 native biometric device",
+                "style": "Title"
+              }
+            },
+            {
+              "id": "device.35a6136cba25e94bfbcf4740.id",
+              "type": "Text",
+              "props": {
+                "text": "sdui-9d9f8a504d661105",
+                "style": "Secondary"
+              }
+            },
+            {
+              "id": "device.35a6136cba25e94bfbcf4740.last",
+              "type": "Text",
+              "props": {
+                "text": "biometric · 2026-10-18T06:15:15.786571Z",
+                "style": "Secondary"
+              }
+            },
+            {
+              "id": "device.35a6136cba25e94bfbcf4740.button",
+              "type": "Button",
+              "props": {
+                "label": "Отозвать",
+                "actionId": "device.35a6136cba25e94bfbcf4740.revoke",
+                "style": "Primary",
+                "enabled": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "screen.refresh",
+      "type": "Refresh",
+      "destination": {
+        "screen": "devices"
+      }
+    },
+    {
+      "id": "device.2532fab979cfecb2b7892d2d.revoke",
+      "type": "RevokeDevice",
+      "deviceId": "sdui-9d9f8a504d661105",
+      "deviceKind": "pin",
+      "confirmation": {
+        "title": "Отозвать устройство?",
+        "message": "Task2 native test device",
+        "confirmLabel": "Отозвать"
+      }
+    },
+    {
+      "id": "device.35a6136cba25e94bfbcf4740.revoke",
+      "type": "RevokeDevice",
+      "deviceId": "sdui-9d9f8a504d661105",
+      "deviceKind": "biometric",
+      "confirmation": {
+        "title": "Отозвать устройство?",
+        "message": "Task2 native biometric device",
+        "confirmLabel": "Отозвать"
+      }
+    }
+  ],
+  "state": {
+    "authenticated": true,
+    "fields": {},
+    "cartItemsCount": 0
+  },
+  "metadata": {
+    "title": "Устройства",
+    "locale": "ru-RU",
+    "accountId": "00e831b3-5c58-4471-93ef-e03b9bf4cb07",
+    "partial": false
+  }
+}

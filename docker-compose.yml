@@ -1,0 +1,284 @@
+name: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}
+
+x-yii-env: &yii-env
+  APP_ENV: development
+  DATABASE_URL: postgres://shopkmp:${POSTGRES_PASSWORD:?required}@postgres:5432/shopkmp?sslmode=disable
+  KEYCLOAK_ISSUER: http://keycloak:8080/realms/shopkmp
+  KEYCLOAK_CLIENT_ID: shopkmp-backend
+  KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?required}
+  OPENSEARCH_URL: http://opensearch:9200
+  PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:?required}
+  PAYMENT_GATEWAY_URL: ${PAYMENT_GATEWAY_URL:-}
+  PAYMENT_GATEWAY_API_KEY: ${PAYMENT_GATEWAY_API_KEY:-}
+  PAYMENT_WEBHOOK_ALLOWED_CIDRS: ${PAYMENT_WEBHOOK_ALLOWED_CIDRS:-}
+  ADMIN_BOOTSTRAP_TOKEN: ${ADMIN_BOOTSTRAP_TOKEN:?required}
+  ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+  # Internal Nginx resolves the one fixed trusted edge hop into REMOTE_ADDR.
+  TRUSTED_PROXY_CIDRS: ""
+  READINESS_TIMEOUT: 2s
+
+x-yii: &yii
+  build: ./backend-yii2
+  image: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}-yii2
+  environment: *yii-env
+  networks: [application, data]
+  security_opt: [no-new-privileges:true]
+  stop_signal: SIGQUIT
+  stop_grace_period: 40s
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: shopkmp
+      POSTGRES_USER: shopkmp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    networks: [data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U shopkmp -d shopkmp']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+    stop_grace_period: 60s
+
+  migrate:
+    build:
+      context: ./tools/ops
+      dockerfile: ../../deploy/migrate.Dockerfile
+    environment:
+      DATABASE_URL: postgres://shopkmp@postgres:5432/shopkmp?sslmode=disable
+      PGPASSWORD: ${POSTGRES_PASSWORD:?required}
+    networks: [data]
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+    read_only: true
+    security_opt: [no-new-privileges:true]
+
+  yii-migrate:
+    <<: *yii
+    command: [php, yii, migrate, --interactive=0]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    restart: "no"
+
+  keycloak-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?required}
+    volumes: [keycloak_data:/var/lib/postgresql/data]
+    networks: [data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U keycloak -d keycloak']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    restart: unless-stopped
+    stop_grace_period: 60s
+
+  keycloak:
+    build:
+      context: ./tools/ops
+      dockerfile: ../../deploy/keycloak/Dockerfile
+    command: [start-dev, --import-realm]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?required}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?required}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?required}
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_HTTP_MANAGEMENT_SCHEME: http
+      HEALTHCHECK_URL: http://127.0.0.1:9000/health/ready
+      KC_HOSTNAME: http://keycloak:8080
+    volumes:
+      - ./deploy/keycloak/shopkmp-realm.json:/opt/keycloak/data/import/shopkmp-realm.json:ro
+    networks: [application, data]
+    depends_on:
+      keycloak-postgres: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, /opt/keycloak/bin/shopkmp-healthcheck]
+      interval: 10s
+      timeout: 5s
+      retries: 40
+      start_period: 60s
+    restart: unless-stopped
+    stop_grace_period: 45s
+    mem_limit: 1g
+
+  opensearch:
+    image: opensearchproject/opensearch:2.19.3
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+    volumes: [search_data:/usr/share/opensearch/data]
+    networks: [application]
+    healthcheck:
+      test: [CMD-SHELL, 'curl -fsS --max-time 4 "http://localhost:9200/_cluster/health?wait_for_status=yellow" >/dev/null']
+      interval: 10s
+      timeout: 5s
+      retries: 40
+      start_period: 45s
+    restart: unless-stopped
+    stop_grace_period: 60s
+    mem_limit: 1g
+
+  reindex:
+    <<: *yii
+    command: [php, yii, maintenance/reindex]
+    depends_on:
+      yii-migrate: {condition: service_completed_successfully}
+      opensearch: {condition: service_healthy}
+    restart: "no"
+
+  yii2:
+    <<: *yii
+    volumes:
+      - ./deploy/php/fpm.conf:/usr/local/etc/php-fpm.d/zz-integration.conf:ro
+      - ./deploy/php/fpm-health.php:/opt/probes/fpm-health.php:ro
+    depends_on:
+      yii-migrate: {condition: service_completed_successfully}
+      reindex: {condition: service_completed_successfully}
+      keycloak: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, php, /opt/probes/fpm-health.php]
+      interval: 10s
+      timeout: 4s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
+
+  yii2-http:
+    image: nginx:1.27-alpine
+    environment:
+      EDGE_IP: ${EDGE_IP:-172.30.95.2}
+      NGINX_ENVSUBST_FILTER: EDGE_IP
+    volumes:
+      - ./deploy/nginx/yii2.conf.template:/etc/nginx/templates/default.conf.template:ro
+    networks:
+      ingress:
+        ipv4_address: ${YII_HTTP_IP:-172.30.95.3}
+      application:
+    depends_on:
+      yii2: {condition: service_healthy}
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -T 6 -O /dev/null http://127.0.0.1:8080/health/ready']
+      interval: 10s
+      timeout: 8s
+      retries: 6
+      start_period: 30s
+    stop_signal: SIGQUIT
+    stop_grace_period: 40s
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+
+  sdui:
+    build: ./backend-sdui
+    environment:
+      YII_ORIGIN: http://yii2-http:8080
+    networks:
+      ingress:
+        ipv4_address: ${SDUI_IP:-172.30.95.4}
+      application:
+    depends_on:
+      yii2-http: {condition: service_healthy}
+    stop_grace_period: 20s
+    restart: unless-stopped
+    read_only: true
+    security_opt: [no-new-privileges:true]
+
+  maintenance:
+    <<: *yii
+    command: [php, /opt/scheduler/scheduler.php, maintenance/run, '60']
+    environment:
+      <<: *yii-env
+      SCHEDULER_JOB_TIMEOUT_SECONDS: ${MAINTENANCE_JOB_TIMEOUT_SECONDS:-120}
+      SCHEDULER_SUCCESS_MAX_AGE_SECONDS: ${MAINTENANCE_SUCCESS_MAX_AGE_SECONDS:-}
+    volumes: [./deploy/php:/opt/scheduler:ro]
+    depends_on:
+      yii2-http: {condition: service_healthy}
+    stop_signal: SIGTERM
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, php, /opt/scheduler/scheduler-health.php, ready]
+      interval: 10s
+      timeout: 3s
+      retries: 1
+      start_period: ${MAINTENANCE_JOB_TIMEOUT_SECONDS:-120}s
+
+  reconcile:
+    <<: *yii
+    command: [php, /opt/scheduler/scheduler.php, maintenance/reindex, '300']
+    environment:
+      <<: *yii-env
+      SCHEDULER_JOB_TIMEOUT_SECONDS: ${REINDEX_JOB_TIMEOUT_SECONDS:-1800}
+      SCHEDULER_SUCCESS_MAX_AGE_SECONDS: ${REINDEX_SUCCESS_MAX_AGE_SECONDS:-}
+    volumes: [./deploy/php:/opt/scheduler:ro]
+    depends_on:
+      yii2-http: {condition: service_healthy}
+    stop_signal: SIGTERM
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, php, /opt/scheduler/scheduler-health.php, ready]
+      interval: 10s
+      timeout: 3s
+      retries: 1
+      start_period: ${REINDEX_JOB_TIMEOUT_SECONDS:-1800}s
+
+  edge:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./deploy/nginx/edge.dev.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/nginx/routes.conf:/etc/nginx/routes.conf:ro
+      - ./deploy/nginx/proxy.conf:/etc/nginx/proxy.conf:ro
+      - ./deploy/swagger/index.html:/srv/swagger/index.html:ro
+      - ./backend-yii2/contracts/openapi.yaml:/srv/swagger/openapi.yaml:ro
+    ports: ['${EDGE_BIND:-127.0.0.1}:${EDGE_PORT:-8080}:8080']
+    networks:
+      ingress:
+        ipv4_address: ${EDGE_IP:-172.30.95.2}
+    depends_on:
+      yii2-http: {condition: service_healthy}
+      sdui: {condition: service_healthy}
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -T 3 -O /dev/null http://127.0.0.1:8090/live']
+      interval: 10s
+      timeout: 4s
+      retries: 6
+      start_period: 10s
+    stop_signal: SIGQUIT
+    stop_grace_period: 45s
+    restart: unless-stopped
+    security_opt: [no-new-privileges:true]
+
+  seed:
+    <<: *yii
+    profiles: [tools]
+    command: [php, yii, development-seed/run]
+    depends_on:
+      yii-migrate: {condition: service_completed_successfully}
+      opensearch: {condition: service_healthy}
+    restart: "no"
+
+networks:
+  ingress:
+    ipam:
+      config: [{subnet: '${EDGE_SUBNET:-172.30.95.0/24}'}]
+  application:
+  data:
+    internal: true
+volumes:
+  postgres_data:
+  keycloak_data:
+  search_data:

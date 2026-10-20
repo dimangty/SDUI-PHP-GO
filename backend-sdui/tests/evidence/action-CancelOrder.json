@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "command": "CancelOrder",
+  "outcome": "applied",
+  "refresh": {
+    "screen": "order",
+    "id": "6cd31259-fcba-4278-a17f-cf8f5175ab7a"
+  }
+}

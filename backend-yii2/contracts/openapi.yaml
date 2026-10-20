@@ -1,0 +1,771 @@
+# Канонический публичный HTTP-контракт ShopKMP для backend и KMP-клиента.
+openapi: 3.1.0
+info:
+  title: ShopKMP API
+  version: 1.0.0
+  description: REST API for authentication, catalog, cart, checkout, profile and payments.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+tags:
+  - {name: Auth}
+  - {name: Catalog}
+  - {name: Cart}
+  - {name: Profile}
+  - {name: Orders}
+  - {name: Payments}
+  - {name: Admin}
+  - {name: Webhooks}
+paths:
+  /auth/register:
+    post: {tags: [Auth], security: [], operationId: register, requestBody: {$ref: '#/components/requestBodies/RegisterRequest'}, responses: {'201': {$ref: '#/components/responses/Token'}, '400': {$ref: '#/components/responses/Error'}, '413': {$ref: '#/components/responses/TooLarge'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+  /auth/login:
+    post: {tags: [Auth], security: [], operationId: login, requestBody: {$ref: '#/components/requestBodies/LoginRequest'}, responses: {'200': {$ref: '#/components/responses/Token'}, '401': {$ref: '#/components/responses/Error'}, '423': {$ref: '#/components/responses/Locked'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+  /auth/refresh:
+    post: {tags: [Auth], security: [], operationId: refresh, requestBody: {$ref: '#/components/requestBodies/RefreshRequest'}, responses: {'200': {$ref: '#/components/responses/Token'}, '401': {$ref: '#/components/responses/Error'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+  /auth/logout:
+    post: {tags: [Auth], operationId: logout, requestBody: {$ref: '#/components/requestBodies/LogoutRequest'}, responses: {'204': {description: Logged out}}}
+  /auth/session:
+    get:
+      tags: [Auth]
+      operationId: session
+      description: Returns session state for the current app installation. The client must always pass its stable deviceId.
+      parameters: [{$ref: '#/components/parameters/DeviceIdQuery'}]
+      responses: {'200': {$ref: '#/components/responses/Session'}, '400': {$ref: '#/components/responses/Error'}}
+  /auth/pin:
+    post: {tags: [Auth], operationId: setPin, requestBody: {$ref: '#/components/requestBodies/SetPinRequest'}, responses: {'201': {description: PIN configured}, '409': {$ref: '#/components/responses/Error'}, '423': {$ref: '#/components/responses/Locked'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+    put: {tags: [Auth], operationId: changePin, requestBody: {$ref: '#/components/requestBodies/ChangePinRequest'}, responses: {'204': {description: PIN changed}, '423': {$ref: '#/components/responses/Locked'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+    delete: {tags: [Auth], operationId: deletePin, parameters: [{$ref: '#/components/parameters/DeviceIdQuery'}], responses: {'204': {description: PIN deleted}}}
+  /auth/pin/login:
+    post: {tags: [Auth], security: [], operationId: pinLogin, requestBody: {$ref: '#/components/requestBodies/PinLoginRequest'}, responses: {'200': {$ref: '#/components/responses/Token'}, '401': {$ref: '#/components/responses/InvalidPin'}, '404': {$ref: '#/components/responses/PinNotSet'}, '423': {$ref: '#/components/responses/Locked'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+  /auth/pin/devices:
+    get: {tags: [Auth], operationId: pinDevices, responses: {'200': {$ref: '#/components/responses/PinDeviceList'}}}
+  /auth/pin/devices/{deviceId}:
+    delete: {tags: [Auth], operationId: revokePinDevice, parameters: [{$ref: '#/components/parameters/DeviceId'}], responses: {'204': {description: Device revoked}}}
+  /auth/biometric:
+    post: {tags: [Auth], operationId: enrollBiometric, requestBody: {$ref: '#/components/requestBodies/BiometricEnrollRequest'}, responses: {'201': {$ref: '#/components/responses/BiometricEnroll'}, '409': {$ref: '#/components/responses/Error'}}}
+    delete: {tags: [Auth], operationId: deleteBiometric, parameters: [{$ref: '#/components/parameters/DeviceIdQuery'}], responses: {'204': {description: Biometric login disabled}}}
+  /auth/biometric/challenge:
+    post: {tags: [Auth], security: [], operationId: biometricChallenge, requestBody: {$ref: '#/components/requestBodies/BiometricChallengeRequest'}, responses: {'200': {$ref: '#/components/responses/BiometricChallenge'}, '404': {$ref: '#/components/responses/Error'}, '423': {$ref: '#/components/responses/Locked'}}}
+  /auth/biometric/login:
+    post: {tags: [Auth], security: [], operationId: biometricLogin, requestBody: {$ref: '#/components/requestBodies/BiometricLoginRequest'}, responses: {'200': {$ref: '#/components/responses/Token'}, '401': {$ref: '#/components/responses/Error'}, '410': {$ref: '#/components/responses/Error'}, '423': {$ref: '#/components/responses/Locked'}}}
+  /auth/biometric/devices:
+    get: {tags: [Auth], operationId: biometricDevices, responses: {'200': {$ref: '#/components/responses/BiometricDeviceList'}}}
+  /auth/biometric/devices/{deviceId}:
+    delete: {tags: [Auth], operationId: revokeBiometricDevice, parameters: [{$ref: '#/components/parameters/DeviceId'}], responses: {'204': {description: Biometric credential revoked}}}
+  /categories:
+    get: {tags: [Catalog], security: [], operationId: categories, responses: {'200': {$ref: '#/components/responses/CategoryList'}, '304': {description: Not modified}}}
+  /categories/{categoryId}:
+    get: {tags: [Catalog], security: [], operationId: category, parameters: [{$ref: '#/components/parameters/CategoryId'}], responses: {'200': {$ref: '#/components/responses/Category'}}}
+  /categories/{categoryId}/children:
+    get: {tags: [Catalog], security: [], operationId: categoryChildren, parameters: [{$ref: '#/components/parameters/CategoryId'}], responses: {'200': {$ref: '#/components/responses/CategoryList'}}}
+  /products:
+    get: {tags: [Catalog], security: [], operationId: products, parameters: [{$ref: '#/components/parameters/CategoryFilter'}, {$ref: '#/components/parameters/ProductSort'}, {$ref: '#/components/parameters/PriceMin'}, {$ref: '#/components/parameters/PriceMax'}, {$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}], responses: {'200': {$ref: '#/components/responses/ProductPage'}, '304': {description: Not modified}}}
+  /products/search:
+    get: {tags: [Catalog], security: [], operationId: searchProducts, parameters: [{name: q, in: query, schema: {type: string, maxLength: 200}}, {$ref: '#/components/parameters/CategoryFilter'}, {$ref: '#/components/parameters/PriceMin'}, {$ref: '#/components/parameters/PriceMax'}, {$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}], responses: {'200': {$ref: '#/components/responses/ProductPage'}, '400': {$ref: '#/components/responses/Error'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+  /products/popular:
+    get:
+      tags: [Catalog]
+      security: []
+      operationId: popularProducts
+      description: Products ranked by captured, non-refunded unit sales during the trailing 30 days.
+      parameters: [{name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 10}}]
+      responses: {'200': {$ref: '#/components/responses/ProductList'}}
+  /products/{productId}:
+    get: {tags: [Catalog], security: [], operationId: product, parameters: [{$ref: '#/components/parameters/ProductId'}], responses: {'200': {$ref: '#/components/responses/Product'}}}
+  /products/{productId}/reviews:
+    get: {tags: [Catalog], security: [], operationId: reviews, parameters: [{$ref: '#/components/parameters/ProductId'}, {$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}], responses: {'200': {$ref: '#/components/responses/ReviewPage'}}}
+    post: {tags: [Catalog], operationId: createReview, parameters: [{$ref: '#/components/parameters/ProductId'}], requestBody: {$ref: '#/components/requestBodies/CreateReviewRequest'}, responses: {'201': {$ref: '#/components/responses/Review'}, '403': {$ref: '#/components/responses/PurchaseRequired'}, '409': {$ref: '#/components/responses/ReviewExists'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+  /reviews/{reviewId}:
+    delete: {tags: [Catalog], operationId: deleteReview, parameters: [{$ref: '#/components/parameters/ReviewId'}], responses: {'204': {description: Review deleted}}}
+  /products/{productId}/stock:
+    patch: {tags: [Admin], operationId: patchProductStock, parameters: [{$ref: '#/components/parameters/ProductId'}], requestBody: {$ref: '#/components/requestBodies/StockRequest'}, responses: {'200': {$ref: '#/components/responses/Product'}}}
+  /cart:
+    get: {tags: [Cart], operationId: cart, responses: {'200': {$ref: '#/components/responses/Cart'}}}
+    delete: {tags: [Cart], operationId: clearCart, responses: {'204': {description: Cart cleared}}}
+  /cart/items:
+    post: {tags: [Cart], operationId: addCartItem, parameters: [{$ref: '#/components/parameters/IdempotencyKey'}], requestBody: {$ref: '#/components/requestBodies/AddCartItemRequest'}, responses: {'200': {$ref: '#/components/responses/Cart'}, '413': {$ref: '#/components/responses/TooLarge'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+  /cart/items/{productId}:
+    patch: {tags: [Cart], operationId: updateCartItem, parameters: [{$ref: '#/components/parameters/ProductId'}], requestBody: {$ref: '#/components/requestBodies/UpdateCartItemRequest'}, responses: {'200': {$ref: '#/components/responses/Cart'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+    delete: {tags: [Cart], operationId: deleteCartItem, parameters: [{$ref: '#/components/parameters/ProductId'}], responses: {'200': {$ref: '#/components/responses/Cart'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+  /users/me:
+    get: {tags: [Profile], operationId: profile, responses: {'200': {$ref: '#/components/responses/User'}}}
+    put:
+      tags: [Profile]
+      operationId: updateProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateProfileRequest'}
+      responses: {'200': {$ref: '#/components/responses/User'}}
+  /users/me/avatar:
+    put:
+      tags: [Profile]
+      operationId: updateAvatar
+      description: 'Upload with multipart/form-data, or clear the current avatar with JSON {"avatarUrl": null}. Arbitrary upload URLs are rejected.'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: {type: object, required: [file], properties: {file: {type: string, format: binary}}}
+          application/json:
+            schema: {type: object, required: [avatarUrl], properties: {avatarUrl: {type: [string, 'null'], maxLength: 0}}}
+      responses: {'200': {$ref: '#/components/responses/User'}, '413': {$ref: '#/components/responses/TooLarge'}}
+  /users/me/change-password:
+    post: {tags: [Profile], operationId: changePassword, requestBody: {$ref: '#/components/requestBodies/ChangePasswordRequest'}, responses: {'204': {description: Password changed}}}
+  /addresses:
+    get: {tags: [Profile], operationId: addresses, responses: {'200': {$ref: '#/components/responses/AddressList'}}}
+    post: {tags: [Profile], operationId: createAddress, requestBody: {$ref: '#/components/requestBodies/AddressRequest'}, responses: {'201': {$ref: '#/components/responses/Address'}}}
+  /addresses/{addressId}:
+    put: {tags: [Profile], operationId: updateAddress, parameters: [{$ref: '#/components/parameters/AddressId'}], requestBody: {$ref: '#/components/requestBodies/AddressRequest'}, responses: {'200': {$ref: '#/components/responses/Address'}}}
+    delete: {tags: [Profile], operationId: deleteAddress, parameters: [{$ref: '#/components/parameters/AddressId'}], responses: {'204': {description: Address deleted}}}
+  /orders:
+    get: {tags: [Orders], operationId: orders, parameters: [{name: status, in: query, schema: {type: string, enum: [CREATED, PAID, ASSEMBLING, DELIVERING, COMPLETED, CANCELLED]}}, {$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}], responses: {'200': {$ref: '#/components/responses/OrderPage'}}}
+    post: {tags: [Orders], operationId: createOrder, parameters: [{$ref: '#/components/parameters/IdempotencyKey'}], requestBody: {$ref: '#/components/requestBodies/CreateOrderRequest'}, responses: {'201': {$ref: '#/components/responses/Order'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+  /orders/{orderId}:
+    get: {tags: [Orders], operationId: order, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'200': {$ref: '#/components/responses/Order'}}}
+  /orders/{orderId}/cancel:
+    post: {tags: [Orders], operationId: cancelOrder, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'200': {$ref: '#/components/responses/Order'}}}
+  /orders/{orderId}/status:
+    post: {tags: [Admin], operationId: transitionOrder, parameters: [{$ref: '#/components/parameters/OrderId'}], requestBody: {$ref: '#/components/requestBodies/OrderStatusRequest'}, responses: {'200': {$ref: '#/components/responses/Order'}}}
+  /payments/{paymentId}:
+    get: {tags: [Payments], operationId: payment, parameters: [{$ref: '#/components/parameters/PaymentId'}], responses: {'200': {$ref: '#/components/responses/Payment'}}}
+  /payments/{paymentId}/confirm:
+    post: {tags: [Payments], operationId: confirmPayment, parameters: [{$ref: '#/components/parameters/PaymentId'}], responses: {'200': {$ref: '#/components/responses/PaymentConfirmation'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+  /payments/{paymentId}/refund:
+    post:
+      tags: [Admin]
+      operationId: refundPayment
+      description: Refunds a captured payment. Authorized but not captured payments must use the void operation.
+      parameters: [{$ref: '#/components/parameters/PaymentId'}]
+      responses: {'200': {$ref: '#/components/responses/Payment'}, '409': {$ref: '#/components/responses/Error'}}
+  /payments/{paymentId}/void:
+    post:
+      tags: [Admin]
+      operationId: voidPayment
+      description: Releases an uncaptured authorization and marks the payment CANCELLED.
+      parameters: [{$ref: '#/components/parameters/PaymentId'}]
+      responses: {'200': {$ref: '#/components/responses/Payment'}, '409': {$ref: '#/components/responses/Error'}}
+  /payments/webhook:
+    post: {tags: [Webhooks], security: [], operationId: paymentWebhook, requestBody: {$ref: '#/components/requestBodies/PaymentWebhookRequest'}, responses: {'204': {description: Webhook processed}, '401': {$ref: '#/components/responses/Error'}, '413': {$ref: '#/components/responses/TooLarge'}, '429': {$ref: '#/components/responses/RateLimited'}}}
+  /admin/products:
+    post: {tags: [Admin], operationId: createProduct, requestBody: {$ref: '#/components/requestBodies/ProductRequest'}, responses: {'201': {$ref: '#/components/responses/Product'}}}
+  /admin/products/{productId}:
+    put: {tags: [Admin], operationId: updateProduct, parameters: [{$ref: '#/components/parameters/ProductId'}], requestBody: {$ref: '#/components/requestBodies/UpdateProductRequest'}, responses: {'200': {$ref: '#/components/responses/Product'}}}
+    delete: {tags: [Admin], operationId: deleteProduct, parameters: [{$ref: '#/components/parameters/ProductId'}], responses: {'204': {description: Product deleted}}}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Zero-based page. Values beyond totalPages return 200 with an empty items array.
+      schema: {type: integer, minimum: 0, default: 0}
+    Size: {name: size, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: >-
+        Optional retry key, strongly recommended for network retries. A retry
+        replays the response snapshot stored for the first successful mutation;
+        it does not refresh a resource that changed later. Read current state
+        through GET /orders/{orderId}, GET /payments/{paymentId}, or GET /cart.
+      schema: {type: string, maxLength: 255}
+    CategoryFilter: {name: categoryId, in: query, schema: {type: string, format: uuid}}
+    ProductSort: {name: sort, in: query, schema: {type: string, enum: [price_asc, price_desc, rating, new]}}
+    PriceMin: {name: priceMin, in: query, schema: {$ref: '#/components/schemas/Money'}}
+    PriceMax: {name: priceMax, in: query, schema: {$ref: '#/components/schemas/Money'}}
+    ProductId: {name: productId, in: path, required: true, schema: {type: string, format: uuid}}
+    CategoryId: {name: categoryId, in: path, required: true, schema: {type: string, format: uuid}}
+    DeviceId: {name: deviceId, in: path, required: true, schema: {type: string}}
+    DeviceIdQuery: {name: deviceId, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 255, pattern: '^[A-Za-z0-9._-]+$'}}
+    AddressId: {name: addressId, in: path, required: true, schema: {type: string, format: uuid}}
+    OrderId: {name: orderId, in: path, required: true, schema: {type: string, format: uuid}}
+    PaymentId: {name: paymentId, in: path, required: true, schema: {type: string, format: uuid}}
+    ReviewId: {name: reviewId, in: path, required: true, schema: {type: string, format: uuid}}
+  requestBodies:
+    RegisterRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RegisterRequest'}}}}
+    LoginRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LoginRequest'}}}}
+    RefreshRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RefreshRequest'}}}}
+    LogoutRequest: {required: false, content: {application/json: {schema: {$ref: '#/components/schemas/LogoutRequest'}}}}
+    PinLoginRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PinLoginRequest'}}}}
+    SetPinRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/SetPinRequest'}}}}
+    ChangePinRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ChangePinRequest'}}}}
+    BiometricEnrollRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/BiometricEnrollRequest'}}}}
+    BiometricChallengeRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/BiometricChallengeRequest'}}}}
+    BiometricLoginRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/BiometricLoginRequest'}}}}
+    AddCartItemRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/AddCartItemRequest'}}}}
+    UpdateCartItemRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/UpdateCartItemRequest'}}}}
+    AddressRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/AddressInput'}}}}
+    CreateOrderRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CreateOrderRequest'}}}}
+    CreateReviewRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CreateReviewRequest'}}}}
+    PaymentWebhookRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PaymentWebhookRequest'}}}}
+    StockRequest: {required: true, content: {application/json: {schema: {type: object, additionalProperties: false, required: [delta], properties: {delta: {type: integer}}}}}}
+    ChangePasswordRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ChangePasswordRequest'}}}}
+    OrderStatusRequest: {required: true, content: {application/json: {schema: {type: object, additionalProperties: false, required: [status], properties: {status: {type: string, enum: [ASSEMBLING, DELIVERING, COMPLETED]}}}}}}
+    ProductRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ProductInput'}}}}
+    UpdateProductRequest: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/UpdateProductRequest'}}}}
+  responses:
+    InvalidPin:
+      description: PIN is invalid; details.attemptsLeft contains the remaining attempts when available
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            invalidPin:
+              value: {error: {code: INVALID_PIN, message: Invalid PIN, traceId: trace-id, details: {attemptsLeft: '3'}}}
+    PinNotSet:
+      description: PIN is not configured for this device
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            pinNotSet:
+              value: {error: {code: PIN_NOT_SET, message: PIN is not set for this device, traceId: trace-id}}
+    PurchaseRequired:
+      description: A completed purchase is required before reviewing this product
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            purchaseRequired:
+              value: {error: {code: PURCHASE_REQUIRED, message: Completed purchase is required, traceId: trace-id}}
+    ReviewExists:
+      description: The current user has already reviewed this product
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            reviewExists:
+              value: {error: {code: REVIEW_EXISTS, message: Review already exists, traceId: trace-id}}
+    Product:
+      description: Product. All monetary values are decimal JSON strings.
+      content: {application/json: {schema: {$ref: '#/components/schemas/Product'}}}
+    ProductList:
+      description: Products ordered by the endpoint-specific ranking.
+      content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Product'}}}}
+    ProductPage:
+      description: Zero-based page of products.
+      content: {application/json: {schema: {$ref: '#/components/schemas/ProductPage'}}}
+    Token: {description: Issued token pair., content: {application/json: {schema: {$ref: '#/components/schemas/TokenResponse'}}}}
+    Session: {description: Current installation session., content: {application/json: {schema: {$ref: '#/components/schemas/SessionResponse'}}}}
+    User: {description: User profile., content: {application/json: {schema: {$ref: '#/components/schemas/User'}}}}
+    Category: {description: Catalog category., content: {application/json: {schema: {$ref: '#/components/schemas/Category'}}}}
+    CategoryList: {description: Categories., content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Category'}}}}}
+    Cart: {description: Current cart., content: {application/json: {schema: {$ref: '#/components/schemas/Cart'}}}}
+    Address: {description: Delivery address., content: {application/json: {schema: {$ref: '#/components/schemas/Address'}}}}
+    AddressList: {description: Delivery addresses., content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Address'}}}}}
+    Order: {description: Order., content: {application/json: {schema: {$ref: '#/components/schemas/Order'}}}}
+    OrderPage: {description: Orders page., content: {application/json: {schema: {$ref: '#/components/schemas/OrderPage'}}}}
+    Payment: {description: Payment., content: {application/json: {schema: {$ref: '#/components/schemas/Payment'}}}}
+    PaymentConfirmation: {description: Payment initiation result., content: {application/json: {schema: {$ref: '#/components/schemas/PaymentConfirmation'}}}}
+    Review: {description: Product review., content: {application/json: {schema: {$ref: '#/components/schemas/Review'}}}}
+    ReviewPage: {description: Reviews page., content: {application/json: {schema: {$ref: '#/components/schemas/ReviewPage'}}}}
+    PinDeviceList: {description: PIN-enabled devices., content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/PinDevice'}}}}}
+    BiometricChallenge: {description: Short-lived one-time challenge., content: {application/json: {schema: {$ref: '#/components/schemas/BiometricChallengeResponse'}}}}
+    BiometricEnroll: {description: Biometric public key registered with an opaque server credential identifier., content: {application/json: {schema: {$ref: '#/components/schemas/BiometricEnrollResponse'}}}}
+    BiometricDeviceList: {description: Biometric-enabled devices., content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/BiometricDevice'}}}}}
+    TooLarge: {$ref: '#/components/responses/Error'}
+    Locked: {$ref: '#/components/responses/Error'}
+    RateLimited:
+      description: Rate limit exceeded. Retry-After contains seconds.
+      headers: {Retry-After: {schema: {type: integer, minimum: 1}}}
+      content: {application/json: {schema: {$ref: '#/components/schemas/ErrorEnvelope'}}}
+    Error:
+      description: API error
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+  schemas:
+    Money:
+      type: string
+      pattern: '^-?(0|[1-9][0-9]*)\.[0-9]{2}$'
+      examples: ['4990.00']
+      description: Exact decimal amount serialized as a JSON string with two fractional digits.
+    Product:
+      type: object
+      required: [id, categoryId, name, description, price, discountPrice, stock, rating, imageUrls, isActive, reviewsCount]
+      properties:
+        id: {type: string, format: uuid}
+        categoryId: {type: string, format: uuid}
+        name: {type: string}
+        description: {type: string}
+        price: {$ref: '#/components/schemas/Money'}
+        discountPrice: {anyOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        stock: {type: integer, minimum: 0}
+        rating: {type: [number, 'null'], minimum: 0, maximum: 5}
+        imageUrls: {type: array, items: {type: string}}
+        isActive: {type: boolean}
+        reviewsCount: {type: integer, minimum: 0}
+    ProductPage:
+      type: object
+      required: [items, page, size, totalPages, totalItems]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/Product'}}
+        page: {type: integer, minimum: 0}
+        size: {type: integer, minimum: 1}
+        totalPages: {type: integer, minimum: 0}
+        totalItems: {type: integer, minimum: 0}
+    UpdateProfileRequest:
+      type: object
+      required: [fullName, phone]
+      properties:
+        fullName: {type: string, minLength: 1, maxLength: 255}
+        phone: {type: string, minLength: 7, maxLength: 32}
+        email: {type: [string, 'null'], format: email, description: If present, must equal the current email.}
+        defaultAddressId: {type: [string, 'null'], format: uuid, description: Omitted keeps the current address; null explicitly clears it.}
+        dateOfBirth: {type: [string, 'null'], format: date, description: Used to reject PIN values containing the profile birthday.}
+    PaymentStatus:
+      type: string
+      description: CANCELLED is used when a pending payment or uncaptured authorization is cancelled; REFUNDED is only used after capture.
+      enum: [PENDING, AUTHORIZED, CAPTURED, FAILED, REFUNDED, CANCELLED]
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, traceId]
+          properties:
+            code: {$ref: '#/components/schemas/ErrorCode'}
+            message: {type: string}
+            traceId: {type: string}
+            details: {type: object, additionalProperties: {type: string}}
+    ErrorCode:
+      type: string
+      description: Stable machine-readable code. Clients branch on this value rather than on the localized message.
+      enum:
+        - ACCOUNT_LOCKED
+        - ADDRESS_IN_USE
+        - ADDRESS_NOT_FOUND
+        - ADMIN_BOOTSTRAP_NOT_CONFIGURED
+        - ADMIN_BOOTSTRAP_REQUIRED
+        - ADMIN_REQUIRED
+        - ALREADY_PROCESSED
+        - AMOUNT_TOO_LARGE
+        - AVATAR_UPLOAD_REQUIRED
+        - AVATAR_URL_REQUIRED
+        - BAD_REQUEST
+        - BIOMETRIC_ALREADY_SET
+        - BIOMETRIC_LOCKED
+        - BIOMETRIC_NOT_CONFIGURED
+        - BIOMETRIC_NOT_SET
+        - BIOMETRIC_REVOKED
+        - CANCEL_NOT_ALLOWED
+        - CART_IS_EMPTY
+        - CART_ITEM_INVALID
+        - CART_ITEM_NOT_FOUND
+        - CATEGORY_NOT_FOUND
+        - CHALLENGE_EXPIRED
+        - CORS_ORIGIN_DENIED
+        - DATABASE_UNAVAILABLE
+        - DEMO_PAYMENT_FORBIDDEN
+        - DEVICE_ID_REQUIRED
+        - DEVICE_NAME_REQUIRED
+        - EMAIL_ALREADY_EXISTS
+        - EMAIL_CHANGE_NOT_ALLOWED
+        - FILE_NOT_FOUND
+        - FILE_REQUIRED
+        - FILE_TOO_LARGE
+        - FORBIDDEN
+        - ICON_NOT_FOUND
+        - IDEMPOTENCY_KEY_REUSED
+        - IDENTITY_PROVIDER_ERROR
+        - IDENTITY_PROVIDER_UNAVAILABLE
+        - IMAGE_NOT_FOUND
+        - INSUFFICIENT_STOCK
+        - INTERNAL_ERROR
+        - INVALID_ASSERTION
+        - INVALID_ADDRESS
+        - INVALID_AVATAR_URL
+        - INVALID_CREDENTIALS
+        - INVALID_CREDENTIAL_ID
+        - INVALID_DATE_OF_BIRTH
+        - INVALID_DEFAULT_ADDRESS
+        - INVALID_DEVICE_ID
+        - INVALID_EMAIL
+        - INVALID_FILE_TYPE
+        - INVALID_FULL_NAME
+        - INVALID_IDEMPOTENCY_KEY
+        - INVALID_KEY_ALGORITHM
+        - INVALID_ORDER_STATUS
+        - INVALID_PAGINATION
+        - INVALID_PAYMENT_METHOD
+        - INVALID_PAYMENT_STATUS
+        - INVALID_PIN
+        - INVALID_PIN_FORMAT
+        - INVALID_PHONE
+        - INVALID_PRICE_FILTER
+        - INVALID_PRODUCT
+        - INVALID_PROFILE
+        - INVALID_PUBLIC_KEY
+        - INVALID_QUANTITY
+        - INVALID_REFRESH_TOKEN
+        - INVALID_REVIEW
+        - INVALID_SEARCH_QUERY
+        - INVALID_SIGNATURE
+        - INVALID_SORT
+        - INVALID_STOCK
+        - INVALID_TRANSACTION_ID
+        - INVALID_WEBHOOK_ID
+        - INVALID_WEBHOOK_STATUS
+        - METHOD_NOT_ALLOWED
+        - NOT_FOUND
+        - ORDER_NOT_FOUND
+        - OUT_OF_STOCK
+        - PAGE_OUT_OF_RANGE
+        - PASSWORD_CHANGED
+        - PAYMENT_GATEWAY_UNAVAILABLE
+        - PAYMENT_NOT_FOUND
+        - PAYMENT_STATE_CHANGED
+        - PERSISTENCE_ERROR
+        - PIN_ALREADY_SET
+        - PIN_FORBIDDEN_FOR_ADMIN
+        - PIN_LOCKED
+        - PIN_NOT_SET
+        - PIN_STATE_CHANGED
+        - PRODUCT_NOT_FOUND
+        - PRODUCT_INACTIVE
+        - PURCHASE_REQUIRED
+        - RATE_LIMITED
+        - REQUEST_TOO_LARGE
+        - REVIEW_EXISTS
+        - REVIEW_NOT_FOUND
+        - SEARCH_ERROR
+        - SEARCH_UNAVAILABLE
+        - UNAUTHORIZED
+        - UNSUPPORTED_MEDIA_TYPE
+        - UPLOAD_STORAGE_UNAVAILABLE
+        - USER_ALREADY_EXISTS
+        - USER_NOT_FOUND
+        - WEAK_PASSWORD
+        - WEAK_PIN
+        - WEBHOOK_NOT_CONFIGURED
+        - WEBHOOK_SOURCE_DENIED
+    TokenResponse:
+      type: object
+      required: [userId, accessToken, refreshToken, expiresIn]
+      properties:
+        userId: {type: string, format: uuid}
+        accessToken: {type: string}
+        refreshToken: {type: string}
+        expiresIn: {type: integer, minimum: 1}
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password, fullName, phone]
+      properties:
+        email: {type: string, format: email, maxLength: 254}
+        password: {type: string, format: password, minLength: 8, maxLength: 128}
+        fullName: {type: string, minLength: 1, maxLength: 255}
+        phone: {type: string, minLength: 9, maxLength: 16}
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: {type: string, format: email}
+        password: {type: string, format: password}
+    RefreshRequest:
+      type: object
+      additionalProperties: false
+      required: [refreshToken]
+      properties: {refreshToken: {type: string}}
+    LogoutRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        refreshToken: {type: [string, 'null']}
+    PinLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [deviceId, pin]
+      properties:
+        deviceId: {type: string, minLength: 1, maxLength: 255}
+        pin: {type: string, pattern: '^[0-9]{4,6}$'}
+    SetPinRequest:
+      type: object
+      additionalProperties: false
+      required: [deviceId, deviceName, pin]
+      properties:
+        deviceId: {type: string, minLength: 1, maxLength: 255}
+        deviceName: {type: string, minLength: 1, maxLength: 255}
+        pin: {type: string, pattern: '^[0-9]{4,6}$'}
+    ChangePinRequest:
+      type: object
+      additionalProperties: false
+      required: [deviceId, currentPin, newPin]
+      properties:
+        deviceId: {type: string, minLength: 1, maxLength: 255}
+        currentPin: {type: string, pattern: '^[0-9]{4,6}$'}
+        newPin: {type: string, pattern: '^[0-9]{4,6}$'}
+    BiometricEnrollRequest:
+      type: object
+      additionalProperties: false
+      required: [deviceId, deviceName, publicKey, keyAlgorithm]
+      properties:
+        deviceId: {type: string, minLength: 1, maxLength: 255}
+        deviceName: {type: string, minLength: 1, maxLength: 255}
+        publicKey: {type: string, minLength: 1, maxLength: 16384, description: Base64 or PEM SPKI public key.}
+        keyAlgorithm: {type: string, enum: [ES256, EdDSA]}
+    BiometricEnrollResponse:
+      type: object
+      additionalProperties: false
+      required: [credentialId]
+      properties:
+        credentialId: {type: string, format: uuid}
+    BiometricChallengeRequest:
+      type: object
+      additionalProperties: false
+      required: [credentialId]
+      properties: {credentialId: {type: string, format: uuid}}
+    BiometricChallengeResponse:
+      type: object
+      required: [challenge, expiresIn]
+      properties:
+        challenge: {type: string}
+        expiresIn: {type: integer, minimum: 1}
+    BiometricLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [credentialId, challenge, signature]
+      properties:
+        credentialId: {type: string, format: uuid}
+        challenge: {type: string}
+        signature: {type: string, description: Base64 DER ECDSA or raw Ed25519 signature.}
+    User:
+      type: object
+      required: [id, email, fullName, phone, avatarUrl, defaultAddressId, dateOfBirth, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        email: {type: string, format: email}
+        fullName: {type: string}
+        phone: {type: string}
+        avatarUrl: {type: [string, 'null']}
+        defaultAddressId: {type: [string, 'null'], format: uuid}
+        dateOfBirth: {type: [string, 'null'], format: date-time}
+        createdAt: {type: string, format: date-time}
+    SessionResponse:
+      type: object
+      required: [user, device, cartItemsCount]
+      properties:
+        user: {$ref: '#/components/schemas/User'}
+        device: {$ref: '#/components/schemas/DeviceSession'}
+        cartItemsCount: {type: integer, minimum: 0}
+    DeviceSession:
+      type: object
+      required: [pinEnabled, biometricEnabled]
+      properties:
+        pinEnabled: {type: boolean}
+        biometricEnabled: {type: boolean}
+        biometricCredentialId: {type: [string, 'null'], format: uuid, description: Present for authenticated migration and quick-login setup.}
+    Category:
+      type: object
+      required: [id, name, parentId, iconUrl, sortOrder]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        parentId: {type: [string, 'null'], format: uuid}
+        iconUrl: {type: string}
+        sortOrder: {type: integer}
+    AddCartItemRequest:
+      type: object
+      additionalProperties: false
+      required: [productId, quantity]
+      properties:
+        productId: {type: string, format: uuid}
+        quantity: {type: integer, minimum: 1}
+    UpdateCartItemRequest:
+      type: object
+      additionalProperties: false
+      required: [quantity]
+      properties: {quantity: {type: integer, minimum: 0}}
+    CartItem:
+      type: object
+      required: [productId, productName, quantity, priceSnapshot, imageUrl, isAvailable, stock]
+      properties:
+        productId: {type: string, format: uuid}
+        productName: {type: string}
+        quantity: {type: integer, minimum: 1}
+        priceSnapshot: {$ref: '#/components/schemas/Money'}
+        imageUrl: {type: [string, 'null']}
+        isAvailable: {type: boolean}
+        stock: {type: integer, minimum: 0}
+    Cart:
+      type: object
+      required: [id, userId, items, totalAmount, updatedAt]
+      properties:
+        id: {type: string}
+        userId: {type: string, format: uuid}
+        items: {type: array, items: {$ref: '#/components/schemas/CartItem'}}
+        totalAmount: {$ref: '#/components/schemas/Money'}
+        updatedAt: {type: string, format: date-time}
+    AddressInput:
+      type: object
+      additionalProperties: false
+      required: [city, street, house]
+      properties:
+        city: {type: string, minLength: 1, maxLength: 255}
+        street: {type: string, minLength: 1, maxLength: 255}
+        house: {type: string, minLength: 1, maxLength: 64}
+        apartment: {type: string, maxLength: 64}
+        comment: {type: [string, 'null'], maxLength: 2000}
+    Address:
+      type: object
+      required: [id, userId, city, street, house, apartment, comment]
+      properties:
+        id: {type: string, format: uuid}
+        userId: {type: string, format: uuid}
+        city: {type: string}
+        street: {type: string}
+        house: {type: string}
+        apartment: {type: string}
+        comment: {type: [string, 'null']}
+    CreateOrderRequest:
+      type: object
+      additionalProperties: false
+      required: [deliveryAddressId, paymentMethod]
+      properties:
+        deliveryAddressId: {type: string, format: uuid}
+        paymentMethod: {type: string, enum: [CARD, SBP, ON_DELIVERY]}
+        comment: {type: [string, 'null'], maxLength: 2000}
+    OrderItem:
+      type: object
+      required: [productId, productName, quantity, priceSnapshot]
+      properties:
+        productId: {type: string, format: uuid}
+        productName: {type: string}
+        quantity: {type: integer, minimum: 1}
+        priceSnapshot: {$ref: '#/components/schemas/Money'}
+    Order:
+      type: object
+      required: [id, number, userId, status, items, totalAmount, deliveryAddressId, deliveryAddress, paymentId, paymentMethod, createdAt, comment]
+      properties:
+        id: {type: string, format: uuid}
+        number: {type: integer}
+        userId: {type: string, format: uuid}
+        status: {type: string, enum: [CREATED, PAID, ASSEMBLING, DELIVERING, COMPLETED, CANCELLED]}
+        items: {type: array, items: {$ref: '#/components/schemas/OrderItem'}}
+        totalAmount: {$ref: '#/components/schemas/Money'}
+        deliveryAddressId: {type: string, format: uuid}
+        deliveryAddress: {type: string}
+        paymentId: {type: [string, 'null'], format: uuid}
+        paymentMethod: {type: string, enum: [CARD, SBP, ON_DELIVERY]}
+        createdAt: {type: string, format: date-time}
+        comment: {type: [string, 'null']}
+    OrderPage:
+      type: object
+      required: [items, page, size, totalPages, totalItems]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/Order'}}
+        page: {type: integer, minimum: 0}
+        size: {type: integer, minimum: 1}
+        totalPages: {type: integer, minimum: 0}
+        totalItems: {type: integer, minimum: 0}
+    Payment:
+      type: object
+      required: [id, orderId, method, status, amount, transactionId]
+      properties:
+        id: {type: string, format: uuid}
+        orderId: {type: string, format: uuid}
+        method: {type: string, enum: [CARD, SBP, ON_DELIVERY]}
+        status: {$ref: '#/components/schemas/PaymentStatus'}
+        amount: {$ref: '#/components/schemas/Money'}
+        transactionId: {type: [string, 'null']}
+    PaymentConfirmation:
+      type: object
+      required: [paymentId, status, paymentUrl]
+      properties:
+        paymentId: {type: string, format: uuid}
+        status: {$ref: '#/components/schemas/PaymentStatus'}
+        paymentUrl: {type: [string, 'null'], format: uri}
+    CreateReviewRequest:
+      type: object
+      additionalProperties: false
+      required: [rating, text]
+      properties:
+        rating: {type: integer, minimum: 1, maximum: 5}
+        text: {type: string, minLength: 1, maxLength: 2000}
+    Review:
+      type: object
+      required: [id, userId, authorName, productId, rating, text, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        userId: {type: string, format: uuid}
+        authorName: {type: string}
+        productId: {type: string, format: uuid}
+        rating: {type: integer, minimum: 1, maximum: 5}
+        text: {type: string}
+        createdAt: {type: string, format: date-time}
+    ReviewPage:
+      type: object
+      required: [items, page, size, totalPages, totalItems]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/Review'}}
+        page: {type: integer, minimum: 0}
+        size: {type: integer, minimum: 1}
+        totalPages: {type: integer, minimum: 0}
+        totalItems: {type: integer, minimum: 0}
+    PaymentWebhookRequest:
+      type: object
+      additionalProperties: false
+      required: [paymentId, status]
+      properties:
+        paymentId: {type: string, format: uuid}
+        status: {type: string, enum: [CAPTURED, FAILED]}
+        transactionId: {type: [string, 'null'], maxLength: 255}
+    PinDevice:
+      type: object
+      required: [deviceId, deviceName, createdAt, lastUsedAt, lockedUntil]
+      properties:
+        deviceId: {type: string}
+        deviceName: {type: string}
+        createdAt: {type: string, format: date-time}
+        lastUsedAt: {type: string, format: date-time}
+        lockedUntil: {type: [string, 'null'], format: date-time}
+    BiometricDevice:
+      type: object
+      required: [deviceId, deviceName, keyAlgorithm, createdAt, lastUsedAt, lockedUntil]
+      properties:
+        deviceId: {type: string}
+        deviceName: {type: string}
+        keyAlgorithm: {type: string, enum: [ES256, EdDSA]}
+        createdAt: {type: string, format: date-time}
+        lastUsedAt: {type: string, format: date-time}
+        lockedUntil: {type: [string, 'null'], format: date-time}
+    ChangePasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [oldPassword, newPassword]
+      properties:
+        oldPassword: {type: string, format: password}
+        newPassword: {type: string, format: password, minLength: 8, maxLength: 128}
+    ProductInput:
+      type: object
+      additionalProperties: false
+      required: [categoryId, name, price, stock]
+      properties:
+        categoryId: {type: string, format: uuid}
+        name: {type: string, minLength: 1, maxLength: 255}
+        description: {type: string, maxLength: 10000}
+        price: {$ref: '#/components/schemas/Money'}
+        discountPrice: {anyOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        stock: {type: integer, minimum: 0}
+        isActive: {type: boolean, default: true}
+        imageUrls: {type: array, maxItems: 20, items: {type: string}}
+    UpdateProductRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        categoryId: {type: string, format: uuid}
+        name: {type: string, minLength: 1, maxLength: 255}
+        description: {type: string, maxLength: 10000}
+        price: {$ref: '#/components/schemas/Money'}
+        discountPrice: {anyOf: [{$ref: '#/components/schemas/Money'}, {type: 'null'}]}
+        stock: {type: integer, minimum: 0}
+        isActive: {type: boolean}
+        imageUrls: {type: array, maxItems: 20, items: {type: string}}

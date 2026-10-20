@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shopkmp.local/contracts/sdui/v1/action-request.schema.json",
+  "title": "POST /api/v1/sdui/actions request",
+  "type": "object", "additionalProperties": false, "required": ["command", "input"],
+  "properties": {"command": {"type": "string"}, "input": {"type": "object"}},
+  "oneOf": [
+    {"properties": {"command": {"const": "AddToCart"}, "input": {"type": "object", "additionalProperties": false, "required": ["productId", "quantity"], "properties": {"productId": {"$ref": "screen.schema.json#/$defs/uuid"}, "quantity": {"type": "integer", "minimum": 1, "maximum": 1000000}}}}},
+    {"properties": {"command": {"const": "UpdateQuantity"}, "input": {"type": "object", "additionalProperties": false, "required": ["productId", "quantity"], "properties": {"productId": {"$ref": "screen.schema.json#/$defs/uuid"}, "quantity": {"type": "integer", "minimum": 0, "maximum": 1000000}}}}},
+    {"properties": {"command": {"const": "RemoveFromCart"}, "input": {"type": "object", "additionalProperties": false, "required": ["productId"], "properties": {"productId": {"$ref": "screen.schema.json#/$defs/uuid"}}}}},
+    {"properties": {"command": {"const": "CancelOrder"}, "input": {"type": "object", "additionalProperties": false, "required": ["orderId", "confirmed"], "properties": {"orderId": {"$ref": "screen.schema.json#/$defs/uuid"}, "confirmed": {"const": true}}}}},
+    {"properties": {"command": {"const": "UpdateProfile"}, "input": {"type": "object", "additionalProperties": false, "required": ["fullName", "phone"], "properties": {"fullName": {"type": "string", "minLength": 1, "maxLength": 255}, "phone": {"type": "string", "pattern": "^\\+[1-9][0-9]{7,14}$"}}}}},
+    {"properties": {"command": {"const": "RevokeDevice"}, "input": {"type": "object", "additionalProperties": false, "required": ["deviceId", "deviceKind", "confirmed"], "properties": {"deviceId": {"$ref": "screen.schema.json#/$defs/deviceId"}, "deviceKind": {"enum": ["pin", "biometric"]}, "confirmed": {"const": true}}}}}
+  ]
+}

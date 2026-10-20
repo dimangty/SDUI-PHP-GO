@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "screenId": "home",
+  "revision": "39a1b6e842db97c24a97b78b19e2ed912941e73b330d803e6f35cbcb60347ef9",
+  "components": [
+    {
+      "id": "screen.content",
+      "type": "LazyColumn",
+      "props": {
+        "spacing": "m",
+        "padding": "m",
+        "align": "Start"
+      },
+      "children": [
+        {
+          "id": "home.title",
+          "type": "Text",
+          "props": {
+            "text": "Магазин",
+            "style": "ScreenTitle"
+          }
+        },
+        {
+          "id": "home.catalog",
+          "type": "Button",
+          "props": {
+            "label": "Каталог",
+            "actionId": "home.catalog.navigate",
+            "style": "Primary",
+            "enabled": true
+          }
+        },
+        {
+          "id": "home.search.form",
+          "type": "Form",
+          "props": {
+            "formId": "catalog",
+            "title": "Поиск",
+            "submitAction": "home.search.submit"
+          },
+          "children": [
+            {
+              "id": "catalog.q",
+              "type": "SearchField",
+              "props": {
+                "fieldId": "catalog.q",
+                "label": "Поиск товаров",
+                "input": "Text",
+                "required": false,
+                "readOnly": false,
+                "maxLength": 200,
+                "maxUtf8Bytes": 200,
+                "changeAction": "field.catalog.q"
+              }
+            },
+            {
+              "id": "home.search.button",
+              "type": "Button",
+              "props": {
+                "label": "Найти",
+                "actionId": "home.search.submit",
+                "style": "Primary",
+                "enabled": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "home.profile",
+          "type": "ProfileHeader",
+          "props": {
+            "fullName": "Buyer",
+            "email": "buyer@example.org",
+            "phone": "+79991234567",
+            "avatar": null
+          }
+        },
+        {
+          "id": "home.cart",
+          "type": "Button",
+          "props": {
+            "label": "Корзина (2)",
+            "actionId": "home.cart.navigate",
+            "style": "Primary",
+            "enabled": true
+          }
+        },
+        {
+          "id": "home.categories.title",
+          "type": "Text",
+          "props": {
+            "text": "Категории",
+            "style": "SectionTitle"
+          }
+        },
+        {
+          "id": "catalog.categories",
+          "type": "CategoryList",
+          "props": {
+            "items": [
+              {
+                "id": "44444444-4444-4444-8444-444444444444",
+                "label": "Lighting",
+                "image": "/icons/light.svg",
+                "actionId": "category.44444444-4444-4444-8444-444444444444",
+                "selected": false
+              }
+            ]
+          }
+        },
+        {
+          "id": "collection.categories.range",
+          "type": "Text",
+          "props": {
+            "text": "Категории: 1–1 из 1",
+            "style": "Secondary"
+          }
+        },
+        {
+          "id": "home.popular.title",
+          "type": "Text",
+          "props": {
+            "text": "Популярные товары",
+            "style": "SectionTitle"
+          }
+        },
+        {
+          "id": "catalog.products",
+          "type": "ProductGrid",
+          "props": {
+            "columns": 2
+          },
+          "children": [
+            {
+              "id": "product.22222222-2222-4222-8222-222222222222",
+              "type": "ProductCard",
+              "props": {
+                "productId": "22222222-2222-4222-8222-222222222222",
+                "name": "Real lamp",
+                "description": "Warm light",
+                "descriptionTruncated": false,
+                "price": "50.01",
+                "discountPrice": null,
+                "image": "/images/products/lamp.png",
+                "stock": 9,
+                "rating": 4.5,
+                "reviewsCount": 2,
+                "openAction": "product.22222222-2222-4222-8222-222222222222.open"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "screen.refresh",
+      "type": "Refresh",
+      "destination": {
+        "screen": "home",
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "home.catalog.navigate",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog"
+      }
+    },
+    {
+      "id": "home.search.submit",
+      "type": "SubmitForm",
+      "formId": "catalog"
+    },
+    {
+      "id": "field.catalog.q",
+      "type": "UpdateField",
+      "fieldId": "catalog.q"
+    },
+    {
+      "id": "home.cart.navigate",
+      "type": "Navigate",
+      "destination": {
+        "screen": "cart"
+      }
+    },
+    {
+      "id": "category.44444444-4444-4444-8444-444444444444",
+      "type": "Navigate",
+      "destination": {
+        "screen": "catalog",
+        "catalog": {
+          "categoryId": "44444444-4444-4444-8444-444444444444",
+          "page": 0,
+          "size": 20
+        },
+        "categories": {
+          "page": 0,
+          "size": 50
+        }
+      }
+    },
+    {
+      "id": "product.22222222-2222-4222-8222-222222222222.open",
+      "type": "OpenProduct",
+      "productId": "22222222-2222-4222-8222-222222222222"
+    }
+  ],
+  "state": {
+    "authenticated": true,
+    "fields": {
+      "catalog.page": "0",
+      "catalog.q": "",
+      "catalog.size": "20"
+    },
+    "cartItemsCount": 2,
+    "collections": {
+      "categories": {
+        "page": 0,
+        "size": 50,
+        "totalPages": 1,
+        "totalItems": 1
+      }
+    }
+  },
+  "metadata": {
+    "title": "Магазин",
+    "locale": "ru-RU",
+    "accountId": "11111111-1111-4111-8111-111111111111",
+    "partial": false
+  }
+}

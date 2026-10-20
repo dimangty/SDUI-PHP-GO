@@ -1,0 +1,5 @@
+tests/evidence
+contracts
+PROGRESS.md
+README.md
+**/*_test.go

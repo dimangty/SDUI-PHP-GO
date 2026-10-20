@@ -1,0 +1,104 @@
+# Docker Compose >=2.24.4 (!override). Only the edge's TLS port is published.
+x-production-env: &production-env
+  APP_ENV: production
+  DATABASE_URL: postgres://shopkmp:${POSTGRES_PASSWORD:?required}@postgres:5432/shopkmp?sslmode=verify-full
+  PGSSLROOTCERT: /run/tls/ca.crt
+  KEYCLOAK_ISSUER: https://keycloak:8443/realms/shopkmp
+  OPENSEARCH_URL: https://admin:${OPENSEARCH_ADMIN_PASSWORD:?required}@opensearch:9200
+  PAYMENT_GATEWAY_URL: ${PAYMENT_GATEWAY_URL:?required HTTPS provider}
+  PAYMENT_GATEWAY_API_KEY: ${PAYMENT_GATEWAY_API_KEY:?required}
+  PAYMENT_WEBHOOK_ALLOWED_CIDRS: ${PAYMENT_WEBHOOK_ALLOWED_CIDRS:?required}
+
+x-production-volumes: &production-volumes
+  - ${TLS_CERT_DIR:?required}/ca.crt:/run/tls/ca.crt:ro
+  - ${CA_BUNDLE_FILE:?required}:/run/tls/ca-bundle.crt:ro
+  - ./deploy/php/tls.ini:/usr/local/etc/php/conf.d/zz-tls.ini:ro
+
+services:
+  postgres:
+    entrypoint: [/bin/sh, /opt/postgres-tls.sh]
+    volumes:
+      - ./deploy/postgres-tls.sh:/opt/postgres-tls.sh:ro
+      - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
+      - ${TLS_CERT_DIR}/postgres.crt:/run/tls/server.crt:ro
+      - ${TLS_CERT_DIR}/postgres.key:/run/tls/server.key:ro
+      - ./deploy/pg_hba.conf:/run/tls/pg_hba.conf:ro
+  keycloak-postgres:
+    entrypoint: [/bin/sh, /opt/postgres-tls.sh]
+    volumes:
+      - ./deploy/postgres-tls.sh:/opt/postgres-tls.sh:ro
+      - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
+      - ${TLS_CERT_DIR}/keycloak-postgres.crt:/run/tls/server.crt:ro
+      - ${TLS_CERT_DIR}/keycloak-postgres.key:/run/tls/server.key:ro
+      - ./deploy/pg_hba.conf:/run/tls/pg_hba.conf:ro
+  migrate:
+    environment:
+      DATABASE_URL: postgres://shopkmp@postgres:5432/shopkmp?sslmode=verify-full&sslrootcert=/run/tls/ca.crt
+    volumes: ["${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro"]
+  yii-migrate:
+    environment: *production-env
+    volumes: *production-volumes
+  reindex:
+    environment: *production-env
+    volumes: *production-volumes
+  yii2:
+    environment: *production-env
+    volumes:
+      - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
+      - ${CA_BUNDLE_FILE}:/run/tls/ca-bundle.crt:ro
+      - ./deploy/php/tls.ini:/usr/local/etc/php/conf.d/zz-tls.ini:ro
+  maintenance:
+    environment: *production-env
+    volumes:
+      - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
+      - ${CA_BUNDLE_FILE}:/run/tls/ca-bundle.crt:ro
+      - ./deploy/php/tls.ini:/usr/local/etc/php/conf.d/zz-tls.ini:ro
+  reconcile:
+    environment: *production-env
+    volumes:
+      - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
+      - ${CA_BUNDLE_FILE}:/run/tls/ca-bundle.crt:ro
+      - ./deploy/php/tls.ini:/usr/local/etc/php/conf.d/zz-tls.ini:ro
+  seed:
+    environment: *production-env
+    volumes: *production-volumes
+  keycloak:
+    command: [start, --import-realm]
+    environment:
+      KC_HOSTNAME: https://keycloak:8443
+      KC_HTTP_ENABLED: "false"
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak?sslmode=verify-full&sslrootcert=/opt/keycloak/conf/ca.crt
+      KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/conf/tls.crt
+      KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/conf/tls.key
+      # 26.3.3 inherits HTTPS for management when the public listener uses TLS.
+      HEALTHCHECK_URL: https://keycloak:9000/health/ready
+      SSL_CERT_FILE: /opt/keycloak/conf/ca.crt
+    volumes:
+      - ${TLS_CERT_DIR}/ca.crt:/opt/keycloak/conf/ca.crt:ro
+      - ${TLS_CERT_DIR}/keycloak.crt:/opt/keycloak/conf/tls.crt:ro
+      - ${TLS_CERT_DIR}/keycloak.key:/opt/keycloak/conf/tls.key:ro
+  opensearch:
+    environment:
+      DISABLE_SECURITY_PLUGIN: !reset null
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      OPENSEARCH_ADMIN_PASSWORD: ${OPENSEARCH_ADMIN_PASSWORD:?required}
+    entrypoint: [bash, /opt/search-start.sh]
+    volumes:
+      - ./deploy/search-start.sh:/opt/search-start.sh:ro
+      - ./deploy/opensearch.yml:/usr/share/opensearch/config/opensearch.yml:ro
+      - ${TLS_CERT_DIR}/ca.crt:/usr/share/opensearch/config/certs/ca.crt:ro
+      - ${TLS_CERT_DIR}/opensearch.crt:/usr/share/opensearch/config/certs/opensearch.crt:ro
+      - ${TLS_CERT_DIR}/opensearch.key:/usr/share/opensearch/config/certs/opensearch.key:ro
+    healthcheck:
+      test: [CMD-SHELL, 'curl -fsS --max-time 4 --cacert config/certs/ca.crt -u "admin:$$OPENSEARCH_ADMIN_PASSWORD" "https://opensearch:9200/_cluster/health?wait_for_status=yellow" >/dev/null']
+  edge:
+    environment:
+      PUBLIC_API_HOST: ${PUBLIC_API_HOST:?required}
+      NGINX_ENVSUBST_FILTER: PUBLIC_API_HOST
+    volumes: !override
+      - ./deploy/nginx/edge.prod.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./deploy/nginx/routes.conf:/etc/nginx/routes.conf:ro
+      - ./deploy/nginx/proxy.conf:/etc/nginx/proxy.conf:ro
+      - ${TLS_CERT_DIR}/api.crt:/run/tls/api.crt:ro
+      - ${TLS_CERT_DIR}/api.key:/run/tls/api.key:ro
+    ports: !override ['${EDGE_BIND:-0.0.0.0}:${EDGE_TLS_PORT:-443}:8443']

@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "screenId": "orders",
+  "revision": "0a48560a12068111e4f363b67120e5a6cfe3227bec18b58a258b0e5a70a05f36",
+  "components": [
+    {
+      "id": "screen.content",
+      "type": "LazyColumn",
+      "props": {
+        "spacing": "m",
+        "padding": "m",
+        "align": "Start"
+      },
+      "children": [
+        {
+          "id": "orders.title",
+          "type": "Text",
+          "props": {
+            "text": "История заказов",
+            "style": "ScreenTitle"
+          }
+        },
+        {
+          "id": "orders.form",
+          "type": "Form",
+          "props": {
+            "formId": "orders",
+            "title": "Фильтр",
+            "submitAction": "orders.submit"
+          },
+          "children": [
+            {
+              "id": "orders.status",
+              "type": "FormField",
+              "props": {
+                "fieldId": "orders.status",
+                "label": "Статус",
+                "input": "Select",
+                "required": false,
+                "readOnly": false,
+                "maxLength": 20,
+                "options": [
+                  {
+                    "value": "",
+                    "label": "Все"
+                  },
+                  {
+                    "value": "CREATED",
+                    "label": "CREATED"
+                  },
+                  {
+                    "value": "PAID",
+                    "label": "PAID"
+                  },
+                  {
+                    "value": "ASSEMBLING",
+                    "label": "ASSEMBLING"
+                  },
+                  {
+                    "value": "DELIVERING",
+                    "label": "DELIVERING"
+                  },
+                  {
+                    "value": "COMPLETED",
+                    "label": "COMPLETED"
+                  },
+                  {
+                    "value": "CANCELLED",
+                    "label": "CANCELLED"
+                  }
+                ],
+                "changeAction": "field.orders.status"
+              }
+            },
+            {
+              "id": "orders.filter",
+              "type": "Button",
+              "props": {
+                "label": "Применить",
+                "actionId": "orders.submit",
+                "style": "Primary",
+                "enabled": true
+              }
+            }
+          ]
+        },
+        {
+          "id": "order.11100dbb-ee36-4535-9c71-8cf7a5ffae0d",
+          "type": "OrderCard",
+          "props": {
+            "orderId": "11100dbb-ee36-4535-9c71-8cf7a5ffae0d",
+            "number": 145,
+            "status": "CREATED",
+            "total": "0.20",
+            "deliveryAddress": "Moscow, SDUI integration, 18, 2",
+            "paymentMethod": "ON_DELIVERY",
+            "createdAt": "2026-10-20T13:21:33.396818Z",
+            "openAction": "order.11100dbb-ee36-4535-9c71-8cf7a5ffae0d.open"
+          }
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "screen.refresh",
+      "type": "Refresh",
+      "destination": {
+        "screen": "orders",
+        "orders": {
+          "page": 0,
+          "size": 20
+        }
+      }
+    },
+    {
+      "id": "orders.submit",
+      "type": "SubmitForm",
+      "formId": "orders"
+    },
+    {
+      "id": "field.orders.status",
+      "type": "UpdateField",
+      "fieldId": "orders.status"
+    },
+    {
+      "id": "order.11100dbb-ee36-4535-9c71-8cf7a5ffae0d.open",
+      "type": "OpenOrder",
+      "orderId": "11100dbb-ee36-4535-9c71-8cf7a5ffae0d"
+    }
+  ],
+  "state": {
+    "authenticated": true,
+    "fields": {
+      "orders.page": "0",
+      "orders.size": "20",
+      "orders.status": ""
+    },
+    "cartItemsCount": 0,
+    "pagination": {
+      "page": 0,
+      "size": 20,
+      "totalPages": 1,
+      "totalItems": 1
+    }
+  },
+  "metadata": {
+    "title": "Заказы",
+    "locale": "ru-RU",
+    "accountId": "3e53341d-252a-4d3c-8664-2f808ea1862c",
+    "partial": false
+  }
+}

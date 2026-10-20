@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [backend-sdui, tools/ops]
+    defaults:
+      run:
+        working-directory: ${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ matrix.module }}/go.mod
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+      - run: test -z "$(gofmt -l .)"
+      - run: go mod tidy -diff
+      - run: go vet ./...
+      - run: go test -race -count=1 ./...
+      - run: go build ./...
+
+  php:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build standalone PHP image and run unit tests and lint
+        run: make test-php
+
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the frozen business route manifest
+        run: python3 scripts/route_matrix.py --check
+      - name: Lint the canonical OpenAPI contract
+        uses: daveshanley/vacuum-action@v1
+        with:
+          specFile: backend-yii2/contracts/openapi.yaml
+          failSeverity: error
+      - name: Validate the root Compose configuration
+        run: make compose-config
+
+  images:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: bff
+            context: backend-sdui
+            dockerfile: backend-sdui/Dockerfile
+          - name: migrate
+            context: tools/ops
+            dockerfile: deploy/migrate.Dockerfile
+          - name: keycloak
+            context: tools/ops
+            dockerfile: deploy/keycloak/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the ${{ matrix.name }} runtime image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: false
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  full-stack-integration:
+    runs-on: ubuntu-latest
+    needs: [go, php, contracts, images]
+    timeout-minutes: 60
+    env:
+      E2E_PROJECT: shopkmp-migrated-e2e
+      E2E_PORT: '58095'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend-sdui/go.mod
+          cache-dependency-path: |
+            backend-sdui/go.sum
+            tools/ops/go.sum
+      - name: Configure OpenSearch host requirement
+        run: sudo sysctl -w vm.max_map_count=262144
+      - name: Start the root Yii2 and BFF stack
+        run: make integration-up
+      - name: Verify the shared edge, PHP business suites, BFF and ops
+        run: make integration-check
+      - name: Print service logs on failure
+        if: failure()
+        run: python3 scripts/compose.py --env .env.example --project "$E2E_PROJECT" --verify --profile verification logs --no-color --tail 300
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-stack-integration-evidence
+          path: deploy/evidence/
+          if-no-files-found: ignore
+      - name: Stop the disposable stack
+        if: always()
+        run: python3 scripts/compose.py --env .env.example --project "$E2E_PROJECT" --verify --profile verification down --volumes --remove-orphans
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '21'}
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build and test Android
+        env:
+          SHOPKMP_RELEASE_SERVER_URL: ${{ vars.SHOPKMP_RELEASE_SERVER_URL }}
+        run: ./gradlew testDebugUnitTest koverVerify detektMetadataCommonMain detektAndroidDebug :composeApp:assembleDebug :composeApp:assembleRelease --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shopkmp-android-artifacts
+          path: |
+            composeApp/build/outputs/apk/**/*.apk
+            composeApp/build/outputs/mapping/release/mapping.txt
+
+  ios-framework:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '21'}
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew :core:common:iosSimulatorArm64Test :feature:auth:auth-ui:iosSimulatorArm64Test :feature:cart:cart-ui:iosSimulatorArm64Test :composeApp:linkDebugFrameworkIosSimulatorArm64 --no-daemon
