@@ -1,14 +1,17 @@
 # ShopKMP independent Go SDUI BFF
 
-Working HTTP-only BFF over the Yii2 business API. Go **1.26**; runtime uses only
+Working HTTP-only BFF over the Yii2 business API. Go **1.27.3**; runtime uses only
 the standard library. No database driver, database configuration, SQL access,
 identity-provider credentials or business-data mock fallback.
 
 ## Layout
 
 * `internal/yii`: bounded typed HTTP client and canonical commerce DTOs.
+* `internal/domain`: independent money, identifier and query wire contracts.
 * `internal/sdui`: sealed component props, finite actions, validation/revisions.
-* `internal/bff`: eight real screen builders and six reauthenticated commands.
+* `internal/bff`: HTTP adapter, constructor-injected application, eight screen
+  builders and six reauthenticated commands.
+* `internal/observe`: JSON slog correlation and bounded in-process metrics.
 * `internal/runtime`, `cmd/server`: configuration, HTTP lifecycle and healthcheck.
 * `contracts`: three Draft 2020-12 schemas and 13 deterministic shared fixtures.
 * `tests/evidence`: actual live HTTP screen/business payloads and step manifest.
@@ -75,10 +78,11 @@ limits: document 1 MiB, 500 nodes/actions, depth 16, text 8192 Unicode character
 command body 32 KiB. Unknown query/body members do not configure the client.
 
 Yii connections ignore proxy environment, have no cookie jar and never follow
-redirects. Upstream keepalive is deliberately disabled: this prevents net/http
-from implicitly replaying a stale-connection request outside the explicit
-one-retry GET budget. The cost is an additional internal TCP/TLS connection per
-operation. All mutations are single-attempt; AddToCart passes the original
+redirects. GET uses a bounded keepalive pool (64 connections/host, 16 idle/host,
+90s idle). A shared connection-acquisition budget counts transparent stale-read
+retries together with the explicit one-retry policy. Mutations use a separate
+non-reusing transport and remain single-attempt, including empty POSTs and
+Idempotency-Key requests. AddToCart passes the original
 idempotency key. No sensitive credentials occur in generic SDUI fields/actions.
 
 ## Tests
@@ -89,6 +93,23 @@ go test -race ./...
 go vet ./...
 docker build -t shopkmp-sdui-task2 .
 ```
+
+Complete backend-local checks (formatting fails on any unformatted Go file):
+
+```sh
+sh scripts/check.sh
+go test ./internal/bff -run '^$' -fuzz '^FuzzStrictCommandJSON$' -fuzztime=10s -parallel=4
+go test ./internal/bff -run '^$' -fuzz '^FuzzScreenQuery$' -fuzztime=10s -parallel=4
+go test ./internal/bff ./internal/yii -run '^$' -bench 'Benchmark(HomeHTTP|HomeHTTPObserved|ClientRead)$' -benchmem -benchtime=2s -count=3
+```
+
+The script pins golangci-lint v2.15.0 and govulncheck v1.9.0 separately from
+server dependencies. First execution needs network/module-cache access.
+See [audit](docs/refactoring/01-AUDIT.md),
+[architecture](docs/refactoring/03-ARCHITECTURE.md),
+[verification](docs/refactoring/08-TEST_RESULTS.md),
+[benchmarks](docs/refactoring/09-BENCHMARK.md) and
+[rollback](docs/refactoring/11-ROLLBACK.md).
 
 The independent schema validator is imported only by `_test.go` files. It and
 its transitive module dependency are not linked into the server. Tests exercise
@@ -160,3 +181,21 @@ See [deployment](../docs/DEPLOYMENT.md) and [actual Task4 evidence](../docs/VERI
 The reviewed Task3 remediation has now removed the inherited blind native
 payment-confirmation retry described in the historical handoff above; its
 regression/platform evidence is in `docs/CMP_IMPLEMENTATION_REPORT.md`.
+
+## Observability
+
+Runtime emits JSON slog to stdout. Records contain finite route/operation labels,
+status, durations and safe error kinds. Request/trace correlation is logged only
+as process-keyed HMAC fingerprints (`request_id_hash`, `trace_id_hash`): even a
+syntactically valid client ID might contain a credential or personal identifier.
+No token, personal data, body, raw URL or query logging. Wire request IDs and
+validated W3C v00 traceparent remain unchanged; correlation never grants authority.
+
+Private `GET /metrics` is available on ADMIN_ADDR (9090), alongside health.
+Prometheus-text counters/histograms cover HTTP, Yii operations, SDUI validation/
+revision/serialization, errors, timeouts, retries, connection reuse and last probe
+status. Labels use finite allowlists; no per-account/token/request-ID metric labels.
+Metrics reset at restart. No collector or infrastructure stack is required.
+Keep the admin listener private; public metrics/health remain 404.
+See [client policy](docs/refactoring/05-HTTP_CLIENT.md) and
+[security boundaries](docs/refactoring/07-SECURITY.md).

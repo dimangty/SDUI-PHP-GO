@@ -12,7 +12,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"shopkmp/backend-sdui/internal/yii"
+	"shopkmp/backend-sdui/internal/domain"
 )
 
 const (
@@ -109,18 +109,18 @@ type FieldProps struct {
 	ChangeAction string   `json:"changeAction"`
 }
 type ProductProps struct {
-	ProductID            string     `json:"productId"`
-	Name                 string     `json:"name"`
-	Description          string     `json:"description"`
-	DescriptionTruncated bool       `json:"descriptionTruncated"`
-	Price                yii.Money  `json:"price"`
-	DiscountPrice        *yii.Money `json:"discountPrice"`
-	Image                *string    `json:"image"`
-	Stock                int        `json:"stock"`
-	Rating               *float64   `json:"rating"`
-	ReviewsCount         int        `json:"reviewsCount"`
-	OpenAction           string     `json:"openAction"`
-	AddAction            string     `json:"addAction,omitempty"`
+	ProductID            string        `json:"productId"`
+	Name                 string        `json:"name"`
+	Description          string        `json:"description"`
+	DescriptionTruncated bool          `json:"descriptionTruncated"`
+	Price                domain.Money  `json:"price"`
+	DiscountPrice        *domain.Money `json:"discountPrice"`
+	Image                *string       `json:"image"`
+	Stock                int           `json:"stock"`
+	Rating               *float64      `json:"rating"`
+	ReviewsCount         int           `json:"reviewsCount"`
+	OpenAction           string        `json:"openAction"`
+	AddAction            string        `json:"addAction,omitempty"`
 }
 type GridProps struct {
 	Columns int `json:"columns"`
@@ -136,8 +136,8 @@ type CategoriesProps struct {
 	Items []CategoryOption `json:"items"`
 }
 type PriceProps struct {
-	Amount   yii.Money `json:"amount"`
-	Currency string    `json:"currency"`
+	Amount   domain.Money `json:"amount"`
+	Currency string       `json:"currency"`
 }
 type StepperProps struct {
 	FieldID  string `json:"fieldId"`
@@ -148,26 +148,26 @@ type StepperProps struct {
 	Enabled  bool   `json:"enabled"`
 }
 type CartItemProps struct {
-	ProductID      string    `json:"productId"`
-	Name           string    `json:"name"`
-	Quantity       int       `json:"quantity"`
-	Price          yii.Money `json:"price"`
-	Image          *string   `json:"image"`
-	Available      bool      `json:"available"`
-	Stock          int       `json:"stock"`
-	OpenAction     string    `json:"openAction"`
-	QuantityAction string    `json:"quantityAction"`
-	RemoveAction   string    `json:"removeAction"`
+	ProductID      string       `json:"productId"`
+	Name           string       `json:"name"`
+	Quantity       int          `json:"quantity"`
+	Price          domain.Money `json:"price"`
+	Image          *string      `json:"image"`
+	Available      bool         `json:"available"`
+	Stock          int          `json:"stock"`
+	OpenAction     string       `json:"openAction"`
+	QuantityAction string       `json:"quantityAction"`
+	RemoveAction   string       `json:"removeAction"`
 }
 type OrderProps struct {
-	OrderID         string    `json:"orderId"`
-	Number          int       `json:"number"`
-	Status          string    `json:"status"`
-	Total           yii.Money `json:"total"`
-	DeliveryAddress string    `json:"deliveryAddress"`
-	PaymentMethod   string    `json:"paymentMethod"`
-	CreatedAt       string    `json:"createdAt"`
-	OpenAction      string    `json:"openAction"`
+	OrderID         string       `json:"orderId"`
+	Number          int          `json:"number"`
+	Status          string       `json:"status"`
+	Total           domain.Money `json:"total"`
+	DeliveryAddress string       `json:"deliveryAddress"`
+	PaymentMethod   string       `json:"paymentMethod"`
+	CreatedAt       string       `json:"createdAt"`
+	OpenAction      string       `json:"openAction"`
 }
 type ProfileProps struct {
 	FullName string  `json:"fullName"`
@@ -210,12 +210,12 @@ func (DividerProps) sduiProps()    {}
 func (FormProps) sduiProps()       {}
 
 type Destination struct {
-	Screen     string            `json:"screen"`
-	ID         string            `json:"id,omitempty"`
-	Catalog    *yii.CatalogQuery `json:"catalog,omitempty"`
-	Orders     *yii.OrderQuery   `json:"orders,omitempty"`
-	Categories *CollectionQuery  `json:"categories,omitempty"`
-	Cart       *CollectionQuery  `json:"cart,omitempty"`
+	Screen     string               `json:"screen"`
+	ID         string               `json:"id,omitempty"`
+	Catalog    *domain.CatalogQuery `json:"catalog,omitempty"`
+	Orders     *domain.OrderQuery   `json:"orders,omitempty"`
+	Categories *CollectionQuery     `json:"categories,omitempty"`
+	Cart       *CollectionQuery     `json:"cart,omitempty"`
 }
 
 // CollectionQuery is presentation-only. Never forward it to business endpoints
@@ -298,7 +298,7 @@ func (s Screen) Validate() error {
 	if s.SchemaVersion != 1 || !oneOf(s.ScreenID, "home", "catalog", "product", "cart", "orders", "order", "profile", "devices") || s.Components == nil || s.Actions == nil || s.State.Fields == nil || len(s.Actions) > MaxActions {
 		return fmt.Errorf("invalid screen envelope")
 	}
-	if !oneOf(s.Metadata.Locale, "ru-RU") || s.Metadata.Title == "" || s.State.Authenticated != (s.Metadata.AccountID != "") || s.Metadata.AccountID != "" && !yii.ValidID(s.Metadata.AccountID) {
+	if !oneOf(s.Metadata.Locale, "ru-RU") || s.Metadata.Title == "" || s.State.Authenticated != (s.Metadata.AccountID != "") || s.Metadata.AccountID != "" && !domain.ValidID(s.Metadata.AccountID) {
 		return fmt.Errorf("invalid metadata")
 	}
 	for k := range s.State.Fields {
@@ -452,23 +452,23 @@ func validateProps(n Node) error {
 		valid = oneOf(n.Type, "TextField", "SearchField", "FormField") && AllowedField(p.FieldID) && oneOf(p.Input, "Text", "Number", "Phone", "Select") && p.MaxLength >= 1 && p.MaxLength <= 2000 && p.ChangeAction != "" && len(p.Options) <= 500
 		valid = valid && ((p.FieldID == "catalog.q" && p.MaxUTF8Bytes == 200) || (p.FieldID != "catalog.q" && p.MaxUTF8Bytes == 0))
 	case ProductProps:
-		valid = n.Type == "ProductCard" && yii.ValidID(p.ProductID) && yii.ValidMoney(string(p.Price)) && (p.DiscountPrice == nil || yii.ValidMoney(string(*p.DiscountPrice))) && (p.Image == nil || Media(*p.Image) != nil) && p.OpenAction != "" && p.Stock >= 0 && p.ReviewsCount >= 0 && (p.Rating == nil || *p.Rating >= 1 && *p.Rating <= 5)
+		valid = n.Type == "ProductCard" && domain.ValidID(p.ProductID) && domain.ValidMoney(string(p.Price)) && (p.DiscountPrice == nil || domain.ValidMoney(string(*p.DiscountPrice))) && (p.Image == nil || Media(*p.Image) != nil) && p.OpenAction != "" && p.Stock >= 0 && p.ReviewsCount >= 0 && (p.Rating == nil || *p.Rating >= 1 && *p.Rating <= 5)
 		valid = valid && utf8.RuneCountInString(p.Description) <= MaxDescriptionPreview
 	case GridProps:
 		valid = n.Type == "ProductGrid" && p.Columns == 2
 	case CategoriesProps:
 		valid = n.Type == "CategoryList" && len(p.Items) <= MaxCategoryPageSize
 		for _, c := range p.Items {
-			valid = valid && yii.ValidID(c.ID) && c.ActionID != "" && (c.Image == nil || Media(*c.Image) != nil)
+			valid = valid && domain.ValidID(c.ID) && c.ActionID != "" && (c.Image == nil || Media(*c.Image) != nil)
 		}
 	case PriceProps:
-		valid = n.Type == "Price" && yii.ValidMoney(string(p.Amount)) && p.Currency == "RUB"
+		valid = n.Type == "Price" && domain.ValidMoney(string(p.Amount)) && p.Currency == "RUB"
 	case StepperProps:
 		valid = n.Type == "QuantityStepper" && AllowedField(p.FieldID) && p.Min >= 0 && p.Max >= p.Min && p.Max <= 1000000 && p.Value >= p.Min && p.Value <= p.Max && p.ActionID != ""
 	case CartItemProps:
-		valid = n.Type == "CartItem" && yii.ValidID(p.ProductID) && yii.ValidMoney(string(p.Price)) && p.Quantity >= 1 && p.Quantity <= 1000000 && p.Stock >= 0 && (p.Image == nil || Media(*p.Image) != nil) && p.OpenAction != "" && p.QuantityAction != "" && p.RemoveAction != ""
+		valid = n.Type == "CartItem" && domain.ValidID(p.ProductID) && domain.ValidMoney(string(p.Price)) && p.Quantity >= 1 && p.Quantity <= 1000000 && p.Stock >= 0 && (p.Image == nil || Media(*p.Image) != nil) && p.OpenAction != "" && p.QuantityAction != "" && p.RemoveAction != ""
 	case OrderProps:
-		valid = n.Type == "OrderCard" && yii.ValidID(p.OrderID) && yii.ValidMoney(string(p.Total)) && p.Number >= 1 && validStatus(p.Status) && oneOf(p.PaymentMethod, "CARD", "SBP", "ON_DELIVERY") && p.OpenAction != ""
+		valid = n.Type == "OrderCard" && domain.ValidID(p.OrderID) && domain.ValidMoney(string(p.Total)) && p.Number >= 1 && validStatus(p.Status) && oneOf(p.PaymentMethod, "CARD", "SBP", "ON_DELIVERY") && p.OpenAction != ""
 	case ProfileProps:
 		valid = n.Type == "ProfileHeader" && (p.Avatar == nil || Media(*p.Avatar) != nil)
 	case StatusProps:
@@ -521,7 +521,7 @@ func (d Destination) Validate() error {
 		return fmt.Errorf("invalid destination")
 	}
 	if oneOf(d.Screen, "product", "order") {
-		if !yii.ValidID(d.ID) {
+		if !domain.ValidID(d.ID) {
 			return fmt.Errorf("missing destination ID")
 		}
 	} else if d.ID != "" {
@@ -576,12 +576,12 @@ func (a Action) Validate() error {
 		}
 		copy.Destination = nil
 	case "OpenProduct":
-		if !yii.ValidID(a.ProductID) {
+		if !domain.ValidID(a.ProductID) {
 			return fmt.Errorf("invalid product action")
 		}
 		copy.ProductID = ""
 	case "OpenOrder":
-		if !yii.ValidID(a.OrderID) {
+		if !domain.ValidID(a.OrderID) {
 			return fmt.Errorf("invalid order action")
 		}
 		copy.OrderID = ""
@@ -596,24 +596,24 @@ func (a Action) Validate() error {
 		}
 		copy.FormID = ""
 	case "AddToCart":
-		if !yii.ValidID(a.ProductID) || (a.QuantityField != "" && a.QuantityField != "product.quantity") {
+		if !domain.ValidID(a.ProductID) || (a.QuantityField != "" && a.QuantityField != "product.quantity") {
 			return fmt.Errorf("invalid add action")
 		}
 		copy.ProductID = ""
 		copy.QuantityField = ""
 	case "RemoveFromCart", "UpdateQuantity":
-		if !yii.ValidID(a.ProductID) {
+		if !domain.ValidID(a.ProductID) {
 			return fmt.Errorf("invalid cart action")
 		}
 		copy.ProductID = ""
 	case "CancelOrder":
-		if !yii.ValidID(a.OrderID) || a.Confirmation == nil {
+		if !domain.ValidID(a.OrderID) || a.Confirmation == nil {
 			return fmt.Errorf("missing order confirmation")
 		}
 		copy.OrderID = ""
 		copy.Confirmation = nil
 	case "RevokeDevice":
-		if !yii.ValidDevice(a.DeviceID) || !oneOf(a.DeviceKind, "pin", "biometric") || a.Confirmation == nil {
+		if !domain.ValidDevice(a.DeviceID) || !oneOf(a.DeviceKind, "pin", "biometric") || a.Confirmation == nil {
 			return fmt.Errorf("invalid device action")
 		}
 		copy.DeviceID = ""

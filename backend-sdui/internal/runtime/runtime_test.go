@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"shopkmp/backend-sdui/internal/observe"
 	"shopkmp/backend-sdui/internal/yii"
 )
 
@@ -21,6 +22,29 @@ func TestConfigRejectsUnsafeTimeoutsAndConflictingListeners(t *testing.T) {
 				t.Fatal("unsafe configuration accepted")
 			}
 		})
+	}
+}
+
+func TestMetricsAvailableOnlyOnOperationalHandler(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"status":"ok"}`)
+	}))
+	defer s.Close()
+	c, err := yii.New(yii.Config{Origin: s.URL, Timeout: time.Second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.CloseIdleConnections()
+	h := Operations(c, observe.New(nil))
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("GET", "/health/ready", nil))
+	if w.Code != 200 {
+		t.Fatal("readiness contract changed")
+	}
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("GET", "/metrics", nil))
+	if w.Code != 200 || w.Header().Get("Cache-Control") != "no-store" || w.Body.Len() == 0 {
+		t.Fatal("operational probe metrics unavailable")
 	}
 }
 func TestHealthHasSeparateHandlerAndReadinessReflectsYii(t *testing.T) {

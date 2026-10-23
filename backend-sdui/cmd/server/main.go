@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -15,9 +15,11 @@ import (
 )
 
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	cfg, err := app.Load()
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("invalid_configuration", "error", err.Error())
+		os.Exit(1)
 	}
 	if len(os.Args) == 2 && os.Args[1] == "healthcheck" {
 		_, port, _ := net.SplitHostPort(cfg.AdminAddr)
@@ -39,6 +41,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if err := app.Run(ctx, cfg); err != nil {
-		log.Fatal(err)
+		// Listener failures can contain deployment addresses but never credentials.
+		logger.Error("server_failed", "error", err.Error())
+		os.Exit(1)
 	}
 }

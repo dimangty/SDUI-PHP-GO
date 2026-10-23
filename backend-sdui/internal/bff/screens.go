@@ -21,7 +21,7 @@ func securityError(err error) bool {
 	status := yii.HTTPStatus(err)
 	return status == 401 || status == 403
 }
-func (s *Service) build(ctx context.Context, id yii.Identity, user *yii.User, name, resource string, q url.Values) (sdui.Screen, error) {
+func (s *Application) build(ctx context.Context, id yii.Identity, user *yii.User, name, resource string, q url.Values) (sdui.Screen, error) {
 	switch name {
 	case "home":
 		return s.home(ctx, id, user, q)
@@ -43,7 +43,7 @@ func (s *Service) build(ctx context.Context, id yii.Identity, user *yii.User, na
 	return sdui.Screen{}, bad("Unknown screen")
 }
 
-func (s *Service) home(ctx context.Context, id yii.Identity, u *yii.User, q url.Values) (sdui.Screen, error) {
+func (s *Application) home(ctx context.Context, id yii.Identity, u *yii.User, q url.Values) (sdui.Screen, error) {
 	d := screenBase("home", "Магазин", u)
 	categoryQuery, err := collectionQuery(q, "categoryPage", "categorySize", sdui.MaxCategoryPageSize)
 	if err != nil {
@@ -141,7 +141,7 @@ func mediaPointer(s *string) *string {
 	return sdui.Media(*s)
 }
 
-func (s *Service) catalog(ctx context.Context, id yii.Identity, u *yii.User, q url.Values) (sdui.Screen, error) {
+func (s *Application) catalog(ctx context.Context, id yii.Identity, u *yii.User, q url.Values) (sdui.Screen, error) {
 	d := screenBase("catalog", "Каталог", u)
 	query, err := catalogQuery(q)
 	if err != nil {
@@ -186,7 +186,7 @@ func (s *Service) catalog(ctx context.Context, id yii.Identity, u *yii.User, q u
 	root(&d, nodes...)
 	return d, nil
 }
-func (s *Service) product(ctx context.Context, id yii.Identity, u *yii.User, pid string) (sdui.Screen, error) {
+func (s *Application) product(ctx context.Context, id yii.Identity, u *yii.User, pid string) (sdui.Screen, error) {
 	d := screenBase("product", "Товар", u)
 	p, err := s.up.Product(ctx, id, pid)
 	if err != nil {
@@ -231,7 +231,7 @@ func (s *Service) product(ctx context.Context, id yii.Identity, u *yii.User, pid
 	root(&d, nodes...)
 	return d, nil
 }
-func (s *Service) cart(ctx context.Context, id yii.Identity, u *yii.User, q url.Values) (sdui.Screen, error) {
+func (s *Application) cart(ctx context.Context, id yii.Identity, u *yii.User, q url.Values) (sdui.Screen, error) {
 	d := screenBase("cart", "Корзина", u)
 	query, err := collectionQuery(q, "page", "size", sdui.MaxCartPageSize)
 	if err != nil {
@@ -281,7 +281,7 @@ func (s *Service) cart(ctx context.Context, id yii.Identity, u *yii.User, q url.
 	root(&d, nodes...)
 	return d, nil
 }
-func (s *Service) orders(ctx context.Context, id yii.Identity, u *yii.User, q url.Values) (sdui.Screen, error) {
+func (s *Application) orders(ctx context.Context, id yii.Identity, u *yii.User, q url.Values) (sdui.Screen, error) {
 	d := screenBase("orders", "Заказы", u)
 	query, err := orderQuery(q)
 	if err != nil {
@@ -314,7 +314,7 @@ func (s *Service) orders(ctx context.Context, id yii.Identity, u *yii.User, q ur
 	root(&d, nodes...)
 	return d, nil
 }
-func (s *Service) order(ctx context.Context, id yii.Identity, u *yii.User, oid string) (sdui.Screen, error) {
+func (s *Application) order(ctx context.Context, id yii.Identity, u *yii.User, oid string) (sdui.Screen, error) {
 	d := screenBase("order", "Заказ", u)
 	o, err := s.up.Order(ctx, id, oid)
 	if err != nil {
@@ -343,7 +343,7 @@ func (s *Service) order(ctx context.Context, id yii.Identity, u *yii.User, oid s
 	root(&d, nodes...)
 	return d, nil
 }
-func (s *Service) profile(ctx context.Context, id yii.Identity, u *yii.User) (sdui.Screen, error) {
+func (s *Application) profile(ctx context.Context, id yii.Identity, u *yii.User) (sdui.Screen, error) {
 	d := screenBase("profile", "Профиль", u)
 	addresses, err := s.up.Addresses(ctx, id)
 	if err != nil {
@@ -364,7 +364,7 @@ func (s *Service) profile(ctx context.Context, id yii.Identity, u *yii.User) (sd
 	root(&d, nodes...)
 	return d, nil
 }
-func (s *Service) devices(ctx context.Context, id yii.Identity, u *yii.User) (sdui.Screen, error) {
+func (s *Application) devices(ctx context.Context, id yii.Identity, u *yii.User) (sdui.Screen, error) {
 	d := screenBase("devices", "Устройства", u)
 	pins, err := s.up.Devices(ctx, id, "pin")
 	if err != nil {

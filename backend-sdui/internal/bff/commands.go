@@ -2,11 +2,10 @@ package bff
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
-	"mime"
-	"net/http"
 	"reflect"
 	"regexp"
 	"strings"
@@ -16,8 +15,6 @@ import (
 	"shopkmp/backend-sdui/internal/sdui"
 	"shopkmp/backend-sdui/internal/yii"
 )
-
-const MaxActionBody = 32 << 10
 
 type CommandRequest struct {
 	Command string          `json:"command"`
@@ -140,119 +137,98 @@ func validProfile(p yii.ProfileInput) bool {
 	}
 	return true
 }
-func (s *Service) handleAction(w http.ResponseWriter, r *http.Request, id yii.Identity) {
-	fail := func(err error) { s.fail(w, id.RequestID, err) }
-	if id.Bearer == "" {
-		fail(&Error{401, "BFF_UNAUTHORIZED", "Sign in to perform this command"})
-		return
+
+type commandInput struct {
+	cart    CartCommand
+	product ProductCommand
+	cancel  CancelCommand
+	revoke  RevokeCommand
+	profile yii.ProfileInput
+}
+
+func prepareCommand(command CommandRequest, key string) (commandInput, error) {
+	var in commandInput
+	if !yii.ValidKey(key) {
+		return in, bad("Invalid Idempotency-Key")
 	}
-	if r.URL.RawQuery != "" {
-		fail(bad("Commands do not accept query parameters"))
-		return
-	}
-	contentType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
-	if err != nil || contentType != "application/json" {
-		fail(&Error{415, "BFF_UNSUPPORTED_MEDIA_TYPE", "Use application/json"})
-		return
-	}
-	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, MaxActionBody))
-	if err != nil {
-		var large *http.MaxBytesError
-		if errors.As(err, &large) {
-			fail(&Error{413, "BFF_REQUEST_TOO_LARGE", "Command body exceeds 32768 bytes"})
-		} else {
-			fail(bad("Cannot read command body"))
-		}
-		return
-	}
-	var command CommandRequest
-	if err := strictJSON(raw, &command); err != nil {
-		fail(err)
-		return
-	}
-	key := r.Header.Get("Idempotency-Key")
-	if len(r.Header.Values("Idempotency-Key")) > 1 || !yii.ValidKey(key) {
-		fail(bad("Invalid Idempotency-Key"))
-		return
-	}
-	var cart CartCommand
-	var product ProductCommand
-	var cancel CancelCommand
-	var revoke RevokeCommand
-	var profile yii.ProfileInput
+	var err error
+	cart, product, cancel, revoke, profile := &in.cart, &in.product, &in.cancel, &in.revoke, &in.profile
 	switch command.Command {
 	case "AddToCart", "UpdateQuantity":
-		err = strictJSON(command.Input, &cart)
+		err = strictJSON(command.Input, cart)
 		if err == nil && (!yii.ValidID(cart.ProductID) || cart.Quantity == nil || *cart.Quantity < 0 || *cart.Quantity > 1000000 || (command.Command == "AddToCart" && (*cart.Quantity == 0 || key == ""))) {
 			err = bad("Valid productId, quantity and AddToCart idempotency key are required")
 		}
 	case "RemoveFromCart":
-		err = strictJSON(command.Input, &product)
+		err = strictJSON(command.Input, product)
 		if err == nil && !yii.ValidID(product.ProductID) {
 			err = bad("Invalid productId")
 		}
 	case "CancelOrder":
-		err = strictJSON(command.Input, &cancel)
+		err = strictJSON(command.Input, cancel)
 		if err == nil && (!yii.ValidID(cancel.OrderID) || !cancel.Confirmed) {
 			err = bad("Cancellation requires orderId and explicit confirmation")
 		}
 	case "UpdateProfile":
-		err = strictJSON(command.Input, &profile)
-		if err == nil && !validProfile(profile) {
+		err = strictJSON(command.Input, profile)
+		if err == nil && !validProfile(*profile) {
 			err = bad("Valid fullName and phone are required")
 		}
 	case "RevokeDevice":
-		err = strictJSON(command.Input, &revoke)
+		err = strictJSON(command.Input, revoke)
 		if err == nil && (!yii.ValidDevice(revoke.DeviceID) || (revoke.DeviceKind != "pin" && revoke.DeviceKind != "biometric") || !revoke.Confirmed) {
 			err = bad("Valid device and explicit confirmation are required")
 		}
 	default:
 		err = bad("Unsupported command")
 	}
-	if err != nil {
-		fail(err)
-		return
+	return in, err
+}
+
+func (s *Application) Execute(ctx context.Context, id yii.Identity, command CommandRequest, key string) (CommandResponse, error) {
+	if id.Bearer == "" {
+		return CommandResponse{}, &Error{401, "BFF_UNAUTHORIZED", "Sign in to perform this command"}
 	}
+	in, err := prepareCommand(command, key)
+	if err != nil {
+		return CommandResponse{}, err
+	}
+	cart, product, cancel, revoke, profile := in.cart, in.product, in.cancel, in.revoke, in.profile
 	// Reauthenticate on every command; never use accountId from a screen, client
 	// claims, cookies, or an earlier successful request as authority.
-	user, err := s.up.User(r.Context(), id)
+	user, err := s.authenticate(ctx, id)
 	if err != nil {
-		fail(err)
-		return
-	}
-	if !yii.ValidID(user.ID) {
-		fail(&yii.TransportError{Kind: "invalid_user"})
-		return
+		return CommandResponse{}, err
 	}
 	dest := sdui.Destination{Screen: "cart"}
 	switch command.Command {
 	case "AddToCart":
 		var result yii.Cart
-		result, err = s.up.AddCart(r.Context(), id, yii.AddCartInput{ProductID: cart.ProductID, Quantity: *cart.Quantity}, key)
+		result, err = s.up.AddCart(ctx, id, yii.AddCartInput{ProductID: cart.ProductID, Quantity: *cart.Quantity}, key)
 		if err == nil {
 			err = ownership(result.UserID == user.ID)
 		}
 	case "UpdateQuantity":
 		var result yii.Cart
-		result, err = s.up.UpdateCart(r.Context(), id, cart.ProductID, *cart.Quantity)
+		result, err = s.up.UpdateCart(ctx, id, cart.ProductID, *cart.Quantity)
 		if err == nil {
 			err = ownership(result.UserID == user.ID)
 		}
 	case "RemoveFromCart":
 		var result yii.Cart
-		result, err = s.up.RemoveCart(r.Context(), id, product.ProductID)
+		result, err = s.up.RemoveCart(ctx, id, product.ProductID)
 		if err == nil {
 			err = ownership(result.UserID == user.ID)
 		}
 	case "CancelOrder":
 		var existing yii.Order
-		existing, err = s.up.Order(r.Context(), id, cancel.OrderID)
+		existing, err = s.up.Order(ctx, id, cancel.OrderID)
 		if err == nil {
 			err = ownership(existing.UserID == user.ID && existing.ID == cancel.OrderID)
 		}
 		if err == nil {
 			var result yii.Order
-			result, err = s.up.CancelOrder(r.Context(), id, cancel.OrderID)
+			result, err = s.up.CancelOrder(ctx, id, cancel.OrderID)
 			if err == nil {
 				err = ownership(result.UserID == user.ID && result.ID == cancel.OrderID)
 			}
@@ -260,23 +236,19 @@ func (s *Service) handleAction(w http.ResponseWriter, r *http.Request, id yii.Id
 		dest = sdui.Destination{Screen: "order", ID: cancel.OrderID}
 	case "UpdateProfile":
 		var result yii.User
-		result, err = s.up.UpdateProfile(r.Context(), id, profile)
+		result, err = s.up.UpdateProfile(ctx, id, profile)
 		if err == nil {
 			err = ownership(result.ID == user.ID)
 		}
 		dest = sdui.Destination{Screen: "profile"}
 	case "RevokeDevice":
-		err = s.up.RevokeDevice(r.Context(), id, revoke.DeviceKind, revoke.DeviceID)
+		err = s.up.RevokeDevice(ctx, id, revoke.DeviceKind, revoke.DeviceID)
 		dest = sdui.Destination{Screen: "devices"}
 	}
 	if err != nil {
-		fail(err)
-		return
+		return CommandResponse{}, err
 	}
 	// Acknowledge the successful write without a second business read that could
 	// fail and hide a committed mutation. The adapter refreshes separately.
-	response := CommandResponse{SchemaVersion: 1, Command: command.Command, Outcome: "applied", Refresh: dest}
-	body, _ := json.Marshal(response)
-	w.WriteHeader(200)
-	_, _ = w.Write(body)
+	return CommandResponse{SchemaVersion: 1, Command: command.Command, Outcome: "applied", Refresh: dest}, nil
 }

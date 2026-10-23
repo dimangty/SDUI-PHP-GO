@@ -1,26 +1,12 @@
 // Package yii is the BFF's sole business-data boundary. It has no persistence.
 package yii
 
-import (
-	"encoding/json"
-	"errors"
-	"regexp"
-)
+import "shopkmp/backend-sdui/internal/domain"
 
-// Money never passes through floating point, even while decoding JSON.
-type Money string
+// Aliases preserve existing adapter consumers; shared values are domain owned.
+type Money = domain.Money
 
-var moneyPattern = regexp.MustCompile(`^(0|[1-9][0-9]{0,9})\.[0-9]{2}$`)
-
-func ValidMoney(s string) bool { return moneyPattern.MatchString(s) }
-func (m *Money) UnmarshalJSON(b []byte) error {
-	var s string
-	if err := json.Unmarshal(b, &s); err != nil || !ValidMoney(s) {
-		return errors.New("invalid decimal-string money")
-	}
-	*m = Money(s)
-	return nil
-}
+func ValidMoney(s string) bool { return domain.ValidMoney(s) }
 
 type User struct {
 	ID               string  `json:"id"`

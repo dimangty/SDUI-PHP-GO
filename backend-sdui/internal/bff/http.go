@@ -12,21 +12,26 @@ import (
 	"strings"
 	"time"
 
+	"shopkmp/backend-sdui/internal/observe"
 	"shopkmp/backend-sdui/internal/sdui"
 	"shopkmp/backend-sdui/internal/yii"
 )
 
-type Config struct{ RequestTimeout time.Duration }
+type Config struct {
+	RequestTimeout time.Duration
+	Observer       *observe.Recorder
+}
 type Service struct {
-	up      *yii.Client
-	timeout time.Duration
+	app      *Application
+	timeout  time.Duration
+	observer *observe.Recorder
 }
 
-func New(up *yii.Client, cfg Config) *Service {
+func New(up Backend, cfg Config) *Service {
 	if cfg.RequestTimeout <= 0 {
 		cfg.RequestTimeout = 8 * time.Second
 	}
-	return &Service{up: up, timeout: cfg.RequestTimeout}
+	return &Service{app: NewApplication(up), timeout: cfg.RequestTimeout, observer: cfg.Observer}
 }
 
 type Error struct {
@@ -47,6 +52,19 @@ func ownership(ok bool) error {
 }
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	trace := yii.RequestID(r.Header.Get("X-Request-Id"))
+	r = r.WithContext(observe.WithCorrelation(r.Context(), trace, r.Header.Get("Traceparent")))
+	if s.observer != nil {
+		start := time.Now()
+		recorded := &statusWriter{ResponseWriter: w, status: 200}
+		w = recorded
+		defer func() {
+			kind := ""
+			if recorded.status >= 400 {
+				kind = "http"
+			}
+			s.observer.Record(r.Context(), observe.Event{Kind: "http", Operation: routeLabel(r.URL.Path), Status: recorded.status, Duration: time.Since(start), Error: kind})
+		}()
+	}
 	w.Header().Set("X-Request-Id", trace)
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -95,36 +113,26 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, trace, err)
 		return
 	}
-	var user *yii.User
-	if id.Bearer == "" {
-		if screen != "home" && screen != "catalog" && screen != "product" {
-			s.fail(w, trace, &Error{401, "BFF_UNAUTHORIZED", "Sign in to view this screen"})
-			return
-		}
-	} else {
-		u, authErr := s.up.User(ctx, id)
-		if authErr != nil {
-			s.fail(w, trace, authErr)
-			return
-		}
-		if !yii.ValidID(u.ID) {
-			s.fail(w, trace, &yii.TransportError{Kind: "invalid_user"})
-			return
-		}
-		user = &u
-	}
-	doc, err := s.build(ctx, id, user, screen, resource, q)
+	doc, err := s.app.Screen(ctx, id, screen, resource, q)
 	if err != nil {
 		s.fail(w, trace, err)
 		return
 	}
+	start := time.Now()
 	body, err := doc.Encode()
+	if s.observer != nil {
+		status, kind := 200, ""
+		if err != nil {
+			status, kind = 502, "invalid_document"
+		}
+		s.observer.Record(ctx, observe.Event{Kind: "render", Operation: screen, Status: status, Duration: time.Since(start), Error: kind})
+	}
 	if err != nil {
 		s.fail(w, trace, &Error{502, "BFF_INVALID_DOCUMENT", "Upstream data cannot form a safe screen"})
 		return
 	}
 	// Public responses are also revalidated; no shared cache of request data.
-	if user == nil {
+	if !doc.State.Authenticated {
 		w.Header().Set("Cache-Control", "public, max-age=0, must-revalidate")
 	}
 	w.WriteHeader(200)
@@ -151,8 +159,11 @@ func screenRoute(path string) (string, string, error) {
 	return "", "", &Error{404, "BFF_NOT_FOUND", "Screen not found"}
 }
 func parseQuery(raw string) (url.Values, error) {
+	if len(raw) > 4096 {
+		return nil, bad("Invalid or oversized query")
+	}
 	q, err := url.ParseQuery(raw)
-	if err != nil || len(raw) > 4096 {
+	if err != nil {
 		return nil, bad("Invalid or oversized query")
 	}
 	for _, v := range q {

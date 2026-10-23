@@ -4,42 +4,64 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
 	"shopkmp/backend-sdui/internal/bff"
+	"shopkmp/backend-sdui/internal/observe"
 	"shopkmp/backend-sdui/internal/yii"
 )
 
 func Health(up *yii.Client) http.Handler {
+	return Operations(up, nil)
+}
+
+func Operations(up *yii.Client, observer *observe.Recorder) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health/live", func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		defer func() {
+			observer.Record(r.Context(), observe.Event{Kind: "probe", Operation: "live", Status: 200, Duration: time.Since(start)})
+		}()
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
 		fmt.Fprint(w, `{"status":"ok"}`)
 	})
 	mux.HandleFunc("GET /health/ready", func(w http.ResponseWriter, r *http.Request) {
+		start, status := time.Now(), 200
+		defer func() {
+			observer.Record(r.Context(), observe.Event{Kind: "probe", Operation: "ready", Status: status, Duration: time.Since(start)})
+		}()
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
 		if err := up.Ready(ctx); err != nil {
+			status = 503
 			w.WriteHeader(503)
 			fmt.Fprint(w, `{"status":"unavailable"}`)
 			return
 		}
 		fmt.Fprint(w, `{"status":"ok"}`)
 	})
+	if observer != nil {
+		mux.Handle("GET /metrics", observer)
+	}
 	return mux
 }
 func Run(ctx context.Context, c Config) error {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	observer := observe.New(logger)
+	c.Yii.Observer = observer
 	up, err := yii.New(c.Yii)
 	if err != nil {
 		return err
 	}
+	defer up.CloseIdleConnections()
 	public, err := net.Listen("tcp", c.ListenAddr)
 	if err != nil {
 		return err
@@ -50,8 +72,10 @@ func Run(ctx context.Context, c Config) error {
 		return err
 	}
 	defer admin.Close()
-	log.Printf("SDUI public=%s internal=%s", public.Addr(), admin.Addr())
-	return Serve(ctx, c, public, admin, bff.New(up, bff.Config{RequestTimeout: c.RequestTimeout}), Health(up))
+	logger.Info("sdui_started", "public", public.Addr().String(), "internal", admin.Addr().String())
+	err = Serve(ctx, c, public, admin, bff.New(up, bff.Config{RequestTimeout: c.RequestTimeout, Observer: observer}), Operations(up, observer))
+	logger.Info("sdui_stopped", "graceful", err == nil)
+	return err
 }
 func Serve(ctx context.Context, c Config, public, admin net.Listener, handler, health http.Handler) error {
 	makeServer := func(h http.Handler) *http.Server {
@@ -82,7 +106,6 @@ func Serve(ctx context.Context, c Config, public, admin net.Listener, handler, h
 	}
 	wg.Wait()
 	close(shutdownErrors)
-	log.Print("SDUI shutdown complete")
 	if serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
 		return serveErr
 	}

@@ -3,3 +3,6 @@ contracts
 PROGRESS.md
 README.md
 **/*_test.go
+docs
+scripts
+.golangci.yml
