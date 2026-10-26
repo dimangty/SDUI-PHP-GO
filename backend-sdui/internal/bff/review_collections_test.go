@@ -36,7 +36,7 @@ func TestReviewI3DefaultCartOverflowBoundariesKeepControls(t *testing.T) {
 		t.Run(fmt.Sprint(count), func(t *testing.T) {
 			h := newTestHandler(t, func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path == "/api/v1/cart" {
-					json.NewEncoder(w).Encode(map[string]any{"id": aid, "userId": uid, "items": reviewCartItems(count), "totalAmount": fmt.Sprintf("%d.00", count)})
+					json.NewEncoder(w).Encode(map[string]any{"id": aid, "userId": uid, "items": reviewCartItems(count), "totalAmount": fmt.Sprintf("%d.00", count), "updatedAt": "2026-10-18T10:00:00Z"})
 					return
 				}
 				fixtureUpstream(w, r)
@@ -105,7 +105,7 @@ func TestReviewI3CartPagingHasNoLossAndAllowsLastPageMutations(t *testing.T) {
 			for _, item := range items {
 				total += item["quantity"].(int)
 			}
-			json.NewEncoder(w).Encode(map[string]any{"id": aid, "userId": uid, "items": items, "totalAmount": fmt.Sprintf("%d.00", total)})
+			json.NewEncoder(w).Encode(map[string]any{"id": aid, "userId": uid, "items": items, "totalAmount": fmt.Sprintf("%d.00", total), "updatedAt": "2026-10-18T10:00:00Z"})
 			return
 		}
 		fixtureUpstream(w, r)

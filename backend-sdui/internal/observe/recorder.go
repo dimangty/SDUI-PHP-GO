@@ -126,7 +126,7 @@ func normalize(kind, operation string) key {
 
 func safeError(kind string) string {
 	switch kind {
-	case "", "network", "body", "body_limit", "redirect", "invalid_error", "invalid_json", "invalid_user", "resource_mismatch", "retry_budget", "canceled", "timeout", "business", "invalid_document", "http":
+	case "", "network", "body", "body_limit", "redirect", "invalid_error", "invalid_json", "protocol", "invalid_user", "resource_mismatch", "retry_budget", "canceled", "timeout", "business", "invalid_document", "http":
 		return kind
 	default:
 		return "other"

@@ -31,7 +31,7 @@ func TestReadsReuseConnectionsAndMutationsRemainSingleAttempt(t *testing.T) {
 			conn.Close() // simulate a committed write with a lost response
 			return
 		}
-		fmt.Fprint(w, `{"items":[],"totalAmount":"0.00"}`)
+		fmt.Fprint(w, emptyCartJSON)
 	}))
 	s.Config.ConnState = func(_ net.Conn, state http.ConnState) {
 		if state == http.StateNew {
@@ -72,7 +72,7 @@ func TestReadBudgetWithMultipleIdleConnections(t *testing.T) {
 				close(allWarm)
 			}
 			<-allWarm // force three simultaneously occupied connections into the pool
-			fmt.Fprint(w, `{"items":[],"totalAmount":"0.00"}`)
+			fmt.Fprint(w, emptyCartJSON)
 			return
 		}
 		targetCalls.Add(1)
@@ -115,7 +115,7 @@ func TestReadBudgetWithMultipleIdleConnections(t *testing.T) {
 func TestCloseIdleConnectionsForcesNextReadToReconnect(t *testing.T) {
 	var connections atomic.Int32
 	s := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{"items":[],"totalAmount":"0.00"}`)
+		fmt.Fprint(w, emptyCartJSON)
 	}))
 	s.Config.ConnState = func(_ net.Conn, state http.ConnState) {
 		if state == http.StateNew {
@@ -199,7 +199,7 @@ func TestStaleReadRetrySharesBudgetWithExplicitRetry(t *testing.T) {
 	c := clientFor(t, func(w http.ResponseWriter, r *http.Request) {
 		n := calls.Add(1)
 		if n == 1 {
-			fmt.Fprint(w, `{"items":[],"totalAmount":"0.00"}`)
+			fmt.Fprint(w, emptyCartJSON)
 			return
 		}
 		if n == 2 {
@@ -243,7 +243,7 @@ func TestTLSVerificationAndCookieIsolation(t *testing.T) {
 			t.Error("upstream cookies reused as identity")
 		}
 		w.Header().Set("Set-Cookie", "identity=admin")
-		fmt.Fprint(w, `{"items":[],"totalAmount":"0.00"}`)
+		fmt.Fprint(w, emptyCartJSON)
 	}, 4096)
 	defer c.CloseIdleConnections()
 	for i := 0; i < 2; i++ {

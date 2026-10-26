@@ -5,12 +5,29 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"reflect"
+	"strings"
+	"unicode/utf8"
+)
+
+// Endpoint methods choose a contract from routes.php / OpenAPI, never infer
+// success from the entire 2xx class or the caller's output pointer.
+type successContract int
+
+const (
+	json200 successContract = iota
+	empty204
+	biometric200
 )
 
 // decodeResponse always closes the body, and retains security status even when
 // reading, size validation or decoding fails. Only valid business envelopes pass.
-func (c *Client) decodeResponse(res *http.Response, out any) (retry bool, err error) {
+func (c *Client) decodeResponse(res *http.Response, success successContract, out any) (retry bool, err error) {
 	defer res.Body.Close()
+	expectedStatus := http.StatusOK
+	if success == empty204 {
+		expectedStatus = http.StatusNoContent
+	}
 	body, readErr := io.ReadAll(io.LimitReader(res.Body, c.maxBody+1))
 	switch {
 	case readErr != nil:
@@ -31,16 +48,75 @@ func (c *Client) decodeResponse(res *http.Response, out any) (retry bool, err er
 			return false, &TransportError{Kind: "invalid_error", Status: res.StatusCode}
 		}
 		return res.StatusCode == 502 || res.StatusCode == 503 || res.StatusCode == 504,
-			&UpstreamError{Status: res.StatusCode, Body: body, Code: envelope.Error.Code}
-	case out == nil || res.StatusCode == http.StatusNoContent:
+			&UpstreamError{Status: res.StatusCode, Body: body, Code: envelope.Error.Code, RetryAfter: validRetryAfter(res.StatusCode, res.Header.Values("Retry-After"))}
+	case res.StatusCode != expectedStatus:
+		return false, &TransportError{Kind: "protocol", Status: res.StatusCode}
+	case success == empty204:
+		if len(body) != 0 {
+			return false, &TransportError{Kind: "protocol", Status: res.StatusCode}
+		}
 		return false, nil
 	default:
-		if len(body) == 0 || bytes.Equal(bytes.TrimSpace(body), []byte("null")) {
-			return false, &TransportError{Kind: "invalid_json"}
+		if out == nil || !utf8.Valid(body) || !validResponseShape(body, reflect.TypeOf(out).Elem(), success == biometric200) {
+			return false, &TransportError{Kind: "protocol", Status: res.StatusCode}
 		}
 		if err := json.Unmarshal(body, out); err != nil {
-			return false, &TransportError{Kind: "invalid_json", Cause: err}
+			return false, &TransportError{Kind: "protocol", Cause: err, Status: res.StatusCode}
 		}
 		return false, nil
 	}
+}
+
+// Check presence and nullability before decoding: encoding/json otherwise
+// silently turns missing/null required members and null list entries into zero
+// values. Requiredness comes from OpenAPI, separately from Go nullability.
+// Only the two documented endpoint-specific optional fields can be absent.
+// Unknown upstream members remain forward compatible, except case-fold aliases
+// that encoding/json would otherwise use to overwrite canonical fields.
+func validResponseShape(raw []byte, typ reflect.Type, biometric bool) bool {
+	raw = bytes.TrimSpace(raw)
+	if len(raw) == 0 {
+		return false
+	}
+	if typ.Kind() == reflect.Pointer {
+		return bytes.Equal(raw, []byte("null")) || validResponseShape(raw, typ.Elem(), biometric)
+	}
+	if bytes.Equal(raw, []byte("null")) {
+		return false
+	}
+	switch typ.Kind() {
+	case reflect.Struct:
+		var fields map[string]json.RawMessage
+		if raw[0] != '{' || json.Unmarshal(raw, &fields) != nil {
+			return false
+		}
+		for i := 0; i < typ.NumField(); i++ {
+			field := typ.Field(i)
+			name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+			for key := range fields {
+				if key != name && strings.EqualFold(key, name) {
+					return false
+				}
+			}
+			value, present := fields[name]
+			optional := typ == reflect.TypeFor[Device]() && field.Name == "KeyAlgorithm" && !biometric || typ == reflect.TypeOf(Session{}.Device) && field.Name == "BiometricCredentialID"
+			if !present && optional {
+				continue
+			}
+			if !validResponseShape(value, field.Type, biometric) {
+				return false
+			}
+		}
+	case reflect.Slice:
+		var items []json.RawMessage
+		if raw[0] != '[' || json.Unmarshal(raw, &items) != nil {
+			return false
+		}
+		for _, item := range items {
+			if !validResponseShape(item, typ.Elem(), biometric) {
+				return false
+			}
+		}
+	}
+	return true // Scalar types and decimal strings are checked by typed decoding.
 }

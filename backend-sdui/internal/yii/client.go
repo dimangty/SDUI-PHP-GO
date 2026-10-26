@@ -46,6 +46,8 @@ type UpstreamError struct {
 	Status int
 	Body   json.RawMessage
 	Code   string
+	// Only a validated, single Retry-After value from a 429/503 response.
+	RetryAfter string
 }
 
 func (e *UpstreamError) Error() string   { return fmt.Sprintf("Yii HTTP %d (%s)", e.Status, e.Code) }
@@ -125,7 +127,7 @@ func New(cfg Config) (*Client, error) {
 }
 
 // call is deliberately private. Public methods fix every path and method.
-func (c *Client) call(ctx context.Context, id Identity, method, path string, q url.Values, input any, key string, out any) (err error) {
+func (c *Client) call(ctx context.Context, id Identity, method, path string, q url.Values, input any, key string, success successContract, out any) (err error) {
 	if id.Bearer != "" && !ValidBearer(id.Bearer) {
 		return errors.New("invalid bearer")
 	}
@@ -144,6 +146,9 @@ func (c *Client) call(ctx context.Context, id Identity, method, path string, q u
 	}
 	id.RequestID = RequestID(id.RequestID)
 	ctx = observe.WithCorrelation(ctx, id.RequestID, observe.TraceParent(ctx))
+	// One event per logical call: status is the final HTTP attempt's response
+	// status, or zero if that attempt received no response. Cancellation while
+	// waiting to retry retains the last received status (no new attempt began).
 	status := 0
 	if c.observer != nil {
 		start := time.Now()
@@ -183,6 +188,10 @@ func (c *Client) call(ctx context.Context, id Identity, method, path string, q u
 		if key != "" {
 			req.Header.Set("Idempotency-Key", key)
 		}
+		if ctx.Err() != nil {
+			return &TransportError{Kind: "canceled", Cause: ctx.Err()}
+		}
+		status = 0
 		res, doErr := client.Do(req)
 		retry := false
 		if doErr != nil {
@@ -194,7 +203,7 @@ func (c *Client) call(ctx context.Context, id Identity, method, path string, q u
 			retry = ctx.Err() == nil && (errors.Is(doErr, io.EOF) || errors.Is(doErr, io.ErrUnexpectedEOF) || errors.As(doErr, &n) && n.Timeout())
 		} else {
 			status = res.StatusCode
-			retry, err = c.decodeResponse(res, out)
+			retry, err = c.decodeResponse(res, success, out)
 			if err == nil {
 				return nil
 			}
@@ -202,7 +211,17 @@ func (c *Client) call(ctx context.Context, id Identity, method, path string, q u
 		if method != http.MethodGet || attempt == 1 || !retry || budget.connections.Load() >= 2 {
 			return err
 		}
-		timer := time.NewTimer(c.backoff)
+		delay := c.backoff
+		var upstream *UpstreamError
+		if errors.As(err, &upstream) && upstream.RetryAfter != "" {
+			delay = max(delay, retryAfterDelay(upstream.RetryAfter, time.Now()))
+		}
+		if deadline, ok := ctx.Deadline(); ok && delay >= time.Until(deadline) {
+			// Preserve the received error and retry metadata if the server's
+			// minimum delay cannot fit the shared request deadline.
+			return err
+		}
+		timer := time.NewTimer(delay)
 		select {
 		case <-ctx.Done():
 			timer.Stop()
@@ -215,7 +234,7 @@ func (c *Client) call(ctx context.Context, id Identity, method, path string, q u
 
 func get[T any](c *Client, ctx context.Context, id Identity, path string, q url.Values) (T, error) {
 	var out T
-	err := c.call(ctx, id, http.MethodGet, path, q, nil, "", &out)
+	err := c.call(ctx, id, http.MethodGet, path, q, nil, "", json200, &out)
 	return out, err
 }
 func (c *Client) User(ctx context.Context, id Identity) (User, error) {
@@ -255,13 +274,19 @@ func (c *Client) Devices(ctx context.Context, id Identity, kind string) ([]Devic
 	if kind != "pin" && kind != "biometric" {
 		return nil, errors.New("invalid device kind")
 	}
-	return get[[]Device](c, ctx, id, "/api/v1/auth/"+kind+"/devices", nil)
+	contract := json200
+	if kind == "biometric" {
+		contract = biometric200
+	}
+	var out []Device
+	err := c.call(ctx, id, http.MethodGet, "/api/v1/auth/"+kind+"/devices", nil, nil, "", contract, &out)
+	return out, err
 }
 func (c *Client) Ready(ctx context.Context) error {
 	var out struct {
 		Status string `json:"status"`
 	}
-	if err := c.call(ctx, Identity{}, "GET", "/health/ready", nil, nil, "", &out); err != nil {
+	if err := c.call(ctx, Identity{}, "GET", "/health/ready", nil, nil, "", json200, &out); err != nil {
 		return err
 	}
 	if out.Status != "ok" {
@@ -274,7 +299,7 @@ func (c *Client) AddCart(ctx context.Context, id Identity, in AddCartInput, key 
 	if !ValidID(in.ProductID) || in.Quantity < 1 || in.Quantity > 1000000 {
 		return out, errors.New("invalid cart input")
 	}
-	err := c.call(ctx, id, "POST", "/api/v1/cart/items", nil, in, key, &out)
+	err := c.call(ctx, id, "POST", "/api/v1/cart/items", nil, in, key, json200, &out)
 	return out, err
 }
 func (c *Client) UpdateCart(ctx context.Context, id Identity, pid string, quantity int) (Cart, error) {
@@ -284,7 +309,7 @@ func (c *Client) UpdateCart(ctx context.Context, id Identity, pid string, quanti
 	}
 	err := c.call(ctx, id, "PATCH", "/api/v1/cart/items/"+pid, nil, struct {
 		Quantity int `json:"quantity"`
-	}{quantity}, "", &out)
+	}{quantity}, "", json200, &out)
 	return out, err
 }
 func (c *Client) RemoveCart(ctx context.Context, id Identity, pid string) (Cart, error) {
@@ -292,7 +317,7 @@ func (c *Client) RemoveCart(ctx context.Context, id Identity, pid string) (Cart,
 	if !ValidID(pid) {
 		return out, errors.New("invalid product ID")
 	}
-	err := c.call(ctx, id, "DELETE", "/api/v1/cart/items/"+pid, nil, nil, "", &out)
+	err := c.call(ctx, id, "DELETE", "/api/v1/cart/items/"+pid, nil, nil, "", json200, &out)
 	return out, err
 }
 func (c *Client) CancelOrder(ctx context.Context, id Identity, oid string) (Order, error) {
@@ -300,17 +325,17 @@ func (c *Client) CancelOrder(ctx context.Context, id Identity, oid string) (Orde
 	if !ValidID(oid) {
 		return out, errors.New("invalid order ID")
 	}
-	err := c.call(ctx, id, "POST", "/api/v1/orders/"+oid+"/cancel", nil, nil, "", &out)
+	err := c.call(ctx, id, "POST", "/api/v1/orders/"+oid+"/cancel", nil, nil, "", json200, &out)
 	return out, err
 }
 func (c *Client) UpdateProfile(ctx context.Context, id Identity, in ProfileInput) (User, error) {
 	var out User
-	err := c.call(ctx, id, "PUT", "/api/v1/users/me", nil, in, "", &out)
+	err := c.call(ctx, id, "PUT", "/api/v1/users/me", nil, in, "", json200, &out)
 	return out, err
 }
 func (c *Client) RevokeDevice(ctx context.Context, id Identity, kind, device string) error {
 	if (kind != "pin" && kind != "biometric") || !ValidDevice(device) {
 		return errors.New("invalid device")
 	}
-	return c.call(ctx, id, "DELETE", "/api/v1/auth/"+kind+"/devices/"+device, nil, nil, "", nil)
+	return c.call(ctx, id, "DELETE", "/api/v1/auth/"+kind+"/devices/"+device, nil, nil, "", empty204, nil)
 }

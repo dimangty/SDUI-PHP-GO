@@ -47,7 +47,7 @@ func fixtureUpstream(w http.ResponseWriter, r *http.Request) {
 	case "/api/v1/orders/" + oid:
 		fmt.Fprint(w, orderJSON)
 	case "/api/v1/auth/pin/devices", "/api/v1/auth/biometric/devices":
-		fmt.Fprint(w, `[{"deviceId":"test-device","deviceName":"Phone","createdAt":"2026-10-18T10:00:00Z","lastUsedAt":"2026-10-18T10:00:00Z","lockedUntil":null}]`)
+		fmt.Fprint(w, `[{"deviceId":"test-device","deviceName":"Phone","keyAlgorithm":"ES256","createdAt":"2026-10-18T10:00:00Z","lastUsedAt":"2026-10-18T10:00:00Z","lockedUntil":null}]`)
 	case "/api/v1/auth/session":
 		fmt.Fprint(w, `{"user":`+userJSON+`,"device":{"pinEnabled":true,"biometricEnabled":false,"biometricCredentialId":null},"cartItemsCount":2}`)
 	default:

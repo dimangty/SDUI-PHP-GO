@@ -239,6 +239,9 @@ func orderQuery(q url.Values) (yii.OrderQuery, error) {
 func (s *Service) fail(w http.ResponseWriter, trace string, err error) {
 	var up *yii.UpstreamError
 	if errors.As(err, &up) {
+		if (up.Status == 429 || up.Status == 503) && up.RetryAfter != "" {
+			w.Header().Set("Retry-After", up.RetryAfter)
+		}
 		w.WriteHeader(up.Status)
 		_, _ = w.Write(up.Body)
 		return

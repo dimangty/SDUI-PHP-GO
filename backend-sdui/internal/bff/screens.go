@@ -328,10 +328,11 @@ func (s *Application) order(ctx context.Context, id yii.Identity, u *yii.User, o
 	}
 	refresh(&d, sdui.Destination{Screen: "order", ID: oid})
 	nodes := []sdui.Node{text("order.title", fmt.Sprintf("Заказ №%d", o.Number), "ScreenTitle"), orderCard(&d, o), text("order.address", o.DeliveryAddress, "Body"), text("order.payment", o.PaymentMethod, "Secondary")}
-	for _, item := range o.Items {
-		base := "order.item." + item.ProductID
-		nodes = append(nodes, sdui.N(base, "Row", sdui.LayoutProps{Spacing: "s", Padding: "none", Align: "Start"}, text(base+".name", fmt.Sprintf("%s × %d", item.ProductName, item.Quantity), "Body"), price(base+".price", item.PriceSnapshot)))
+	items, err := orderItemNodes(o.Items)
+	if err != nil {
+		return d, err
 	}
+	nodes = append(nodes, items...)
 	nodes = append(nodes, price("order.total", o.TotalAmount))
 	if o.Comment != nil {
 		nodes = append(nodes, text("order.comment", *o.Comment, "Secondary"))

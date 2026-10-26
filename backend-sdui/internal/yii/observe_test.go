@@ -25,7 +25,7 @@ func TestUpstreamTraceAndRetryMetrics(t *testing.T) {
 			fmt.Fprint(w, `{"error":{"code":"DOWN","message":"down","traceId":"up"}}`)
 			return
 		}
-		fmt.Fprint(w, `{"items":[],"totalAmount":"0.00"}`)
+		fmt.Fprint(w, emptyCartJSON)
 	}))
 	defer s.Close()
 	recorder := observe.New(nil)

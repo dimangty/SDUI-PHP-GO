@@ -19,7 +19,7 @@ func BenchmarkClientRead(b *testing.B) {
 	var connections, calls atomic.Int64
 	s := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
-		fmt.Fprint(w, `{"id":"cart","userId":"u","items":[],"totalAmount":"0.00"}`)
+		fmt.Fprint(w, emptyCartJSON)
 	}))
 	s.Config.ConnState = func(_ net.Conn, state http.ConnState) {
 		if state == http.StateNew {

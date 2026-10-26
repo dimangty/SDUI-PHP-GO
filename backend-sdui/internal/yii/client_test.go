@@ -14,6 +14,7 @@ import (
 )
 
 const productID = "11111111-1111-4111-8111-111111111111"
+const emptyCartJSON = `{"id":"cart","userId":"11111111-1111-4111-8111-111111111111","items":[],"totalAmount":"0.00","updatedAt":"2026-10-18T10:00:00Z"}`
 
 func clientFor(t *testing.T, h http.HandlerFunc, limit int64) *Client {
 	t.Helper()
@@ -39,7 +40,7 @@ func TestTypedProductPreservesMoneyAndOnlySafeHeaders(t *testing.T) {
 				t.Errorf("unexpected header %s", k)
 			}
 		}
-		fmt.Fprintf(w, `{"id":%q,"name":"Lamp","price":"9999999999.99","discountPrice":"50.01","stock":5,"imageUrls":[],"isActive":true}`, productID)
+		fmt.Fprintf(w, `{"id":%q,"categoryId":%q,"name":"Lamp","description":"Light","price":"9999999999.99","discountPrice":"50.01","stock":5,"rating":null,"imageUrls":[],"isActive":true,"reviewsCount":0}`, productID, productID)
 	}, 4096)
 	p, err := c.Product(context.Background(), Identity{Bearer: "test-token", RequestID: "trace-1"}, productID)
 	if err != nil || p.Price != "9999999999.99" || p.DiscountPrice == nil || *p.DiscountPrice != "50.01" {
@@ -131,7 +132,7 @@ func TestGETRetriesOnceButMutationNeverRetries(t *testing.T) {
 			fmt.Fprint(w, `{"error":{"code":"DATABASE_UNAVAILABLE","message":"down","traceId":"x"}}`)
 			return
 		}
-		fmt.Fprint(w, `{"id":"cart","userId":"u","items":[],"totalAmount":"0.00"}`)
+		fmt.Fprint(w, emptyCartJSON)
 	}, 4096)
 	if _, err := c.Cart(context.Background(), Identity{Bearer: "test"}); err != nil || calls.Load() != 2 {
 		t.Fatalf("GET %v %d", err, calls.Load())
@@ -209,7 +210,7 @@ func TestTransientNetworkEOFGETRetriesButPOSTIsSingleAttempt(t *testing.T) {
 					conn.Close()
 					return
 				}
-				fmt.Fprint(w, `{"id":"cart","userId":"u","items":[],"totalAmount":"0.00"}`)
+				fmt.Fprint(w, emptyCartJSON)
 			}, 4096)
 			var err error
 			if method == "GET" {

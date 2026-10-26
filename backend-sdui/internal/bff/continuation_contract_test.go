@@ -19,7 +19,7 @@ func TestPublishedContinuationAndLongDescriptionFixtures(t *testing.T) {
 		case "/api/v1/categories":
 			json.NewEncoder(w).Encode(reviewCategoryItems(4, false))
 		case "/api/v1/cart":
-			json.NewEncoder(w).Encode(map[string]any{"id": aid, "userId": uid, "items": reviewCartItems(5), "totalAmount": "5.00"})
+			json.NewEncoder(w).Encode(map[string]any{"id": aid, "userId": uid, "items": reviewCartItems(5), "totalAmount": "5.00", "updatedAt": "2026-10-18T10:00:00Z"})
 		case "/api/v1/products/" + pid:
 			json.NewEncoder(w).Encode(reviewProduct(t, strings.Repeat("Ж🌟<>&", 2000)))
 		case "/api/v1/products":
