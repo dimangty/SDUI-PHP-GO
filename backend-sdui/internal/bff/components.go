@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"shopkmp/backend-sdui/internal/domain"
 	"shopkmp/backend-sdui/internal/sdui"
 	"shopkmp/backend-sdui/internal/yii"
 )
@@ -45,7 +46,7 @@ func categories(d *sdui.Screen, items []yii.Category, query yii.CatalogQuery, co
 		q.CategoryID = c.ID
 		q.Page = 0
 		ref := action(d, sdui.Action{ID: "category." + c.ID, Type: "Navigate", Destination: &sdui.Destination{Screen: "catalog", Catalog: &q, Categories: &collection}})
-		props.Items = append(props.Items, sdui.CategoryOption{ID: c.ID, Label: c.Name, Image: sdui.Media(c.IconURL), ActionID: ref, Selected: query.CategoryID == c.ID})
+		props.Items = append(props.Items, sdui.CategoryOption{ID: c.ID, Label: c.Name, Image: sdui.Media(c.IconURL), ActionID: ref, Selected: domain.EqualID(query.CategoryID, c.ID)})
 	}
 	return sdui.N("catalog.categories", "CategoryList", props)
 }
@@ -116,7 +117,7 @@ func checkoutForm(d *sdui.Screen, addresses []yii.Address, def *string) sdui.Nod
 		chosen = addresses[0]
 	}
 	for _, a := range addresses {
-		if def != nil && a.ID == *def {
+		if def != nil && domain.EqualID(a.ID, *def) {
 			chosen = a
 		}
 	}
@@ -136,13 +137,19 @@ func profileForm(d *sdui.Screen, u yii.User) sdui.Node {
 	return sdui.N("profile.form", "Form", sdui.FormProps{FormID: "profile", Title: "Изменить профиль", SubmitAction: ref}, field(d, "profile.fullName", "Имя", u.FullName, "Text", true, 255, nil), field(d, "profile.phone", "Телефон", u.Phone, "Phone", true, 16, nil), button("profile.save", "Сохранить", ref, true))
 }
 func quantityField(q int) string { return strconv.Itoa(q) }
-func deviceNodes(d *sdui.Screen, kind string, devices []yii.Device) []sdui.Node {
+func deviceNodes(d *sdui.Screen, kind string, devices []yii.Device, compact bool) []sdui.Node {
 	nodes := []sdui.Node{}
 	for _, v := range devices {
 		id := "device." + kind + "." + v.DeviceID
 		// Device IDs can be 255 bytes; use a stable short hash for view identity.
 		id = shortID(id)
 		ref := action(d, sdui.Action{ID: id + ".revoke", Type: "RevokeDevice", DeviceID: v.DeviceID, DeviceKind: kind, Confirmation: &sdui.Confirmation{Title: "Отозвать устройство?", Message: v.DeviceName, ConfirmLabel: "Отозвать"}})
+		if compact {
+			// Flat siblings remain independently reachable in CMP's LazyColumn.
+			// Each label stays next to its own unchanged button and confirmation.
+			nodes = append(nodes, text(id+".info", fmt.Sprintf("%s\n%s\n%s · %s", v.DeviceName, v.DeviceID, kind, v.LastUsedAt), "Body"), button(id+".button", "Отозвать", ref, true))
+			continue
+		}
 		nodes = append(nodes, sdui.N(id, "Column", sdui.LayoutProps{Spacing: "s", Padding: "s", Align: "Start"}, text(id+".name", v.DeviceName, "Title"), text(id+".id", v.DeviceID, "Secondary"), text(id+".last", fmt.Sprintf("%s · %s", kind, v.LastUsedAt), "Secondary"), button(id+".button", "Отозвать", ref, true)))
 	}
 	return nodes

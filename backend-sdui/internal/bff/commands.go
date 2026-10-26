@@ -12,6 +12,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"shopkmp/backend-sdui/internal/domain"
 	"shopkmp/backend-sdui/internal/sdui"
 	"shopkmp/backend-sdui/internal/yii"
 )
@@ -206,31 +207,31 @@ func (s *Application) Execute(ctx context.Context, id yii.Identity, command Comm
 		var result yii.Cart
 		result, err = s.up.AddCart(ctx, id, yii.AddCartInput{ProductID: cart.ProductID, Quantity: *cart.Quantity}, key)
 		if err == nil {
-			err = ownership(result.UserID == user.ID)
+			err = ownership(domain.EqualID(result.UserID, user.ID))
 		}
 	case "UpdateQuantity":
 		var result yii.Cart
 		result, err = s.up.UpdateCart(ctx, id, cart.ProductID, *cart.Quantity)
 		if err == nil {
-			err = ownership(result.UserID == user.ID)
+			err = ownership(domain.EqualID(result.UserID, user.ID))
 		}
 	case "RemoveFromCart":
 		var result yii.Cart
 		result, err = s.up.RemoveCart(ctx, id, product.ProductID)
 		if err == nil {
-			err = ownership(result.UserID == user.ID)
+			err = ownership(domain.EqualID(result.UserID, user.ID))
 		}
 	case "CancelOrder":
 		var existing yii.Order
 		existing, err = s.up.Order(ctx, id, cancel.OrderID)
 		if err == nil {
-			err = ownership(existing.UserID == user.ID && existing.ID == cancel.OrderID)
+			err = ownership(domain.EqualID(existing.UserID, user.ID) && domain.EqualID(existing.ID, cancel.OrderID))
 		}
 		if err == nil {
 			var result yii.Order
 			result, err = s.up.CancelOrder(ctx, id, cancel.OrderID)
 			if err == nil {
-				err = ownership(result.UserID == user.ID && result.ID == cancel.OrderID)
+				err = ownership(domain.EqualID(result.UserID, user.ID) && domain.EqualID(result.ID, cancel.OrderID))
 			}
 		}
 		dest = sdui.Destination{Screen: "order", ID: cancel.OrderID}
@@ -238,7 +239,7 @@ func (s *Application) Execute(ctx context.Context, id yii.Identity, command Comm
 		var result yii.User
 		result, err = s.up.UpdateProfile(ctx, id, profile)
 		if err == nil {
-			err = ownership(result.ID == user.ID)
+			err = ownership(domain.EqualID(result.ID, user.ID))
 		}
 		dest = sdui.Destination{Screen: "profile"}
 	case "RevokeDevice":

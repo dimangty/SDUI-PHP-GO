@@ -123,7 +123,7 @@ func TestReviewFixR1AdjacentCollectionBoundaries(t *testing.T) {
 	for _, tc := range []struct {
 		screen        string
 		count, status int
-	}{{"profile", 487, 200}, {"profile", 488, 502}, {"devices", 99, 200}, {"devices", 100, 502}} {
+	}{{"profile", 487, 200}, {"profile", 488, 200}, {"devices", 99, 200}, {"devices", 100, 200}} {
 		t.Run(fmt.Sprintf("%s/%d", tc.screen, tc.count), func(t *testing.T) {
 			h := newTestHandler(t, func(w http.ResponseWriter, r *http.Request) {
 				switch r.URL.Path {

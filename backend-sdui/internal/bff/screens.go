@@ -9,6 +9,7 @@ import (
 	"sort"
 	"sync"
 
+	"shopkmp/backend-sdui/internal/domain"
 	"shopkmp/backend-sdui/internal/sdui"
 	"shopkmp/backend-sdui/internal/yii"
 )
@@ -94,7 +95,7 @@ func (s *Application) home(ctx context.Context, id yii.Identity, u *yii.User, q 
 	if u != nil {
 		nodes = append(nodes, sdui.N("home.profile", "ProfileHeader", sdui.ProfileProps{FullName: u.FullName, Email: u.Email, Phone: u.Phone, Avatar: mediaPointer(u.AvatarURL)}))
 		if se == nil {
-			if err := ownership(session.User.ID == u.ID); err != nil {
+			if err := ownership(domain.EqualID(session.User.ID, u.ID)); err != nil {
 				return d, err
 			}
 			d.State.CartItemsCount = session.CartItemsCount
@@ -192,7 +193,7 @@ func (s *Application) product(ctx context.Context, id yii.Identity, u *yii.User,
 	if err != nil {
 		return d, err
 	}
-	if p.ID != pid {
+	if !domain.EqualID(p.ID, pid) {
 		return d, &yii.TransportError{Kind: "resource_mismatch"}
 	}
 	refresh(&d, sdui.Destination{Screen: "product", ID: pid})
@@ -241,7 +242,7 @@ func (s *Application) cart(ctx context.Context, id yii.Identity, u *yii.User, q 
 	if err != nil {
 		return d, err
 	}
-	if err = ownership(cart.UserID == u.ID); err != nil {
+	if err = ownership(domain.EqualID(cart.UserID, u.ID)); err != nil {
 		return d, err
 	}
 	sort.Slice(cart.Items, func(i, j int) bool { return cart.Items[i].ProductID < cart.Items[j].ProductID })
@@ -254,6 +255,11 @@ func (s *Application) cart(ctx context.Context, id yii.Identity, u *yii.User, q 
 	refresh(&d, dest)
 	nodes := []sdui.Node{text("cart.title", "Корзина", "ScreenTitle")}
 	for _, item := range cart.Items {
+		// Check before adding, including rows outside the visible window. Never
+		// overflow Go int or publish a count CMP's Kotlin Int cannot represent.
+		if item.Quantity < 0 || item.Quantity > sdui.MaxClientInt-d.State.CartItemsCount {
+			return d, &Error{502, "BFF_INVALID_DOCUMENT", "Upstream data cannot form a safe screen"}
+		}
 		d.State.CartItemsCount += item.Quantity
 	}
 	for _, item := range visible {
@@ -272,7 +278,7 @@ func (s *Application) cart(ctx context.Context, id yii.Identity, u *yii.User, q 
 			return d, err
 		}
 		for _, a := range addresses {
-			if err := ownership(a.UserID == u.ID); err != nil {
+			if err := ownership(domain.EqualID(a.UserID, u.ID)); err != nil {
 				return d, err
 			}
 		}
@@ -302,7 +308,7 @@ func (s *Application) orders(ctx context.Context, id yii.Identity, u *yii.User, 
 	d.State.Fields["orders.page"] = quantityField(query.Page)
 	d.State.Fields["orders.size"] = quantityField(query.Size)
 	for _, o := range page.Items {
-		if err := ownership(o.UserID == u.ID); err != nil {
+		if err := ownership(domain.EqualID(o.UserID, u.ID)); err != nil {
 			return d, err
 		}
 		nodes = append(nodes, orderCard(&d, o))
@@ -320,10 +326,10 @@ func (s *Application) order(ctx context.Context, id yii.Identity, u *yii.User, o
 	if err != nil {
 		return d, err
 	}
-	if err = ownership(o.UserID == u.ID); err != nil {
+	if err = ownership(domain.EqualID(o.UserID, u.ID)); err != nil {
 		return d, err
 	}
-	if o.ID != oid {
+	if !domain.EqualID(o.ID, oid) {
 		return d, &yii.TransportError{Kind: "resource_mismatch"}
 	}
 	refresh(&d, sdui.Destination{Screen: "order", ID: oid})
@@ -353,11 +359,15 @@ func (s *Application) profile(ctx context.Context, id yii.Identity, u *yii.User)
 	refresh(&d, sdui.Destination{Screen: "profile"})
 	nodes := []sdui.Node{text("profile.title", "Профиль", "ScreenTitle"), sdui.N("profile.header", "ProfileHeader", sdui.ProfileProps{FullName: u.FullName, Email: u.Email, Phone: u.Phone, Avatar: mediaPointer(u.AvatarURL)}), nav(&d, "profile.orders", "Заказы", "orders"), nav(&d, "profile.devices", "Устройства", "devices"), profileForm(&d, *u)}
 	for _, a := range addresses {
-		if err := ownership(a.UserID == u.ID); err != nil {
+		if err := ownership(domain.EqualID(a.UserID, u.ID)); err != nil {
 			return d, err
 		}
-		nodes = append(nodes, text("address."+a.ID, fmt.Sprintf("%s, %s, %s, %s", a.City, a.Street, a.House, a.Apartment), "Body"))
 	}
+	addressContent, err := addressNodes(addresses)
+	if err != nil {
+		return d, err
+	}
+	nodes = append(nodes, addressContent...)
 	for _, v := range []struct{ id, label, kind string }{{"edit", "Редактировать профиль", "EditProfile"}, {"pin", "Изменить PIN", "ChangePin"}, {"biometric", "Биометрия", "ManageBiometric"}, {"logout", "Выйти", "Logout"}} {
 		ref := action(&d, sdui.Action{ID: "profile." + v.id, Type: v.kind})
 		nodes = append(nodes, button("profile."+v.id+".button", v.label, ref, true))
@@ -377,8 +387,11 @@ func (s *Application) devices(ctx context.Context, id yii.Identity, u *yii.User)
 	}
 	refresh(&d, sdui.Destination{Screen: "devices"})
 	nodes := []sdui.Node{text("devices.title", "Устройства быстрого входа", "ScreenTitle")}
-	nodes = append(nodes, deviceNodes(&d, "pin", pins)...)
-	nodes = append(nodes, deviceNodes(&d, "biometric", bio)...)
+	// Preserve small-screen IDs and layout. Compact rows need two nodes each,
+	// plus the root/title; Encode enforces the full node/action/body budgets.
+	compact := len(pins)+len(bio) > (sdui.MaxNodes-2)/5
+	nodes = append(nodes, deviceNodes(&d, "pin", pins, compact)...)
+	nodes = append(nodes, deviceNodes(&d, "biometric", bio, compact)...)
 	if len(pins)+len(bio) == 0 {
 		nodes = append(nodes, empty("devices.empty", "Нет устройств", "Настройте PIN или биометрию на устройстве"))
 	}

@@ -16,6 +16,8 @@ import (
 )
 
 const (
+	// MaxClientInt is the largest value of the unchanged CMP v1 Kotlin Int.
+	MaxClientInt          = 1<<31 - 1
 	MaxBody               = 1 << 20
 	MaxNodes              = 500
 	MaxDepth              = 16
@@ -306,13 +308,16 @@ func (s Screen) Validate() error {
 			return fmt.Errorf("invalid field %s", k)
 		}
 	}
-	if s.State.CartItemsCount < 0 {
-		return fmt.Errorf("negative cart count")
+	if !clientInt(s.State.CartItemsCount) {
+		return fmt.Errorf("cart count outside client Int range")
 	}
-	if p := s.State.Pagination; p != nil && (p.Page < 0 || p.Size < 1 || p.Size > 100 || p.TotalPages < 0 || p.TotalItems < 0) {
+	if p := s.State.Pagination; p != nil && !validPagination(*p) {
 		return fmt.Errorf("invalid pagination")
 	}
 	for key, p := range s.State.Collections {
+		if !validPagination(p) {
+			return fmt.Errorf("invalid collection pagination")
+		}
 		maxSize := MaxCartPageSize
 		switch key {
 		case "categories":
@@ -330,7 +335,11 @@ func (s Screen) Validate() error {
 		if err := (CollectionQuery{Page: p.Page, Size: p.Size}).Validate(maxSize); err != nil {
 			return err
 		}
-		if p.TotalPages < 0 || p.TotalItems < 0 || p.TotalPages != (p.TotalItems+p.Size-1)/p.Size || (p.TotalPages == 0 && p.Page != 0) || (p.TotalPages > 0 && p.Page >= p.TotalPages) {
+		pages := 0
+		if p.TotalItems > 0 {
+			pages = 1 + (p.TotalItems-1)/p.Size
+		}
+		if p.TotalPages != pages || (p.TotalPages == 0 && p.Page != 0) || (p.TotalPages > 0 && p.Page >= p.TotalPages) {
 			return fmt.Errorf("inconsistent collection pagination")
 		}
 	}
@@ -394,6 +403,13 @@ func (s Screen) Validate() error {
 	}
 	return boundedStrings(reflect.ValueOf(s), 0)
 }
+
+func clientInt(value int) bool { return value >= 0 && value <= MaxClientInt }
+
+func validPagination(p Pagination) bool {
+	return clientInt(p.Page) && p.Size >= 1 && p.Size <= 100 && clientInt(p.TotalPages) && clientInt(p.TotalItems)
+}
+
 func boundedStrings(v reflect.Value, depth int) error {
 	if depth > 128 {
 		return fmt.Errorf("value too deep")
@@ -452,7 +468,7 @@ func validateProps(n Node) error {
 		valid = oneOf(n.Type, "TextField", "SearchField", "FormField") && AllowedField(p.FieldID) && oneOf(p.Input, "Text", "Number", "Phone", "Select") && p.MaxLength >= 1 && p.MaxLength <= 2000 && p.ChangeAction != "" && len(p.Options) <= 500
 		valid = valid && ((p.FieldID == "catalog.q" && p.MaxUTF8Bytes == 200) || (p.FieldID != "catalog.q" && p.MaxUTF8Bytes == 0))
 	case ProductProps:
-		valid = n.Type == "ProductCard" && domain.ValidID(p.ProductID) && domain.ValidMoney(string(p.Price)) && (p.DiscountPrice == nil || domain.ValidMoney(string(*p.DiscountPrice))) && (p.Image == nil || Media(*p.Image) != nil) && p.OpenAction != "" && p.Stock >= 0 && p.ReviewsCount >= 0 && (p.Rating == nil || *p.Rating >= 1 && *p.Rating <= 5)
+		valid = n.Type == "ProductCard" && domain.ValidID(p.ProductID) && domain.ValidMoney(string(p.Price)) && (p.DiscountPrice == nil || domain.ValidMoney(string(*p.DiscountPrice))) && (p.Image == nil || Media(*p.Image) != nil) && p.OpenAction != "" && clientInt(p.Stock) && clientInt(p.ReviewsCount) && (p.Rating == nil || *p.Rating >= 1 && *p.Rating <= 5)
 		valid = valid && utf8.RuneCountInString(p.Description) <= MaxDescriptionPreview
 	case GridProps:
 		valid = n.Type == "ProductGrid" && p.Columns == 2
@@ -466,9 +482,9 @@ func validateProps(n Node) error {
 	case StepperProps:
 		valid = n.Type == "QuantityStepper" && AllowedField(p.FieldID) && p.Min >= 0 && p.Max >= p.Min && p.Max <= 1000000 && p.Value >= p.Min && p.Value <= p.Max && p.ActionID != ""
 	case CartItemProps:
-		valid = n.Type == "CartItem" && domain.ValidID(p.ProductID) && domain.ValidMoney(string(p.Price)) && p.Quantity >= 1 && p.Quantity <= 1000000 && p.Stock >= 0 && (p.Image == nil || Media(*p.Image) != nil) && p.OpenAction != "" && p.QuantityAction != "" && p.RemoveAction != ""
+		valid = n.Type == "CartItem" && domain.ValidID(p.ProductID) && domain.ValidMoney(string(p.Price)) && p.Quantity >= 1 && p.Quantity <= 1000000 && clientInt(p.Stock) && (p.Image == nil || Media(*p.Image) != nil) && p.OpenAction != "" && p.QuantityAction != "" && p.RemoveAction != ""
 	case OrderProps:
-		valid = n.Type == "OrderCard" && domain.ValidID(p.OrderID) && domain.ValidMoney(string(p.Total)) && p.Number >= 1 && validStatus(p.Status) && oneOf(p.PaymentMethod, "CARD", "SBP", "ON_DELIVERY") && p.OpenAction != ""
+		valid = n.Type == "OrderCard" && domain.ValidID(p.OrderID) && domain.ValidMoney(string(p.Total)) && p.Number >= 1 && clientInt(p.Number) && validStatus(p.Status) && oneOf(p.PaymentMethod, "CARD", "SBP", "ON_DELIVERY") && p.OpenAction != ""
 	case ProfileProps:
 		valid = n.Type == "ProfileHeader" && (p.Avatar == nil || Media(*p.Avatar) != nil)
 	case StatusProps:

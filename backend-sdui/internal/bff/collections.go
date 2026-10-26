@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"shopkmp/backend-sdui/internal/domain"
 	"shopkmp/backend-sdui/internal/sdui"
 	"shopkmp/backend-sdui/internal/yii"
 )
@@ -92,13 +93,18 @@ func categoryOptions(all, visible []yii.Category, selected string) []sdui.Option
 	options := []sdui.Option{{Value: "", Label: "Все категории"}}
 	present := selected == ""
 	for _, c := range visible {
-		options = append(options, sdui.Option{Value: c.ID, Label: c.Name})
-		present = present || c.ID == selected
+		value := c.ID
+		if domain.EqualID(c.ID, selected) {
+			// CMP selects options literally against controlled field state.
+			value = selected
+			present = true
+		}
+		options = append(options, sdui.Option{Value: value, Label: c.Name})
 	}
 	if !present {
 		label := "Выбранная категория"
 		for _, c := range all {
-			if c.ID == selected {
+			if domain.EqualID(c.ID, selected) {
 				label = c.Name
 				break
 			}

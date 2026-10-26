@@ -33,3 +33,8 @@ so 99 devices fit, 100 do not (across both kinds). Tests pin these boundaries.
 Devices require individual revoke actions and v1 has no continuation input for
 either screen; these known growth limits remain outside this targeted order
 composition fix and must not be described as solved.
+
+Follow-up: the N2 collection limits above describe the original R1 scope.
+They are superseded by the adaptive device/profile composition documented in
+[the follow-up review](../review-followup/FINAL_REVIEW.md#real-finite-composition-limits).
+The order composition decision and its limits are unchanged.
