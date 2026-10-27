@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strconv"
 	"strings"
@@ -20,18 +21,26 @@ import (
 type Config struct {
 	RequestTimeout time.Duration
 	Observer       *observe.Recorder
+	TrustedEdgeIPs []netip.Addr
 }
 type Service struct {
-	app      *Application
-	timeout  time.Duration
-	observer *observe.Recorder
+	app          *Application
+	timeout      time.Duration
+	observer     *observe.Recorder
+	trustedEdges map[netip.Addr]bool
 }
 
 func New(up Backend, cfg Config) *Service {
 	if cfg.RequestTimeout <= 0 {
 		cfg.RequestTimeout = 8 * time.Second
 	}
-	return &Service{app: NewApplication(up), timeout: cfg.RequestTimeout, observer: cfg.Observer}
+	peers := make(map[netip.Addr]bool, len(cfg.TrustedEdgeIPs))
+	for _, peer := range cfg.TrustedEdgeIPs {
+		if peer.IsValid() && peer.Zone() == "" && !peer.Unmap().IsUnspecified() && !peer.IsMulticast() {
+			peers[peer.Unmap()] = true
+		}
+	}
+	return &Service{app: NewApplication(up), timeout: cfg.RequestTimeout, observer: cfg.Observer, trustedEdges: peers}
 }
 
 type Error struct {
@@ -73,6 +82,12 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	r = r.WithContext(ctx)
 	id := yii.Identity{RequestID: trace}
+	clientIP, err := s.originalClient(r)
+	if err != nil {
+		s.fail(w, trace, err)
+		return
+	}
+	id.ClientIP = clientIP
 	headers := r.Header.Values("Authorization")
 	if len(headers) > 1 {
 		s.fail(w, trace, bad("Only one Authorization header is allowed"))

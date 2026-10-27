@@ -73,7 +73,7 @@ func Run(ctx context.Context, c Config) error {
 	}
 	defer admin.Close()
 	logger.Info("sdui_started", "public", public.Addr().String(), "internal", admin.Addr().String())
-	err = Serve(ctx, c, public, admin, bff.New(up, bff.Config{RequestTimeout: c.RequestTimeout, Observer: observer}), Operations(up, observer))
+	err = Serve(ctx, c, public, admin, bff.New(up, bff.Config{RequestTimeout: c.RequestTimeout, Observer: observer, TrustedEdgeIPs: c.TrustedEdgeIPs}), Operations(up, observer))
 	logger.Info("sdui_stopped", "graceful", err == nil)
 	return err
 }

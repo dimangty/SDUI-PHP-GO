@@ -59,6 +59,9 @@ services:
       - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
       - ${CA_BUNDLE_FILE}:/run/tls/ca-bundle.crt:ro
       - ./deploy/php/tls.ini:/usr/local/etc/php/conf.d/zz-tls.ini:ro
+  payment-recovery:
+    environment: *production-env
+    volumes: *production-volumes
   seed:
     environment: *production-env
     volumes: *production-volumes

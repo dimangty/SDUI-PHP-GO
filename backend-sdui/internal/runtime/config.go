@@ -3,8 +3,10 @@ package runtime
 import (
 	"fmt"
 	"net"
+	"net/netip"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"shopkmp/backend-sdui/internal/yii"
@@ -20,6 +22,7 @@ type Config struct {
 	WriteTimeout      time.Duration
 	IdleTimeout       time.Duration
 	ShutdownTimeout   time.Duration
+	TrustedEdgeIPs    []netip.Addr
 }
 
 func Defaults() Config {
@@ -27,10 +30,19 @@ func Defaults() Config {
 }
 func Load() (Config, error) {
 	c := Defaults()
-	strings := map[string]*string{"LISTEN_ADDR": &c.ListenAddr, "ADMIN_ADDR": &c.AdminAddr, "YII_ORIGIN": &c.Yii.Origin}
-	for key, dest := range strings {
+	envStrings := map[string]*string{"LISTEN_ADDR": &c.ListenAddr, "ADMIN_ADDR": &c.AdminAddr, "YII_ORIGIN": &c.Yii.Origin}
+	for key, dest := range envStrings {
 		if v, ok := os.LookupEnv(key); ok {
 			*dest = v
+		}
+	}
+	if raw := os.Getenv("TRUSTED_EDGE_IPS"); raw != "" {
+		for _, value := range strings.Split(raw, ",") {
+			peer, err := netip.ParseAddr(strings.TrimSpace(value))
+			if err != nil || peer.Zone() != "" || peer.Unmap().IsUnspecified() || peer.IsMulticast() {
+				return c, fmt.Errorf("TRUSTED_EDGE_IPS requires exact IP addresses, never CIDRs or hostnames")
+			}
+			c.TrustedEdgeIPs = append(c.TrustedEdgeIPs, peer.Unmap())
 		}
 	}
 	durations := map[string]*time.Duration{"UPSTREAM_TIMEOUT": &c.Yii.Timeout, "UPSTREAM_RETRY_BACKOFF": &c.Yii.Backoff, "REQUEST_TIMEOUT": &c.RequestTimeout, "READ_HEADER_TIMEOUT": &c.ReadHeaderTimeout, "READ_TIMEOUT": &c.ReadTimeout, "WRITE_TIMEOUT": &c.WriteTimeout, "IDLE_TIMEOUT": &c.IdleTimeout, "SHUTDOWN_TIMEOUT": &c.ShutdownTimeout}

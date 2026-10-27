@@ -2,9 +2,67 @@
 # No published ports and never loaded by the production wrapper.
 services:
   yii2:
-    networks: [ingress, application, data]
+    # Keep FPM admission/networking intact. The additional networks are for CLI
+    # test containers, never an alternate FastCGI listener or public ingress.
+    networks:
+      ingress:
+      application:
+      data:
+      fpm:
+      payment-test:
+        ipv4_address: ${PAYMENT_TEST_CLIENT_IP:-10.245.248.4}
+    volumes:
+      - ./tools/ops/migrations:/migrations:ro
+      - ./deploy/php:/opt/scheduler:ro
   fixture:
     image: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}-yii2
     command: [php, -S, 0.0.0.0:8080, /app/tests/upstream-router.php]
     profiles: [verification]
     networks: [application]
+  payment-provider:
+    image: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}-yii2
+    command: [php, -S, 0.0.0.0:8080, /app/tests/payment-provider.php]
+    environment:
+      DATABASE_URL: postgres://shopkmp:${POSTGRES_PASSWORD:?required}@postgres:5432/shopkmp?sslmode=disable
+      PAYMENT_TEST_HTTP_ORIGIN: http://payment-fixture-http:8080
+    profiles: [verification]
+    healthcheck:
+      test: [CMD, php, -r, 'exit(@fsockopen("127.0.0.1",8080)?0:1);']
+      interval: 2s
+      timeout: 2s
+      retries: 10
+    networks:
+      data:
+      payment-test:
+        ipv4_address: ${PAYMENT_TEST_PROVIDER_IP:-10.245.248.2}
+        aliases: [payment-fixture-gateway]
+    cap_drop: [NET_RAW]
+    security_opt: [no-new-privileges:true]
+  payment-http:
+    image: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}-yii2
+    command: [php, -S, 0.0.0.0:8080, -t, web, web/router.php]
+    environment:
+      DATABASE_URL: postgres://shopkmp:${POSTGRES_PASSWORD:?required}@postgres:5432/shopkmp?sslmode=disable
+      PAYMENT_GATEWAY_URL: http://payment-fixture-gateway:8080
+      PAYMENT_GATEWAY_API_KEY: payment-fixture-key
+      PAYMENT_WEBHOOK_SECRET: payment-test-secret
+      PAYMENT_WEBHOOK_ALLOWED_CIDRS: ${PAYMENT_TEST_PROVIDER_IP:-10.245.248.2}/32,${PAYMENT_TEST_CLIENT_IP:-10.245.248.4}/32
+      PHP_CLI_SERVER_WORKERS: 4
+    profiles: [verification]
+    healthcheck:
+      test: [CMD, php, -r, 'exit(@fsockopen("127.0.0.1",8080)?0:1);']
+      interval: 2s
+      timeout: 2s
+      retries: 10
+    networks:
+      data:
+      payment-test:
+        ipv4_address: ${PAYMENT_TEST_HTTP_IP:-10.245.248.3}
+        aliases: [payment-fixture-http]
+    cap_drop: [NET_RAW]
+    security_opt: [no-new-privileges:true]
+networks:
+  payment-test:
+    internal: true
+    ipam:
+      config: [{subnet: '${PAYMENT_TEST_SUBNET:-10.245.248.0/24}'}]

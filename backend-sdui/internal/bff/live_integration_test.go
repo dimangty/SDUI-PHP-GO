@@ -314,8 +314,19 @@ func TestLiveYiiEightScreensAndActions(t *testing.T) {
 	_ = profile
 	screen("devices", "devices")
 	command("RevokeDevice", map[string]any{"deviceId": device, "deviceKind": "pin", "confirmed": true}, "")
+	// Deleting the issuing credential must revoke this opaque family immediately.
+	l.call("deleted PIN family rejected", l.bff, "GET", "/api/v1/screens/profile", nil, "", 401)
+	l.token = tokens.Access // Still-valid signed password JWT, not the revoked PIN bearer.
 	command("RevokeDevice", map[string]any{"deviceId": device, "deviceKind": "biometric", "confirmed": true}, "")
 	screen("empty-devices", "devices")
+	// Exercise the remaining journey/logout with a genuinely new opaque family.
+	logoutDevice := device + "-logout"
+	l.call("native set logout PIN", l.yii, "POST", "/api/v1/auth/pin", map[string]string{"deviceId": logoutDevice, "deviceName": "Live logout device", "pin": pin}, "", 201)
+	native = decodeLive[liveTokens](t, l.call("native logout PIN login", l.yii, "POST", "/api/v1/auth/pin/login", map[string]string{"deviceId": logoutDevice, "pin": pin}, "", 200))
+	if !strings.HasPrefix(native.Access, "app_access_") || native.UserID != tokens.UserID {
+		t.Fatal("fresh opaque logout session not issued")
+	}
+	l.token = native.Access
 	// Existing CheckoutUseCase owns this canonical operation. The test drives the
 	// same HTTP boundary without asking SDUI to execute a critical remote command.
 	checkout := map[string]any{"deliveryAddressId": address.ID, "paymentMethod": "ON_DELIVERY", "comment": "Task2 native adapter HTTP verification"}
@@ -366,7 +377,7 @@ func TestLiveYiiEightScreensAndActions(t *testing.T) {
 	l.call("cross-account cancellation rejected", l.bff, "POST", "/api/v1/sdui/actions", map[string]any{"command": "CancelOrder", "input": map[string]any{"orderId": order.ID, "confirmed": true}}, "", 404)
 	l.token = originalToken
 	l.call("critical remote checkout rejected", l.bff, "POST", "/api/v1/sdui/actions", map[string]any{"command": "Checkout", "input": checkout}, "", 400)
-	l.call("native logout", l.yii, "POST", "/api/v1/auth/logout", map[string]string{"refreshToken": native.Refresh, "deviceId": device}, "", 204)
+	l.call("native logout", l.yii, "POST", "/api/v1/auth/logout", map[string]string{"refreshToken": native.Refresh, "deviceId": logoutDevice}, "", 204)
 	l.call("revoked opaque session rejected", l.bff, "GET", "/api/v1/screens/profile", nil, "", 401)
 	manifest := struct {
 		ExecutedAt string     `json:"executedAt"`

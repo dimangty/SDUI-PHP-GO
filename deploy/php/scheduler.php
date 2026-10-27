@@ -3,8 +3,8 @@ declare(strict_types=1);
 require __DIR__.'/scheduler-state.php';
 
 $command=$argv[1]??'';$interval=(int)($argv[2]??0);
-if(!in_array($command,['maintenance/run','maintenance/reindex'],true) || $interval<1){exit(2);}
-$budget=schedulerPositiveEnv('SCHEDULER_JOB_TIMEOUT_SECONDS',$command==='maintenance/run'?120:1800);
+if(!in_array($command,['maintenance/run','maintenance/reindex','maintenance/recover'],true) || $interval<1){exit(2);}
+$budget=schedulerPositiveEnv('SCHEDULER_JOB_TIMEOUT_SECONDS',$command==='maintenance/reindex'?1800:120);
 $maxAge=schedulerPositiveEnv('SCHEDULER_SUCCESS_MAX_AGE_SECONDS',$interval+$budget+5);
 set_time_limit(0);pcntl_async_signals(true);
 $stop=false;$child=null;$terminateAt=null;$timedOut=false;$nextRun=0.0;

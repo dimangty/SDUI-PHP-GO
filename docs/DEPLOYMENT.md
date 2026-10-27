@@ -35,7 +35,8 @@ The wrapper also rejects custom production-marked/TLS environment files without
 Only edge is published. Keycloak, both DBs, OpenSearch, FPM, internal Yii HTTP
 and BFF have no host mappings. Inspect privately with
 `python3 scripts/compose.py exec -T yii2 curl -fsS http://yii2-http:8080/health/ready`
-or `... http://sdui:9090/health/ready`. Development-only Swagger is at `/swagger/`;
+or `python3 scripts/compose.py exec -T yii2-http wget -q -O - http://sdui:9090/health/ready`.
+Development-only Swagger is at `/swagger/`;
 its YAML is the unchanged `backend-yii2/contracts/openapi.yaml` mounted read-only.
 The UI loads a pinned Swagger asset from unpkg; the YAML itself is served locally
 and works offline. No retired source tree or archive is needed to launch.
@@ -50,8 +51,9 @@ make integration-check
 ```
 
 Override `E2E_PORT` / `E2E_PROJECT` together when needed (project must end `-e2e`).
-Use different EDGE_SUBNET/EDGE_IP/YII_HTTP_IP/SDUI_IP if running multiple migrated
-projects concurrently. The verification runner requires explicit `--disposable`
+Use different EDGE_SUBNET/EDGE_IP/YII_HTTP_IP/SDUI_IP and YII_FPM_SUBNET/YII_FPM_HTTP_IP
+if running multiple migrated projects concurrently; update TRUSTED_BFF_IPS to
+match the allocated BFF addresses. The verification runner requires explicit `--disposable`
 and creates real random accounts/addresses/orders. It preserves normal app
 security ceilings, runs PHP HTTP tests against `http://edge:8080` with a test-only
 provider fixture, and records logs plus noncredential captures in
@@ -159,10 +161,14 @@ Keycloak administration and update PHP together. Admin management remains privat
 Keycloak26.3.3 inherits HTTPS for port9000; its Docker probe uses HTTPS and CA trust.
 
 The edge reconstructs headers; only its fixed address can set client IP at Yii
-HTTP. PHP trusts no forwarded chain. Auth/webhook budgets use the actual socket
-peer, verified by the runtime test. Do not put a new proxy in front and enable
-arbitrary X-Forwarded trust. BFF calls intentionally use their internal IP for
-network limits, with separate verified-user limits. See [architecture](ARCHITECTURE.md).
+HTTP. Go accepts original-client context only from the exact edge, and PHP
+accepts rate context only from exact `TRUSTED_BFF_IPS`. BFF egress is ingress-only;
+FPM admits only the internal Nginx's exact dedicated-network IP and local probe.
+Production retains the FPM mount/environment and these network maps. Network
+limits follow the original IPv4 /24 or IPv6 /64 through direct API and BFF calls;
+verified-user limits remain separate. Webhook source trust remains independent.
+See [trust wiring](backend-fixes/TRUST_AND_RATE_LIMITS.md); do not replace exact
+peer allowlists with shared Docker CIDRs or arbitrary forwarded chains.
 
 OpenSearch enables security/TLS, disables demo installation and uses the supplied
 node certificate. `search-start.sh` builds an admin hash for **fresh** security
@@ -171,7 +177,11 @@ not overwritten by startup; rotate its password using its authenticated security
 API/private administrator procedure, update `.env.prod`, then verify readiness.
 Search data is reconstructible from SQL. Initial reindex must succeed before FPM
 starts. Full reconciliation is scheduled every five minutes, separately from the
-one-minute reservation/session maintenance worker. Large-volume throughput and
+one-minute reservation/session maintenance worker and 30-second
+`payment-recovery` worker. The latter runs `maintenance/recover`, dispatches
+unsent payment intents and retries only safe stored-user session revocation.
+Uncertain payment sends and password resets remain manual work; see
+[recovery/rollout](backend-fixes/MIGRATION_ROLLBACK.md). Large-volume throughput and
 search disaster recovery are not established by small-fixture tests.
 
 ### Scheduled worker readiness and bounded execution
@@ -200,8 +210,10 @@ Operator inputs in both env templates:
 | --- | ---: | --- |
 | MAINTENANCE_JOB_TIMEOUT_SECONDS |120 | Maximum maintenance attempt runtime |
 | REINDEX_JOB_TIMEOUT_SECONDS |1800 | Maximum reconciliation attempt runtime |
+| RECOVERY_JOB_TIMEOUT_SECONDS |120 | Maximum payment/session recovery scan runtime |
 | MAINTENANCE_SUCCESS_MAX_AGE_SECONDS |blank →185 |60s cadence +120s runtime +5s |
 | REINDEX_SUCCESS_MAX_AGE_SECONDS |blank →2105 |300s cadence +1800s runtime +5s |
+| RECOVERY_SUCCESS_MAX_AGE_SECONDS |blank →155 |30s cadence +120s runtime +5s |
 
 Explicit timeout/success-age values must be1..86400 seconds. A deliberately
 shorter success-age budget can make a live waiting/in-progress worker unready;
@@ -237,7 +249,7 @@ make test-infra PRODUCTION_TEST_ENV="$TEST_ENV"
 ```
 
 The scheduler tests execute the actual deployed script and exact Compose probe
-for both modes. Real unreachable DB/search checks and controlled CLI child
+for all three commands. Real unreachable business dependencies and controlled CLI child
 processes cover first completion, repeated failure/recovery, bounded legitimate/
 TERM-ignoring jobs, stale success, frozen parents and graceful child signalling.
 They have `--network none`, no production credentials/data access and clean up
@@ -296,6 +308,11 @@ The test certificates expire after three days. Never reuse this PKI for deployme
    Go snapshot importer. Use a separately retained immutable release and its
    controlled offline import procedure on a restored copy first; confirm the
    resulting normalized schema, import status and data before cutover.
+   The current SQL release includes 012–014: payment outbox/correlation, session
+   families/revocation, and bounded recovery scheduling. Migration 013 deletes
+   unlinked legacy opaque tokens and requires reauthentication. Old binaries
+   cannot safely write alongside this schema. Readiness checks the combined
+   shape. See [migration and rollback details](backend-fixes/MIGRATION_ROLLBACK.md).
 4. Start infrastructure/jobs, require initial reindex and internal readiness, run
    read-only contract/data checks and provider/TLS checks. Shift the one edge to
    Yii/BFF as a **single-writer** staged switch; do not distribute writes across
@@ -348,7 +365,7 @@ Equivalent explicit job/drain commands are:
 
 ```sh
 python3 scripts/compose.py --env .env.prod --prod stop edge
-python3 scripts/compose.py --env .env.prod --prod stop sdui yii2-http maintenance reconcile yii2
+python3 scripts/compose.py --env .env.prod --prod stop sdui yii2-http maintenance reconcile payment-recovery yii2
 python3 scripts/compose.py --env .env.prod --prod run --rm --no-deps migrate
 python3 scripts/compose.py --env .env.prod --prod run --rm --no-deps yii-migrate
 python3 scripts/compose.py --env .env.prod --prod run --rm --no-deps reindex

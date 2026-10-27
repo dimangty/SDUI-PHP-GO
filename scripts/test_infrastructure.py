@@ -18,17 +18,20 @@ def main():
         cfg = json.loads(subprocess.check_output(command(path, prod=prod) + ['config', '--format', 'json']))
         services = cfg['services']
         assert set(services) == {'postgres', 'migrate', 'yii-migrate', 'keycloak-postgres', 'keycloak', 'opensearch',
-                                 'reindex', 'yii2', 'yii2-http', 'sdui', 'maintenance', 'reconcile'} | {'edge'}
+                                 'reindex', 'yii2', 'yii2-http', 'sdui', 'maintenance', 'reconcile', 'payment-recovery'} | {'edge'}
         assert all(not service.get('ports') for name, service in services.items() if name != 'edge')
         assert len(services['edge']['ports']) == 1
         assert not any(key in services['sdui']['environment'] for key in ('DATABASE_URL', 'PGPASSWORD', 'KEYCLOAK_CLIENT_SECRET'))
         assert services['sdui']['environment']['YII_ORIGIN'] == 'http://yii2-http:8080'
-        assert services['yii2']['environment']['TRUSTED_PROXY_CIDRS'] == ''
+        assert services['yii2']['environment']['TRUSTED_BFF_IPS'] == services['sdui']['networks']['ingress']['ipv4_address']
+        assert set(services['sdui']['networks']) == {'ingress'}
+        assert services['sdui']['environment']['TRUSTED_EDGE_IPS'] == services['edge']['networks']['ingress']['ipv4_address']
+        assert services['yii2']['environment']['FPM_TRUSTED_NGINX_IPS'] == services['yii2-http']['networks']['fpm']['ipv4_address'] + ',127.0.0.1'
         assert services['migrate']['build']['dockerfile'].endswith('deploy/migrate.Dockerfile')
         assert services['yii2']['healthcheck']['test'][-1] == '/opt/probes/fpm-health.php'
         assert services['yii2']['depends_on']['reindex']['condition'] == 'service_completed_successfully'
         if prod:
-            for name in ('yii2', 'yii-migrate', 'reindex', 'maintenance', 'reconcile'):
+            for name in ('yii2', 'yii-migrate', 'reindex', 'maintenance', 'reconcile', 'payment-recovery'):
                 e = services[name]['environment']
                 assert e['APP_ENV'] == 'production' and 'sslmode=verify-full' in e['DATABASE_URL']
                 assert e['PGSSLROOTCERT'] == '/run/tls/ca.crt'

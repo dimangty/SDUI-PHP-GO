@@ -45,14 +45,21 @@ def main():
     run('bff-vet', ['go', 'vet', './...'], cwd=ROOT / 'backend-sdui')
     run('ops-tests', ['go', 'test', './...', '-count=1'], cwd=ROOT / 'tools/ops')
     run('ops-vet', ['go', 'vet', './...'], cwd=ROOT / 'tools/ops')
+    sql_workers = ['maintenance', 'payment-recovery']
     try:
+        run('php-workers-pause', compose + ['stop', *sql_workers])
         run('provider-fixture', verify + ['--profile', 'verification', 'up', '-d', '--no-deps', 'fixture'])
         run('php-all', verify + ['run', '--rm', '--no-deps',
             '-e', 'ADMIN_EMAILS=admin@test.example',
             '-e', 'API_ORIGIN=http://edge:8080',
             '-e', 'UPSTREAM_FIXTURE_ORIGIN=http://fixture:8080', 'yii2', 'composer', 'test:all'])
+        run('backend-fixes', [sys.executable, 'scripts/backend_fixes.py', '--env', args.env,
+                              '--project', args.project, '--disposable'])
     finally:
-        subprocess.run(verify + ['--profile', 'verification', 'stop', 'fixture'], cwd=ROOT, env=env, check=True)
+        try:
+            subprocess.run(verify + ['--profile', 'verification', 'stop', 'fixture'], cwd=ROOT, env=env, check=True)
+        finally:
+            subprocess.run(compose + ['up', '-d', '--no-deps', *sql_workers], cwd=ROOT, env=env, check=True)
     run('runtime', [sys.executable, 'scripts/runtime_checks.py', '--env', args.env, '--project', args.project,
                     '--url', args.url, '--shutdown'])
     print('PASS Task4 disposable verification. Evidence: deploy/evidence/. No mobile or production cutover claim.')

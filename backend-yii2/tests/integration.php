@@ -90,7 +90,7 @@ test('payment confirmation webhook dedup refund and stock restoration are transa
     [$u,$a,$p]=fixture();$payments=new \Shop\application\PaymentService($db,$repo,$commerce);
     $commerce->addCart($u,['productId'=>$p,'quantity'=>2]);$o=$commerce->createOrder($u,['deliveryAddressId'=>$a,'paymentMethod'=>'CARD']);
     same('AUTHORIZED',$payments->confirm($u,$o['paymentId'])['status']);
-    $id=Ids::uuid();$payments->webhook(['paymentId'=>$o['paymentId'],'status'=>'CAPTURED','transactionId'=>'test-txn'],$id);
+    $id=Ids::uuid();$payments->webhook(['paymentId'=>$o['paymentId'],'status'=>'CAPTURED','transactionId'=>'test-txn-'.$o['paymentId']],$id);
     same('PAID',$repo->order($o['id'],$u)['status']);
     errorCode('ALREADY_PROCESSED',fn()=>$payments->webhook(['paymentId'=>$o['paymentId'],'status'=>'CAPTURED'],$id));
     same('REFUNDED',$payments->refund($o['paymentId'])['status']);

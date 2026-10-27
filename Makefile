@@ -34,12 +34,23 @@ reindex:
 	$(COMPOSE) exec -T yii2 php yii maintenance/reindex
 
 integration-up:
+	# A rebuilt dependency must not be gated by an old running proxy's failed readiness.
+	EDGE_PORT=$(E2E_PORT) python3 scripts/compose.py --env .env.example --project $(E2E_PROJECT) stop edge sdui yii2-http maintenance reconcile payment-recovery yii2
+	# Prepare ingress/FPM proxy containers before the full dependency startup.
+	EDGE_PORT=$(E2E_PORT) python3 scripts/compose.py --env .env.example --project $(E2E_PROJECT) up --no-start --no-deps yii2-http edge
 	EDGE_PORT=$(E2E_PORT) python3 scripts/compose.py --env .env.example --project $(E2E_PROJECT) up -d --build --wait --wait-timeout $(WAIT_TIMEOUT)
 	EDGE_PORT=$(E2E_PORT) python3 scripts/compose.py --env .env.example --project $(E2E_PROJECT) run --rm --no-deps seed
 	EDGE_PORT=$(E2E_PORT) python3 scripts/compose.py --env .env.example --project $(E2E_PROJECT) exec -T yii2 php yii maintenance/reindex
 
 integration-check:
 	EDGE_PORT=$(E2E_PORT) python3 scripts/verify.py --env .env.example --project $(E2E_PROJECT) --url http://127.0.0.1:$(E2E_PORT) --disposable
+
+.PHONY: test-backend-fixes test-trust-live
+test-backend-fixes:
+	python3 scripts/backend_fixes.py --env .env.example --project $(E2E_PROJECT) --disposable
+
+test-trust-live:
+	python3 backend-yii2/tests/trust-live/run.py
 
 test-php:
 	docker build -t "$(PHP_TEST_IMAGE)" backend-yii2
@@ -48,6 +59,7 @@ test-php:
 
 test-infra:
 	$(MAKE) test-scheduler
+	python3 scripts/test_backend_integration.py
 	python3 scripts/test_infrastructure.py --production-env "$(PRODUCTION_TEST_ENV)"
 	python3 scripts/test_deployment_commands.py --production-env "$(PRODUCTION_TEST_ENV)"
 
@@ -69,7 +81,7 @@ prod-infra:
 
 prod-drain:
 	$(PROD_COMPOSE) stop edge
-	$(PROD_COMPOSE) stop sdui yii2-http maintenance reconcile yii2
+	$(PROD_COMPOSE) stop sdui yii2-http maintenance reconcile payment-recovery yii2
 
 prod-migrate:
 	$(PROD_COMPOSE) run --rm --no-deps migrate
@@ -82,7 +94,7 @@ prod-app:
 	$(PROD_COMPOSE) up -d --no-deps --wait --wait-timeout $(WAIT_TIMEOUT) yii2 yii2-http sdui
 
 prod-workers:
-	$(PROD_COMPOSE) up -d --no-deps --wait --wait-timeout $(WAIT_TIMEOUT) maintenance reconcile
+	$(PROD_COMPOSE) up -d --no-deps --wait --wait-timeout $(WAIT_TIMEOUT) maintenance reconcile payment-recovery
 
 prod-edge:
 	$(PROD_COMPOSE) up -d --no-deps --wait --wait-timeout $(WAIT_TIMEOUT) edge

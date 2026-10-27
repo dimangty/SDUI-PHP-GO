@@ -8,7 +8,8 @@ use Shop\repositories\ShopRepository;
 
 final class AuthService
 {
-    public function __construct(private Database $db,private ShopRepository $repo,private SessionService $sessions) {}
+    public function __construct(private Database $db,private ShopRepository $repo,private SessionService $sessions,private ?Keycloak $provider=null) {}
+    private function keycloak(): Keycloak {return $this->provider??new Keycloak();}
     public function register(array $input,string $bootstrap=''): array
     {
         $email=strtolower(trim($input['email']??''));$password=$input['password']??'';Rules::email($email);Rules::password($password);
@@ -52,9 +53,15 @@ final class AuthService
     }
     public function logout(string $user,array $input): void
     {
+        // Commit local cleanup first, including every refresh family. The remote
+        // target is the authenticated subject, regardless of supplied token text.
+        $this->sessions->logout($user);
         $token=$input['refreshToken']??'';
-        if($token!=='' && !str_starts_with($token,'app_refresh_')){try{(new Keycloak())->logout($token);}catch(\Throwable $e){error_log('Identity logout failed: '.$e->getMessage());}}
-        $this->sessions->logout($user,str_starts_with($token,'app_refresh_')?$token:'');
+        if($token!=='' && !str_starts_with($token,'app_')){
+            try{$this->keycloak()->logoutUser($user);}
+            catch(ApiError $e){throw $e;}
+            catch(\Throwable){throw new ApiError('IDENTITY_PROVIDER_UNAVAILABLE','identity provider is unavailable');}
+        }
     }
     public function authenticate(string $raw): array
     {
@@ -69,15 +76,11 @@ final class AuthService
     }
     public function changePassword(string $user,array $input): void
     {
-        $new=$input['newPassword']??'';Rules::password($new);$u=$this->repo->user($user);$kc=new Keycloak();
-        try{$kc->password($u['email'],$input['oldPassword']??'');}catch(ApiError){throw new ApiError('INVALID_CREDENTIALS','old password is incorrect');}
-        foreach([
-            ['PUT','/users/'.rawurlencode($user).'/reset-password',['type'=>'password','value'=>$new,'temporary'=>false]],
-            ['POST','/users/'.rawurlencode($user).'/logout',null],
-            ['DELETE','/users/'.rawurlencode($user).'/consents/'.rawurlencode(Env::get('KEYCLOAK_CLIENT_ID','shopkmp-backend')),null],
-        ] as [$method,$path,$body]){
-            $r=$kc->admin($method,$path,$body);
-            if(($r['status']<200 || $r['status']>=300) && !($method==='DELETE' && $r['status']===404)){throw new ApiError('IDENTITY_PROVIDER_ERROR','identity provider rejected password change or session revocation');}
+        $new=$input['newPassword']??'';Rules::password($new);$u=$this->repo->user($user);$kc=$this->keycloak();
+        try{$verified=$kc->password($u['email'],$input['oldPassword']??'');}catch(ApiError $e){
+            if(in_array($e->errorCode,['INVALID_CREDENTIALS','ACCOUNT_LOCKED'],true)){throw new ApiError('INVALID_CREDENTIALS','old password is incorrect');}throw $e;
         }
+        if($verified['userId']!==$user){throw new ApiError('IDENTITY_PROVIDER_ERROR','identity subject mismatch');}
+        (new PasswordSessionRecovery($this->db,$this->sessions,$kc))->change($user,$new,$u['session_security_version']);
     }
 }

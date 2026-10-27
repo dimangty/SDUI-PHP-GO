@@ -1,5 +1,11 @@
 log_format internal '$remote_addr "$request_method $uri" $status $request_time';
 access_log /dev/stdout internal;
+# BFF context is only for rate accounting. Webhook source verification keeps
+# the direct edge-resolved REMOTE_ADDR and can never inherit BFF rate context.
+map $uri $shop_rate_client_ip {
+    default $http_x_real_ip;
+    /api/v1/payments/webhook "";
+}
 server {
     listen 8080;
     server_name _;
@@ -16,9 +22,26 @@ server {
     set $fpm_upstream yii2:9000;
     location / {
         include fastcgi_params;
+        # Finite header set: do not expose caller identity/forwarding headers
+        # (including a forged X-Shop-Rate-Client-IP) to PHP.
+        fastcgi_pass_request_headers off;
         fastcgi_param SCRIPT_FILENAME /app/web/index.php;
         fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_param HTTP_HOST $host;
         fastcgi_param HTTP_AUTHORIZATION $http_authorization;
+        fastcgi_param HTTP_ACCEPT $http_accept;
+        fastcgi_param HTTP_ORIGIN $http_origin;
+        fastcgi_param HTTP_ACCESS_CONTROL_REQUEST_METHOD $http_access_control_request_method;
+        fastcgi_param HTTP_ACCESS_CONTROL_REQUEST_HEADERS $http_access_control_request_headers;
+        fastcgi_param HTTP_IDEMPOTENCY_KEY $http_idempotency_key;
+        fastcgi_param HTTP_X_REQUEST_ID $http_x_request_id;
+        fastcgi_param HTTP_X_WEBHOOK_ID $http_x_webhook_id;
+        fastcgi_param HTTP_X_WEBHOOK_TIMESTAMP $http_x_webhook_timestamp;
+        fastcgi_param HTTP_X_WEBHOOK_SIGNATURE $http_x_webhook_signature;
+        fastcgi_param HTTP_X_ADMIN_BOOTSTRAP_TOKEN $http_x_admin_bootstrap_token;
+        fastcgi_param HTTP_IF_NONE_MATCH $http_if_none_match;
+        fastcgi_param HTTP_X_SHOP_RATE_CLIENT_IP $shop_rate_client_ip;
+        fastcgi_param HTTP_X_REAL_IP "";
         fastcgi_param HTTP_PROXY "";
         fastcgi_param HTTP_X_FORWARDED_FOR "";
         fastcgi_param HTTP_FORWARDED "";

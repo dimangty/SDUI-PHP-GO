@@ -70,7 +70,7 @@ test('API catalog admin profile cart checkout webhook reviews and cancellation r
     same(404,request('GET','/api/v1/orders/'.$o['id'],null,$otherToken)['status']);
     same(404,request('GET','/api/v1/payments/'.$o['paymentId'],null,$otherToken)['status']);
     same('AUTHORIZED',request('POST','/api/v1/payments/'.$o['paymentId'].'/confirm',null,$token)['data']['status']);
-    $raw=json_encode(['paymentId'=>$o['paymentId'],'status'=>'CAPTURED','transactionId'=>'api-capture']);$ts=(string)time();$wid=Ids::uuid();
+    $raw=json_encode(['paymentId'=>$o['paymentId'],'status'=>'CAPTURED','transactionId'=>'api-capture-'.$o['paymentId']]);$ts=(string)time();$wid=Ids::uuid();
     $headers=['x-webhook-id'=>$wid,'x-webhook-timestamp'=>$ts,'x-webhook-signature'=>hash_hmac('sha256',$ts.':'.$wid.':'.$raw,Env::get('PAYMENT_WEBHOOK_SECRET'))];
     same(401,request('POST','/api/v1/payments/webhook',null,null,[], $raw)['status']);
     same(204,request('POST','/api/v1/payments/webhook',null,null,$headers,$raw)['status']);

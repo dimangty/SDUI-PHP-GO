@@ -31,7 +31,7 @@ def main():
 
     def worker_statuses():
         statuses = {}
-        for name in ('maintenance', 'reconcile'):
+        for name in ('maintenance', 'reconcile', 'payment-recovery'):
             status = json.loads(run('exec', '-T', name, 'php', '/opt/scheduler/scheduler-health.php', 'status'))
             assert status['live'] and status['ready'] and status['state']['lastSuccessAt'] is not None, (name, status)
             statuses[name] = status
@@ -57,7 +57,8 @@ def main():
     assert client != spoof and expected in keys and 'read:network-203.0.113.0/24' not in keys, (client, keys)
     for url in ('http://yii2-http:8080/health/live', 'http://yii2-http:8080/health/ready',
                 'http://sdui:9090/health/live', 'http://sdui:9090/health/ready'):
-        run('exec', '-T', 'yii2', 'curl', '--fail', '--silent', '--max-time', '8', url)
+        # Nginx is on ingress and FPM; PHP deliberately has no ingress interface.
+        run('exec', '-T', 'yii2-http', 'wget', '-q', '-T', '8', '-O', '/dev/null', url)
     run('exec', '-T', 'yii2', 'php', '/opt/probes/fpm-health.php')
     run('exec', '-T', 'yii2', 'php-fpm', '-t')
     run('exec', '-T', 'yii2-http', 'nginx', '-t')
@@ -77,7 +78,7 @@ def main():
         evidence['services'][name] = {'image': container['Image'], 'status': container['State']['Status'],
                                       'health': container['State'].get('Health', {}).get('Status')}
     if args.shutdown:
-        names = ['edge', 'sdui', 'yii2-http', 'yii2', 'maintenance', 'reconcile']
+        names = ['edge', 'sdui', 'yii2-http', 'yii2', 'maintenance', 'reconcile', 'payment-recovery']
         run('stop', *names)
         stopped = json.loads(subprocess.check_output(['docker', 'inspect', *run('ps', '--all', '--quiet', *names).split()]))
         exits = {c['Config']['Labels']['com.docker.compose.service']: c['State']['ExitCode'] for c in stopped}

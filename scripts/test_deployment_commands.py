@@ -64,10 +64,10 @@ def tests(production_env):
             stages = {
                 'prod-migrate': [('run', ['migrate']), ('run', ['yii-migrate'])],
                 'prod-reindex': [('run', ['reindex'])],
-                'prod-drain': [('stop', ['edge']), ('stop', ['sdui', 'yii2-http', 'maintenance', 'reconcile', 'yii2'])],
-                'prod-rollback-stop': [('stop', ['edge']), ('stop', ['sdui', 'yii2-http', 'maintenance', 'reconcile', 'yii2'])],
+                'prod-drain': [('stop', ['edge']), ('stop', ['sdui', 'yii2-http', 'maintenance', 'reconcile', 'payment-recovery', 'yii2'])],
+                'prod-rollback-stop': [('stop', ['edge']), ('stop', ['sdui', 'yii2-http', 'maintenance', 'reconcile', 'payment-recovery', 'yii2'])],
                 'prod-app': [('up', ['yii2', 'yii2-http', 'sdui'])],
-                'prod-workers': [('up', ['maintenance', 'reconcile'])],
+                'prod-workers': [('up', ['maintenance', 'reconcile', 'payment-recovery'])],
                 'prod-edge': [('up', ['edge'])],
                 'prod-infra': [('up', ['postgres', 'keycloak-postgres', 'keycloak', 'opensearch'])],
             }

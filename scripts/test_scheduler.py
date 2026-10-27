@@ -17,6 +17,12 @@ import unittest
 import uuid
 from compose import ROOT, command
 
+# Preserve all deadline/health assertions while allowing real Docker round trips
+# on a loaded shared VM. Production scheduler budgets/heartbeat are unchanged.
+TIME_SCALE = int(os.getenv('SCHEDULER_TEST_TIME_SCALE', '1'))
+if not 1 <= TIME_SCALE <= 5:
+    raise ValueError('SCHEDULER_TEST_TIME_SCALE must be between 1 and 5')
+
 
 def docker(*args, check=True):
     return subprocess.run(['docker', *map(str, args)], check=check, text=True,
@@ -24,7 +30,7 @@ def docker(*args, check=True):
 
 
 def wait_for(predicate, message, timeout=15):
-    deadline = time.monotonic() + timeout
+    deadline = time.monotonic() + timeout * TIME_SCALE
     while time.monotonic() < deadline:
         value = predicate()
         if value:
@@ -35,6 +41,9 @@ def wait_for(predicate, message, timeout=15):
 
 class Worker:
     def __init__(self, service, image, fixture=True, interval=1, budget=3, max_age=30, mode='success'):
+        interval *= TIME_SCALE
+        budget *= TIME_SCALE
+        max_age *= TIME_SCALE
         self.temp = tempfile.TemporaryDirectory(prefix='shopkmp-scheduler-')
         self.path = Path(self.temp.name)
         (self.path / 'runtime').mkdir()
@@ -44,7 +53,7 @@ class Worker:
         probe = service['healthcheck']['test']
         health = shlex.join(probe[1:]) if probe[0] == 'CMD' else probe[1]
         args = ['run', '-d', '--name', self.name, '--network', 'none', '--stop-signal', service['stop_signal'],
-                '--health-cmd', health, '--health-interval', '1s', '--health-timeout', '2s',
+                '--health-cmd', health, '--health-interval', '1s', '--health-timeout', f'{2 * TIME_SCALE}s',
                 '--health-retries', '1', '--health-start-period', '0s',
                 '-e', 'DATABASE_URL=postgres://regression:unused@127.0.0.1:1/regression?sslmode=disable',
                 '-e', 'OPENSEARCH_URL=http://127.0.0.1:1',
@@ -64,6 +73,12 @@ class Worker:
             raise
 
     def set_mode(self, mode):
+        if hasattr(self, 'name'):
+            # Update from the container side: a host-side atomic rename can be
+            # observed as ENOENT through Docker Desktop's shared filesystem.
+            docker('exec', self.name, 'php', '-r',
+                   'file_put_contents("/scheduler-fixture/mode",$argv[1],LOCK_EX);', mode)
+            return
         path = self.path / 'mode.next'
         path.write_text(mode)
         path.replace(self.path / 'mode')
@@ -152,7 +167,7 @@ def worker_tests(service, image):
             count = len(w.events('started'))
             w.set_mode('hold')
             wait_for(lambda: len(w.events('started')) > count, 'No active child for graceful stop')
-            docker('stop', '--time', '8', w.name)
+            docker('stop', '--time', str(8 * TIME_SCALE), w.name)
             self.assertTrue(w.events('term'), 'Parent did not forward SIGTERM to its child')
             self.assertEqual(0, w.state()['ExitCode'])
             self.assertEqual('stopped', w.snapshot()['phase'])
@@ -180,7 +195,7 @@ def worker_tests(service, image):
             w = self.worker(mode='hold', budget=2)
             wait_for(lambda: w.events('started'), 'No child before parent pause')
             docker('kill', '--signal', 'STOP', w.name)
-            time.sleep(2.3)  # The child really exceeds its budget while the parent cannot poll.
+            time.sleep(2.3 * TIME_SCALE)  # Really exceeds the scaled budget while the parent cannot poll.
             w.set_mode('success')
             wait_for(lambda: w.events('succeeded'), 'Child did not finish while parent was paused')
             w.set_mode('hold')
@@ -200,12 +215,13 @@ def worker_tests(service, image):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--image', default=os.getenv('SCHEDULER_TEST_IMAGE', 'shopkmp-migrated-e2e-yii2'))
-    parser.add_argument('--service', choices=['maintenance', 'reconcile'])
+    parser.add_argument('--service', choices=['maintenance', 'reconcile', 'payment-recovery'])
     parser.add_argument('--test', help='Run only test names containing this substring')
     args = parser.parse_args()
+    print(f'Scheduler fixture timing scale: {TIME_SCALE}; all production-script/probe assertions enabled', flush=True)
     config = json.loads(subprocess.check_output(command(ROOT / '.env.example') + ['config', '--format', 'json']))
     suite = unittest.TestSuite(worker_tests(config['services'][name], args.image)
-                               for name in ([args.service] if args.service else ['maintenance', 'reconcile']))
+                               for name in ([args.service] if args.service else ['maintenance', 'reconcile', 'payment-recovery']))
     if args.test:
         suite = unittest.TestSuite(test for group in suite for test in group if args.test in test.id())
     result = unittest.TextTestRunner(verbosity=2).run(suite)

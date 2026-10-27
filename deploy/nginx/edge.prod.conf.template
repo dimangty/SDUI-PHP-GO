@@ -2,12 +2,14 @@ log_format edge '$remote_addr "$request_method $uri" $status $request_time $requ
 access_log /dev/stdout edge;
 server {
     listen 8443 ssl default_server;
+    listen [::]:8443 ssl default_server;
     server_name _;
     ssl_reject_handshake on;
     return 444;
 }
 server {
     listen 8443 ssl;
+    listen [::]:8443 ssl;
     server_name ${PUBLIC_API_HOST};
     ssl_certificate /run/tls/api.crt;
     ssl_certificate_key /run/tls/api.key;

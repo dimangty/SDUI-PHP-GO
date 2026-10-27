@@ -32,6 +32,7 @@ final class CredentialService
         $maxLocks=max(1,(int)Env::get($kind==='PIN'?'PIN_MAX_LOCKS':'BIOMETRIC_MAX_LOCKS','3'));
         if($attempts>=$maxAttempts){$attempts=0;$locks++;
             if($locks>=$maxLocks){
+                $this->sessions->revokeCredential($row['user_id'],$kind==='PIN'?'pin':'biometric',$row['id']);
                 $this->db->execute('DELETE FROM '.$table.' WHERE id=?',[$row['id']]);
                 return new ApiError($kind==='PIN'?'PIN_NOT_SET':'BIOMETRIC_REVOKED',$kind==='PIN'?'PIN was removed after repeated lockouts':'biometric credential was revoked after repeated lockouts; sign in with password to enroll again');
             }
@@ -46,11 +47,14 @@ final class CredentialService
     {
         $device=$input['deviceId']??'';Rules::device($device);
         $result=$this->db->transaction(function()use($device,$input){
+            $owner=$this->db->required('SELECT user_id FROM device_pins WHERE device_id=?',[$device],'PIN_NOT_SET','PIN is not set for this device');
+            $this->sessions->lockUser($owner['user_id']);
             $r=$this->db->required('SELECT * FROM device_pins WHERE device_id=? FOR UPDATE',[$device],'PIN_NOT_SET','PIN is not set for this device');
+            if($r['user_id']!==$owner['user_id']){throw new ApiError('PIN_NOT_SET','PIN credential changed; retry login');}
             $this->activeLock($r,'PIN');
             if(!Secret::verify($input['pin']??'',$r['pin_hash'])){return $this->failure($r,'device_pins','PIN');}
             $this->db->execute('UPDATE device_pins SET failed_attempts=0,lock_count=0,locked_until=NULL,last_used_at=now() WHERE id=?',[$r['id']]);
-            return $this->sessions->issue($r['user_id']);
+            return $this->sessions->issue($r['user_id'],'pin',$r['id']);
         });
         if($result instanceof ApiError){throw $result;}return $result;
     }
@@ -58,6 +62,7 @@ final class CredentialService
     {
         $device=$input['deviceId']??'';Rules::device($device);$u=$this->repo->user($user);Rules::pin($input['newPin']??'',$u['date_of_birth']);
         $result=$this->db->transaction(function()use($user,$device,$input){
+            $this->sessions->lockUser($user);
             $r=$this->db->required('SELECT * FROM device_pins WHERE user_id=? AND device_id=? FOR UPDATE',[$user,$device],'PIN_NOT_SET','PIN not set');$this->activeLock($r,'PIN');
             if(!Secret::verify($input['currentPin']??'',$r['pin_hash'])){return $this->failure($r,'device_pins','PIN');}
             $this->db->execute('UPDATE device_pins SET pin_hash=?,failed_attempts=0,lock_count=0,locked_until=NULL WHERE id=?',[Secret::hash($input['newPin']),$r['id']]);return null;
@@ -68,7 +73,12 @@ final class CredentialService
     private function deleteDevice(string $user,string $device,bool $biometric): void
     {
         Rules::device($device);$table=$biometric?'device_biometrics':'device_pins';
-        if($this->db->execute('DELETE FROM '.$table.' WHERE user_id=? AND device_id=?',[$user,$device])===0){throw new ApiError($biometric?'BIOMETRIC_NOT_SET':'PIN_NOT_SET',$biometric?'biometric login is not enabled for this device':'PIN not set');}
+        $this->db->transaction(function()use($user,$device,$biometric,$table){
+            $this->sessions->lockUser($user);
+            $r=$this->db->required('SELECT id FROM '.$table.' WHERE user_id=? AND device_id=? FOR UPDATE',[$user,$device],$biometric?'BIOMETRIC_NOT_SET':'PIN_NOT_SET',$biometric?'biometric login is not enabled for this device':'PIN not set');
+            $this->sessions->revokeCredential($user,$biometric?'biometric':'pin',$r['id']);
+            $this->db->execute('DELETE FROM '.$table.' WHERE id=?',[$r['id']]);
+        });
     }
     public function pinDevices(string $user): array {return $this->devices($user,false);}
     public function biometricDevices(string $user): array {return $this->devices($user,true);}
@@ -107,6 +117,7 @@ final class CredentialService
     {
         $id=$input['credentialId']??'';$this->credential($id);
         return $this->db->transaction(function()use($id){
+            $owner=$this->db->required('SELECT user_id FROM device_biometrics WHERE id=?',[$id],'BIOMETRIC_NOT_SET','biometric credential not found');$this->sessions->lockUser($owner['user_id']);
             $r=$this->db->required('SELECT * FROM device_biometrics WHERE id=? FOR UPDATE',[$id],'BIOMETRIC_NOT_SET','biometric login is not enabled for this credential');$this->activeLock($r,'BIOMETRIC');
             $this->db->execute('DELETE FROM biometric_challenges WHERE credential_id=? OR used OR expires_at<=now()',[$id]);$nonce=Ids::opaque();
             $this->db->execute('INSERT INTO biometric_challenges(challenge,credential_id,expires_at) VALUES(?,?,now()+interval \'120 seconds\')',[$nonce,$id]);
@@ -117,6 +128,7 @@ final class CredentialService
     {
         $id=$input['credentialId']??'';$this->credential($id);$nonce=$input['challenge']??'';
         $result=$this->db->transaction(function()use($id,$nonce,$input){
+            $owner=$this->db->required('SELECT user_id FROM device_biometrics WHERE id=?',[$id],'BIOMETRIC_NOT_SET','biometric credential not found');$this->sessions->lockUser($owner['user_id']);
             $r=$this->db->required('SELECT *,encode(public_key,\'hex\') AS key_hex FROM device_biometrics WHERE id=? FOR UPDATE',[$id],'BIOMETRIC_NOT_SET','biometric login is not enabled for this credential');$this->activeLock($r,'BIOMETRIC');
             $c=$this->db->one('SELECT * FROM biometric_challenges WHERE challenge=? FOR UPDATE',[$nonce]);
             if(!$c || $c['credential_id']!==$id || $c['used'] || strtotime($c['expires_at'])<=time()){
@@ -131,7 +143,7 @@ final class CredentialService
             if(!$valid){$this->db->execute('DELETE FROM biometric_challenges WHERE challenge=?',[$nonce]);return $this->failure($r,'device_biometrics','BIOMETRIC');}
             $this->db->execute('UPDATE biometric_challenges SET used=TRUE WHERE challenge=?',[$nonce]);
             $this->db->execute('UPDATE device_biometrics SET failed_attempts=0,lock_count=0,locked_until=NULL,last_used_at=now() WHERE id=?',[$id]);
-            return $this->sessions->issue($r['user_id']);
+            return $this->sessions->issue($r['user_id'],'biometric',$r['id']);
         });if($result instanceof ApiError){throw $result;}return $result;
     }
     public function session(string $user,string $device): array

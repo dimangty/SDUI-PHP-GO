@@ -104,9 +104,16 @@ final class CommerceService
         });
     }
     public function lockOrderPayment(string $id): array
-    {return $this->db->required('SELECT o.*,p.status AS payment_status FROM orders o JOIN payments p ON p.id=o.payment_id WHERE o.id=? FOR UPDATE OF o,p',[$id],'ORDER_NOT_FOUND','order not found');}
+    {
+        // Explicit order -> payment -> operation -> sorted products everywhere.
+        $o=$this->db->required('SELECT * FROM orders WHERE id=? FOR UPDATE',[$id],'ORDER_NOT_FOUND','order not found');
+        $p=$this->db->required('SELECT status FROM payments WHERE id=? FOR UPDATE',[$o['payment_id']],'PAYMENT_NOT_FOUND','payment not found');
+        $o['payment_status']=$p['status'];return $o;
+    }
     public function restoreStock(string $order): void
     {
+        // Same transaction as product updates: a rollback rolls back this guard too.
+        if($this->db->execute("UPDATE orders SET stock_restored_at=now() WHERE id=? AND stock_restored_at IS NULL AND status<>'COMPLETED'",[$order])!==1){return;}
         // Sorted locks match checkout, avoiding multi-product reversal deadlocks.
         $rows=$this->db->all('SELECT product_id,sum(quantity)::int AS quantity FROM order_items WHERE order_id=? GROUP BY product_id ORDER BY product_id',[$order]);
         foreach($rows as $r){$this->db->one('SELECT id FROM products WHERE id=? FOR UPDATE',[$r['product_id']]);$this->db->execute('UPDATE products SET stock=stock+? WHERE id=?',[$r['quantity'],$r['product_id']]);}

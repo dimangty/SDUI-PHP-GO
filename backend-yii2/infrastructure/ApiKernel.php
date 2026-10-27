@@ -175,6 +175,18 @@ final class ApiKernel
         $components=[];
         try{
             $this->db->one('SELECT 1 FROM users LIMIT 1');$this->db->one('SELECT 1 FROM biometric_challenges LIMIT 1');
+            // Old writers/schema are incompatible with durable effects and token
+            // revocation. Check the complete 012-014 shape before serving traffic.
+            $this->db->all('SELECT id,stock_restored_at FROM orders LIMIT 0');
+            $this->db->all('SELECT id,cancel_requested_at,refund_requested_at FROM payments LIMIT 0');
+            $this->db->all('SELECT id,payment_id,kind,operation_key,state,lease_token,lease_until,sent_at FROM payment_operations LIMIT 0');
+            $this->db->all('SELECT operation_id,lease_token,observed_at,result FROM payment_operation_observations LIMIT 0');
+            $this->db->all('SELECT transaction_id,payment_id FROM payment_transaction_links LIMIT 0');
+            $this->db->all('SELECT operation_id,payment_id,transaction_id,status,resolved_at FROM payment_callback_inbox LIMIT 0');
+            $this->db->all('SELECT session_security_version,sessions_blocked FROM users LIMIT 0');
+            $this->db->all('SELECT id,user_id,security_version,credential_kind,credential_id,revoked_at FROM session_families LIMIT 0');
+            foreach(['access_sessions','refresh_sessions'] as $table){$this->db->all('SELECT family_id FROM '.$table.' LIMIT 0');}
+            $this->db->all('SELECT id,user_id,state,recovery_attempts,next_retry_at,recovery_claim_until,operator_evidence_ref,operator_confirmed_at FROM password_session_operations LIMIT 0');
             $legacy=$this->db->one('SELECT value FROM repository_metadata WHERE key=\'legacy_import_status\'');
             if(($legacy['value']??'')==='required'){throw new \RuntimeException('Explicit legacy import required');}$components['postgres']='up';
             (new Keycloak())->verifier()->ready();$components['keycloak']='up';

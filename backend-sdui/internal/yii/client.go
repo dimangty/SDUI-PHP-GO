@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"regexp"
 	"strings"
@@ -37,10 +38,13 @@ type Client struct {
 	observer  *observe.Recorder
 }
 
-// Identity carries only request-scoped credentials, never an asserted user/role.
+// Identity carries request-scoped credentials and transport-derived rate context,
+// never an asserted user/role. Only the bearer can authenticate the caller.
 type Identity struct {
 	Bearer    string
 	RequestID string
+	// Transport-derived rate context only. Never authenticates a user or role.
+	ClientIP netip.Addr
 }
 type UpstreamError struct {
 	Status int
@@ -181,6 +185,9 @@ func (c *Client) call(ctx context.Context, id Identity, method, path string, q u
 		}
 		if id.Bearer != "" {
 			req.Header.Set("Authorization", "Bearer "+id.Bearer)
+		}
+		if id.ClientIP.IsValid() && id.ClientIP.Zone() == "" {
+			req.Header.Set("X-Real-IP", id.ClientIP.Unmap().String())
 		}
 		if input != nil {
 			req.Header.Set("Content-Type", "application/json")

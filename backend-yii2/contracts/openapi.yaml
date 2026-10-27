@@ -25,7 +25,12 @@ paths:
   /auth/refresh:
     post: {tags: [Auth], security: [], operationId: refresh, requestBody: {$ref: '#/components/requestBodies/RefreshRequest'}, responses: {'200': {$ref: '#/components/responses/Token'}, '401': {$ref: '#/components/responses/Error'}, '429': {$ref: '#/components/responses/RateLimited'}}}
   /auth/logout:
-    post: {tags: [Auth], operationId: logout, requestBody: {$ref: '#/components/requestBodies/LogoutRequest'}, responses: {'204': {description: Logged out}}}
+    post:
+      tags: [Auth]
+      operationId: logout
+      description: Local opaque families are revoked first. Empty or opaque refresh input is local-only logout. Provider refresh input additionally requests authenticated-user online/offline provider cleanup. IDENTITY_PROVIDER_ERROR (502) or IDENTITY_PROVIDER_UNAVAILABLE (503) confirms local cleanup committed while remote completion is unconfirmed; a database failure before local commit does not provide that guarantee. Already-issued offline-verified JWTs remain valid until expiry.
+      requestBody: {$ref: '#/components/requestBodies/LogoutRequest'}
+      responses: {'204': {description: Requested logout scope confirmed}, '401': {$ref: '#/components/responses/Error'}, '502': {$ref: '#/components/responses/Error'}, '503': {$ref: '#/components/responses/Error'}}
   /auth/session:
     get:
       tags: [Auth]
@@ -114,7 +119,12 @@ paths:
             schema: {type: object, required: [avatarUrl], properties: {avatarUrl: {type: [string, 'null'], maxLength: 0}}}
       responses: {'200': {$ref: '#/components/responses/User'}, '413': {$ref: '#/components/responses/TooLarge'}}
   /users/me/change-password:
-    post: {tags: [Profile], operationId: changePassword, requestBody: {$ref: '#/components/requestBodies/ChangePasswordRequest'}, responses: {'204': {description: Password changed}}}
+    post:
+      tags: [Profile]
+      operationId: changePassword
+      description: Revokes and fences opaque session families before remote reset. Partial remote outcomes return 502 or 503 with string-valued details recoveryRequired and recoveryOperationId; the user stays fenced until safe recovery. A stale verification or pending recovery returns 409.
+      requestBody: {$ref: '#/components/requestBodies/ChangePasswordRequest'}
+      responses: {'204': {description: Password changed and session cleanup confirmed}, '401': {$ref: '#/components/responses/Error'}, '409': {$ref: '#/components/responses/Error'}, '502': {$ref: '#/components/responses/Error'}, '503': {$ref: '#/components/responses/Error'}}
   /addresses:
     get: {tags: [Profile], operationId: addresses, responses: {'200': {$ref: '#/components/responses/AddressList'}}}
     post: {tags: [Profile], operationId: createAddress, requestBody: {$ref: '#/components/requestBodies/AddressRequest'}, responses: {'201': {$ref: '#/components/responses/Address'}}}
