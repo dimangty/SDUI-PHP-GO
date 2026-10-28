@@ -53,7 +53,6 @@ internal val commonModule = module {
             httpClient = get<com.shopkmp.network.api.ApiHttpClient>().client,
             json = get(),
             backendSession = get(),
-            isDebugLoggingEnabled = get<NetworkSettings>().isDebugLoggingEnabled,
         )
     }
     singleOf(::GetRequest)

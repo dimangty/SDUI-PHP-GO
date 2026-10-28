@@ -33,14 +33,14 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
-import io.github.aakira.napier.Napier
+import com.shopkmp.network.api.logSavedJsonBody
+import com.shopkmp.network.api.logBoundedJsonBody
 import com.shopkmp.network.randomUuid
 
 internal class RequestExecutor(
     httpClient: HttpClient,
     private val json: Json,
     private val backendSession: BackendSession,
-    private val isDebugLoggingEnabled: Boolean = false,
 ) {
     @PublishedApi
     internal data class ConditionalEntry(
@@ -87,6 +87,7 @@ internal class RequestExecutor(
             if (body != null) { contentType(ContentType.Application.Json); setBody(body) }
         }.execute { response ->
             val bytes = response.bodyAsChannel().readRemaining(1_048_577).readByteArray()
+            response.logBoundedJsonBody(bytes)
             response.status.value to if (bytes.size > 1_048_576) null else runCatching { bytes.decodeToString(throwOnInvalidSequence = true) }.getOrNull()
         }
         return try {
@@ -123,7 +124,6 @@ internal class RequestExecutor(
         requiresAuth: Boolean = false,
         allowRefresh: Boolean = true,
     ): RemoteResult<T> {
-        val requestMark = TimeSource.Monotonic.markNow()
         val requestId = headers["X-Request-Id"] ?: randomUuid()
         return try {
             val correlatedHeaders = headers + ("X-Request-Id" to requestId)
@@ -142,17 +142,6 @@ internal class RequestExecutor(
                 }
             }
 
-            val durationMillis = requestMark.elapsedNow().inWholeMilliseconds
-            val serverRequestId = response.headers["X-Request-Id"].orEmpty()
-            if (isDebugLoggingEnabled) {
-                Napier.i(
-                    message = "${method.value} $path -> ${response.status.value} in ${durationMillis}ms " +
-                        "requestId=$requestId serverRequestId=$serverRequestId",
-                    tag = "HTTP",
-                    throwable = null,
-                )
-            }
-
             when {
                 response.status.isSuccess() && T::class == Unit::class ->
                     RemoteResult.Success(Unit as T)
@@ -168,19 +157,15 @@ internal class RequestExecutor(
                     }
                 }
             }
-        } catch (error: HttpRequestTimeoutException) {
-            Napier.w("${method.value} $path timed out after ${requestMark.elapsedNow().inWholeMilliseconds}ms requestId=$requestId", error, "HTTP")
+        } catch (_: HttpRequestTimeoutException) {
             RemoteResult.Error.TimeoutError
-        } catch (error: SerializationException) {
-            Napier.e("${method.value} $path response decoding failed requestId=$requestId", error, "HTTP")
+        } catch (_: SerializationException) {
             RemoteResult.Error.SerializationError
-        } catch (error: IOException) {
-            Napier.w("${method.value} $path network failure requestId=$requestId", error, "HTTP")
+        } catch (_: IOException) {
             RemoteResult.Error.NetworkError
         } catch (e: kotlin.coroutines.cancellation.CancellationException) {
             throw e
         } catch (error: Throwable) {
-            Napier.e("${method.value} $path unexpected failure requestId=$requestId", error, "HTTP")
             RemoteResult.Error.ServerError(code = -1, message = error.message.orEmpty())
         }
     }
@@ -304,7 +289,7 @@ internal class RequestExecutor(
                 contentType(ContentType.Application.Json)
                 setBody(body)
             }
-        }
+        }.also { it.logSavedJsonBody() }
 
     internal fun parseErrorMessage(rawBody: String): String {
         if (rawBody.isBlank()) {
@@ -339,7 +324,7 @@ internal class RequestExecutor(
             val response = client.post("${ApiRoute.AUTH}/refresh") {
                 contentType(ContentType.Application.Json)
                 setBody(RefreshRequest(refreshToken))
-            }
+            }.also { it.logSavedJsonBody() }
             if (!response.status.isSuccess()) {
                 val shouldClear = response.status.value == 401
                 if (shouldClear) backendSession.clearTokens()

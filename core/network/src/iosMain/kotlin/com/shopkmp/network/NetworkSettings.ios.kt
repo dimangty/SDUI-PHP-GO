@@ -1,6 +1,9 @@
 package com.shopkmp.network
 
 import platform.Foundation.NSBundle
+import com.shopkmp.network.api.networkDebugLoggingAllowed
+import kotlin.experimental.ExperimentalNativeApi
+import kotlin.native.Platform
 
 internal actual fun defaultServerUrl(): String {
     val fromInfoPlist = (NSBundle.mainBundle.objectForInfoDictionaryKey("BackendServerURL") as? String)
@@ -10,8 +13,12 @@ internal actual fun defaultServerUrl(): String {
     return fromInfoPlist ?: legacyValue ?: "http://127.0.0.1:8080"
 }
 
+@OptIn(ExperimentalNativeApi::class)
 internal actual fun defaultNetworkDebugLogging(): Boolean =
-    NSBundle.mainBundle.objectForInfoDictionaryKey("NetworkDebugLogging") as? Boolean ?: false
+    networkDebugLoggingAllowed(
+        debugBuild = Platform.isDebugBinary,
+        configured = NSBundle.mainBundle.objectForInfoDictionaryKey("NetworkDebugLogging") as? Boolean,
+    )
 
 internal actual fun defaultPaymentOrigins(): Set<String> =
     (NSBundle.mainBundle.objectForInfoDictionaryKey("PaymentOrigins") as? String).orEmpty()

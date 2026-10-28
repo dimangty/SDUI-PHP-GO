@@ -142,6 +142,23 @@ PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH" make run
 If the helper is also absent from `/Applications/Docker.app/Contents/Resources/bin`,
 check the Docker Desktop installation/location and repair it before retrying.
 
+### Troubleshooting: connection error in the iOS Simulator
+
+Check the **published host port** of the running project's edge:
+
+```sh
+docker ps --format 'table {{.Names}}\t{{.Ports}}'
+curl --fail http://127.0.0.1:8080/api/v1/categories
+```
+
+The standard `.env` project is `shopkmp-migrated`; `make run` starts its API on
+**127.0.0.1:8080**, matching the default Xcode Debug `BACKEND_SERVER_URL`.
+An isolated fixture such as `shopkmp-backend-fixes-e2e` on **58196** is a separate
+project. A mapping `127.0.0.1:58196->8080/tcp` is reached from the simulator using
+host port **58196**. Keep the app's `BACKEND_SERVER_URL` aligned with the edge's
+published host port. Once the matching API responds, retry registration in the
+app; the generic connection-error message can result from a stopped local API.
+
 ## Verification
 
 ```sh
@@ -206,6 +223,43 @@ and installed CARD journeys have their own evidence in the mobile report.
 python3 scripts/run_android_installed_journey.py --serial emulator-5554
 python3 scripts/run_ios_installed_journey.py --udid <booted-iPhone-simulator-UDID>
 ```
+
+### HTTP and SDUI screen logs in Xcode
+
+1. Open `iosApp/iosApp.xcodeproj` and select the **iosApp** scheme.
+2. In **Product → Scheme → Edit Scheme → Run → Info**, select **Debug**.
+3. Build and run with **Cmd+R** so the app includes the current Kotlin framework.
+4. Show the Debug Area with **Shift+Cmd+Y**, select the console and **All Output**.
+5. Filter the console by **`SDUI`**, then open Home, Catalog or another SDUI
+   destination after signing in. Native authentication requests use **`HTTP`**.
+
+Debug startup prints `[HTTP] Backend HTTP logging enabled (Debug)`. No additional
+Info.plist key is required; an existing Boolean `NetworkDebugLogging=false`
+explicitly disables diagnostics. Release binaries do not enable these logs.
+HTTP/SDUI diagnostics use the iOS system logger (`NSLog`) to reach Xcode's
+console. Android uses the same diagnostics through Logcat's HTTP/SDUI tags.
+
+Example screen-loading log shape:
+
+```text
+[SDUI] SDUI --> screen=home GET http://127.0.0.1:8080/api/v1/screens/home requestId=...
+[SDUI] SDUI <-- 200 screen=home GET ... 120ms serverRequestId=...
+[SDUI] SDUI RESPONSE JSON screen=home GET ... receivedBytes=...
+{
+    "schemaVersion": 1,
+    "screenId": "home",
+    ...
+}
+```
+
+Each call includes the method, safe URL, status, duration and correlation IDs;
+failures include the exception type. Passwords, PINs, tokens and credential
+fields are masked; authorization/cookie headers are not dumped and query values
+are hidden. JSON previews are capped at **8 KiB**. Larger accepted SDUI documents
+are redacted first, then clipped with a `JSON truncated` marker; malformed,
+non-JSON or out-of-policy bodies are omitted. The SDUI document limit remains
+**1 MiB**. Match `BACKEND_SERVER_URL` in the Xcode build settings to the running
+backend's `EDGE_PORT`.
 
 ## Contracts and design
 
