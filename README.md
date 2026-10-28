@@ -24,6 +24,10 @@ migrator and Keycloak HTTP probe. The retired Go business source and original
 archive have been removed after extracting these essentials; see
 [decommissioning and preserved artifacts](docs/LEGACY_REMOVAL.md).
 
+## UI design
+
+![ShopKMP frontend design sketch for Android and iOS](docs/images/frontend-sketch.png)
+
 ## Run locally
 
 Requires Docker Compose **2.24.4+**, Docker Engine and Python 3.9+. Go 1.26 is
