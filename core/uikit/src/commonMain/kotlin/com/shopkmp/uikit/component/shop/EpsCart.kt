@@ -25,6 +25,7 @@ data class EpsCartItemState(
     val imageState: EpsImagePlaceholderState,
     val cardState: EpsCardState,
     val quantityStepperState: EpsQuantityStepperState,
+    val imageUrl: String? = null,
 )
 
 @Composable
@@ -37,7 +38,7 @@ fun EpsCartItem(
         modifier = modifier,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            EpsProductImage(state = state.imageState, modifier = Modifier.size(64.dp))
+            EpsProductImage(state = state.imageState, imageUrl = state.imageUrl, modifier = Modifier.size(48.dp))
             EpsSpacer(EpsSpacerState.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 EpsText(EpsTextState(state.productName, fontWeight = FontWeight.SemiBold))

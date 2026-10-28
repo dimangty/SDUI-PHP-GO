@@ -4,12 +4,27 @@ import (
 	"fmt"
 	"strings"
 
+	"shopkmp/backend-sdui/internal/domain"
 	"shopkmp/backend-sdui/internal/sdui"
 	"shopkmp/backend-sdui/internal/yii"
 )
 
+func defaultAddressSummary(addresses []yii.Address, def *string) string {
+	if len(addresses) == 0 {
+		return "Адрес не указан"
+	}
+	chosen := addresses[0]
+	for _, a := range addresses {
+		if def != nil && domain.EqualID(a.ID, *def) {
+			chosen = a
+			break
+		}
+	}
+	return fmt.Sprintf("%s, %s, %s, %s", chosen.City, chosen.Street, chosen.House, chosen.Apartment)
+}
+
 func addressNodes(addresses []yii.Address) ([]sdui.Node, error) {
-	// Keep normal profile IDs/layout, reserving all thirteen non-address nodes.
+	// Keep address IDs/order and the conservative legacy thirteen-node reserve.
 	compact := len(addresses) > sdui.MaxNodes-13
 	nodes := []sdui.Node{}
 	var block strings.Builder

@@ -13,6 +13,8 @@ import com.shopkmp.uikit.component.avatar.EpsAvatar
 import com.shopkmp.uikit.component.avatar.EpsAvatarState
 import com.shopkmp.uikit.component.card.EpsCard
 import com.shopkmp.uikit.component.card.EpsCardState
+import com.shopkmp.uikit.component.icon.EpsIcon
+import com.shopkmp.uikit.component.icon.EpsIconName
 import com.shopkmp.uikit.component.text.EpsText
 import com.shopkmp.uikit.component.text.EpsTextState
 import com.shopkmp.uikit.component.text.EpsTextStyle
@@ -84,7 +86,7 @@ fun EpsProfileAction(
                 state = EpsTextState(title),
                 modifier = Modifier.weight(1f),
             )
-            EpsText(EpsTextState(">"))
+            EpsIcon(EpsIconName.ChevronRight, null)
         }
     }
 }

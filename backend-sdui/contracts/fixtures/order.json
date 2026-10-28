@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "screenId": "order",
-  "revision": "0489a2cc8fc48e24e4636a13464701d63b9a9e3a902aa7096b12c1e4d5c5a03e",
+  "revision": "c76928b32712004fe3f74f1c5ceb9116f7dfe738d1eb309fbbf549f3472a953c",
   "components": [
     {
       "id": "screen.content",
@@ -46,7 +46,7 @@
           "id": "order.payment",
           "type": "Text",
           "props": {
-            "text": "ON_DELIVERY",
+            "text": "При получении",
             "style": "Secondary"
           }
         },

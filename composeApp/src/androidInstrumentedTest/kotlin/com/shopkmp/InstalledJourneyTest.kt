@@ -2,6 +2,7 @@ package com.shopkmp
 
 import android.os.Bundle
 import android.os.SystemClock
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -36,14 +37,20 @@ class InstalledJourneyTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
     private val device = UiDevice.getInstance(instrumentation)
-    private val api = Verifier("http://10.0.2.2:58095")
+    private val api = Verifier(requireNotNull(InstrumentationRegistry.getArguments().getString("backendServerUrl")))
     private val timeout = 40_000L
+    private val allowedScreenshots = setOf(
+        "login", "registration", "pin-create-partial-2", "pin-login-partial-3", "home",
+        "product", "cart-checkout", "orders-paid", "orders-created", "profile", "profile-actions", "edit-profile",
+        "checkout-confirmation", "order-detail",
+    )
 
     @Test fun realCardJourney() {
         val run = UUID.randomUUID().toString().replace("-", "")
         val email = "android-$run@example.org"
-        val password = "Mobile!9$run"
-        val buyer = "Android Buyer"
+        // Public synthetic email IDs must not reveal a password derivation.
+        val password = "Mobile!9${UUID.randomUUID()}"
+        val buyer = "Android Buyer ${run.take(4)}"
         val productName = "Тестовая лампа"
         val products = api.get("/products/search?q=${URLEncoder.encode(productName, "UTF-8")}&size=20").getJSONArray("items")
         val product = (0 until products.length()).map(products::getJSONObject)
@@ -54,7 +61,12 @@ class InstalledJourneyTest {
 
         launch()
         node("login.email")
+        assertTrue("Login capture has empty inputs", listOf("login.email", "login.password").all { node(it).text.orEmpty().isEmpty() })
+        screenshot("login")
         click("login.signup")
+        node("signup.name")
+        assertTrue("Registration capture has empty inputs", listOf("signup.name", "signup.email", "signup.phone", "signup.password", "signup.passwordRepeat").all { node(it).text.orEmpty().isEmpty() })
+        screenshot("registration")
         type("signup.name", buyer, "signup.scroll")
         type("signup.email", email, "signup.scroll")
         type("signup.phone", "+79991234567", "signup.scroll")
@@ -62,41 +74,32 @@ class InstalledJourneyTest {
         type("signup.passwordRepeat", password, "signup.scroll")
         click("signup.terms", "signup.scroll")
         click("signup.submit", "signup.scroll")
-        node("pin.submit")
+        node("pin.header")
         milestone("UI registration reached native PIN setup")
 
         // Separate real login for assertions. Its tokens never enter app storage/DI.
         api.login(email, password)
         assertEquals(buyer, api.get("/users/me").getString("fullName"))
-        val random = SecureRandom()
-        // Fresh strong input: six distinct digits and a nonsequential first pair.
-        // No DOB is supplied for this account; don't randomly sample weak PINs.
-        val pin = generateSequence { List(6) { random.nextInt(10) } }
-            .first { it.distinct().size == 6 && (it[1] - it[0] + 10) % 10 in 2..8 }
-        pin.forEach { click("pin.digit.$it") }
-        click("pin.submit")
-        await("native PIN setup reached Home") {
-            assertFalse("Generated PIN rejected by server policy", device.hasObject(By.textContains("PIN must not be common")))
-            device.hasObject(By.res("home.title"))
-        }
+        val pin = configureStrongPin()
         node("home.title")
-        reveal("home.profile")
-        assertTrue("Home renders the authenticated buyer", device.hasObject(By.text(buyer)))
-        assertTrue("Home renders this account's identity", device.hasObject(By.text(email)))
+        assertProfileIdentity(buyer, email)
         val pins = api.array("/auth/pin/devices")
         assertEquals("UI PIN setup persisted one device", 1, pins.length())
         milestone("Authenticated Home SDUI and persisted PIN device verified")
 
         // Also prove password login using the account registered through the UI.
         logout()
+        loginWithPin(pin, buyer, email)
+        milestone("UI six-digit PIN login and actual Profile identity verified")
+        logout()
         type("login.email", email)
         type("login.password", password)
         click("login.submit")
         node("home.title")
-        reveal("home.profile")
-        assertTrue("Password login restores authenticated Home", device.hasObject(By.text(buyer)))
-        assertTrue("Password login restores this account's identity", device.hasObject(By.text(email)))
+        assertProfileIdentity(buyer, email)
         milestone("UI logout and real password login returned to authenticated Home")
+        api.login(email, password) // Refresh the independent observer before commerce.
+        screenshot("home")
 
         click("nav.catalog")
         node("catalog.title")
@@ -106,7 +109,7 @@ class InstalledJourneyTest {
         click("product.$productId.open")
         assertEquals(productName, node("product.title").text)
         reveal("product.price")
-        assertEquals("Product renders public API price", "$price ₽", node("product.price").text)
+        assertEquals("Product renders public API price", rubDisplay(price), node("product.price").text)
         screenshot("product")
         click("product.buy", "sdui.vertical")
         await("UI AddToCart persisted exactly one lamp") {
@@ -121,15 +124,24 @@ class InstalledJourneyTest {
         assertEquals(price, api.get("/cart").getString("totalAmount"))
         milestone("Catalog search → Product → AddToCart → Cart; canonical quantity/total verified")
 
+        reveal("checkout.address.edit")
+        if (!device.hasObject(By.res("checkout.city"))) click("checkout.address.edit")
         type("checkout.city", "Moscow", "sdui.vertical")
         type("checkout.street", "Mobile Journey", "sdui.vertical")
         type("checkout.house", "5", "sdui.vertical")
         type("checkout.apartment", "1", "sdui.vertical")
+        reveal("checkout.payment.edit")
+        if (!device.hasObject(By.res("checkout.paymentMethod.option.CARD"))) click("checkout.payment.edit")
         click("checkout.paymentMethod.option.CARD", "sdui.vertical")
         await("CARD selection exposed by platform accessibility") {
             val card = node("checkout.paymentMethod.option.CARD")
             card.isChecked || card.isSelected
         }
+        click("checkout.address.edit", "sdui.vertical")
+        click("checkout.payment.edit", "sdui.vertical")
+        reveal("cart.$productId", direction = Direction.UP)
+        assertEquals("No order before cart capture", 0, api.get("/orders").getInt("totalItems"))
+        screenshot("cart-checkout")
         click("checkout.button", "sdui.vertical")
         assertNotNull("Native checkout confirmation", device.wait(Until.findObject(By.text("Оформить заказ?")), timeout))
         assertEquals("Confirmation must precede order creation", 0, api.get("/orders").getInt("totalItems"))
@@ -152,7 +164,7 @@ class InstalledJourneyTest {
         milestone("Native checkout confirmed: one CREATED CARD order, exact total, stock -1, empty cart; order=$orderId")
 
         val paymentFailure = if (completeBrowserPayment()) null else
-            "Browser CARD POST rejected: CORS_ORIGIN_DENIED for Origin http://10.0.2.2:58095"
+            "Browser CARD POST rejected: CORS_ORIGIN_DENIED for configured disposable origin"
         if (paymentFailure == null) {
             await("Browser payment captured and order paid") {
                 api.get("/payments/$paymentId").getString("status") == "CAPTURED" &&
@@ -169,6 +181,7 @@ class InstalledJourneyTest {
             launch() // normal Android launcher entry, no deep-link/token injection
         }
         val expectedOrderStatus = if (paymentFailure == null) "PAID" else "CREATED"
+        val expectedOrderLabel = if (paymentFailure == null) "Оплачен" else "Создан"
         await("Browser returns to installed app") {
             device.findObject(By.text("Open"))?.click()
             device.currentPackageName == context.packageName
@@ -180,9 +193,9 @@ class InstalledJourneyTest {
         node("orders.title")
         reveal("order.$orderId.open")
         val orderCard = node("order.$orderId.open")
-        // Scope to the actual order, not the status filter (which also contains PAID).
-        assertTrue("Order card displays canonical payment outcome",
-            orderCard.text.orEmpty().contains(expectedOrderStatus) || orderCard.findObject(By.text(expectedOrderStatus)) != null)
+        // Scope to the actual order, not the status filter with the same display labels.
+        assertTrue("Specific order card displays localized payment outcome",
+            orderCard.text.orEmpty().contains(expectedOrderLabel) || orderCard.findObject(By.textContains(expectedOrderLabel)) != null)
         screenshot("orders-${expectedOrderStatus.lowercase()}")
         click("order.$orderId.open")
         node("order.title")
@@ -191,6 +204,7 @@ class InstalledJourneyTest {
         screenshot("order-detail")
         click("nav.profile")
         node("profile.title")
+        captureProfileAndEditor(buyer, email)
         click("profile.devices", "sdui.vertical")
         node("devices.title")
         assertFalse("PIN device is not empty", device.hasObject(By.res("devices.empty")))
@@ -212,6 +226,103 @@ class InstalledJourneyTest {
 
     private fun launch() {
         context.startActivity(context.packageManager.getLaunchIntentForPackage(context.packageName))
+    }
+
+    private fun configureStrongPin(): List<Int> {
+        val random = SecureRandom()
+        val pin = generateSequence { List(6) { random.nextInt(10) } }
+            .first { it.distinct().size == 6 && (it[1] - it[0] + 10) % 10 in 2..8 }
+        pin.forEachIndexed { index, digit ->
+            click("pin.digit.$digit")
+            if (index == 1) capturePartialPin(2, "pin-create-partial-2")
+            if (index == 3) assertNoAutoFour()
+        }
+        await("six-digit setup PIN complete") { !node("pin.digit.0").isEnabled }
+        click("pin.submit")
+        await("native PIN setup reached Home") {
+            assertFalse("Generated PIN rejected by server policy", device.hasObject(By.textContains("PIN must not be common")))
+            device.hasObject(By.res("home.title"))
+        }
+        return pin
+    }
+
+    private fun capturePartialPin(count: Int, name: String) {
+        assertFalse("Partial PIN does not expose submit", device.hasObject(By.res("pin.submit")))
+        assertFalse("Partial PIN does not navigate", device.hasObject(By.res("home.title")))
+        (0..9).forEach { assertTrue("Partial PIN keeps all keys enabled", node("pin.digit.$it").isEnabled) }
+        val dots = findNativeNode { it.contentDescription?.toString() == "PIN-код" }
+        assertTrue("Actual partial PIN count is exposed without digits", dots?.stateDescription?.toString() == "Введено цифр: $count")
+        screenshot(name)
+    }
+
+    private fun assertNoAutoFour() {
+        node("pin.submit")
+        assertTrue("Four digits still await explicit submission", device.hasObject(By.res("pin.header")))
+        assertFalse("Four digits never auto-submit", device.hasObject(By.res("home.title")))
+    }
+
+    private fun loginWithPin(pin: List<Int>, buyer: String, email: String) {
+        click("login.pin")
+        node("pin.header")
+        pin.forEachIndexed { index, digit ->
+            click("pin.digit.$digit")
+            if (index == 2) capturePartialPin(3, "pin-login-partial-3")
+            if (index == 3) assertNoAutoFour()
+        }
+        await("six-digit login PIN complete") { !node("pin.digit.0").isEnabled }
+        click("pin.submit")
+        node("home.title")
+        assertProfileIdentity(buyer, email)
+    }
+
+    private fun findNativeNode(predicate: (AccessibilityNodeInfo) -> Boolean): AccessibilityNodeInfo? {
+        fun visit(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+            if (predicate(node)) return node
+            for (index in 0 until node.childCount) {
+                node.getChild(index)?.let { visit(it)?.let { match -> return match } }
+            }
+            return null
+        }
+        return instrumentation.uiAutomation.rootInActiveWindow?.let(::visit)
+    }
+
+    private fun captureProfileAndEditor(buyer: String, email: String) {
+        val before = api.get("/users/me")
+        reveal("profile.header", direction = Direction.UP)
+        screenshot("profile")
+        reveal("profile.logout.button")
+        val biometric = node("profile.biometric.button")
+        milestone("VISUAL_BIOMETRIC checked=${biometric.isChecked || biometric.isSelected} enabled=${biometric.isEnabled}")
+        screenshot("profile-actions")
+        click("profile.edit.button")
+        await("native editor name loaded") { node("editProfile.name").text == buyer }
+        assertTrue("Editor has no host navigation", listOf("nav.home", "nav.catalog", "nav.cart", "nav.profile", "nav.refresh").none { device.hasObject(By.res(it)) })
+        assertTrue("Editor email is loaded", node("editProfile.email").text == email)
+        val emailNode = findNativeNode { it.viewIdResourceName == "editProfile.email" }
+        assertTrue("Email has no native set-text action", emailNode != null && emailNode.actionList.none { it.id == AccessibilityNodeInfo.AccessibilityAction.ACTION_SET_TEXT.id })
+        assertFalse("Photo action is honestly unavailable", node("editProfile.photo").isEnabled)
+        visible(By.text("Изменение фото пока недоступно"), "photo capability caption")
+        screenshot("edit-profile")
+        click("editProfile.back")
+        node("profile.title")
+        val after = api.get("/users/me")
+        assertTrue("Cancel did not mutate profile", listOf("fullName", "email", "phone", "defaultAddressId").all { before.optString(it) == after.optString(it) })
+        milestone("Native editor readonly email, absent bottom nav and cancel without mutation verified")
+    }
+
+    private fun assertProfileIdentity(buyer: String, email: String) {
+        click("home.profile")
+        node("profile.title")
+        reveal("profile.header")
+        assertTrue("Profile renders the authenticated buyer", device.hasObject(By.text(buyer)))
+        assertTrue("Profile renders this account's identity", device.hasObject(By.text(email)))
+        click("nav.home")
+        node("home.title")
+    }
+
+    private fun rubDisplay(wire: String): String {
+        val (whole, fraction) = wire.split('.')
+        return whole.reversed().chunked(3).joinToString(" ").reversed() + ",$fraction ₽"
     }
 
     private fun logout() {
@@ -241,7 +352,7 @@ class InstalledJourneyTest {
         }
     }
 
-    private fun reveal(id: String, scroll: String = "sdui.vertical") {
+    private fun reveal(id: String, scroll: String = "sdui.vertical", direction: Direction = Direction.DOWN) {
         // Scroll until the lazy item/action is visible, not a fixed delay or coordinate tap.
         val deadline = SystemClock.elapsedRealtime() + timeout
         while (SystemClock.elapsedRealtime() < deadline) {
@@ -250,7 +361,7 @@ class InstalledJourneyTest {
                 if (target != null && target.visibleBounds.height() > 20) return
                 // Network navigation can replace the entire lazy list between gestures.
                 // Reacquire its accessibility node rather than retaining an old document.
-                node(scroll).scroll(Direction.DOWN, 0.65f)
+                node(scroll).scroll(direction, 0.65f)
             } catch (_: StaleObjectException) {
                 // Only the read/scroll is retried; never repeat a business action.
             }
@@ -271,14 +382,40 @@ class InstalledJourneyTest {
         }
         val action = visible(complete, "system browser demo CARD action")
         assertTrue("Payment runs outside app", action.applicationPackage != context.packageName)
+        val tapBounds = action.visibleBounds
+        milestone("BROWSER_TAP bounds=${tapBounds.left},${tapBounds.top},${tapBounds.width()},${tapBounds.height()}")
         action.click()
         val resultDeadline = SystemClock.elapsedRealtime() + timeout
+        browserDiagnostics("after_click")
         while (SystemClock.elapsedRealtime() < resultDeadline) {
             if (device.hasObject(By.text("Payment completed"))) return true
             if (device.hasObject(By.textContains("CORS_ORIGIN_DENIED"))) return false
             device.wait(Until.hasObject(By.text("Payment completed")), 300)
         }
+        browserDiagnostics("timeout")
         throw AssertionError("Timed out waiting for gateway completed state; no payment action retry")
+    }
+
+    private fun browserDiagnostics(stage: String) {
+        milestone("BROWSER stage=$stage chrome=${device.currentPackageName == "com.android.chrome"}")
+        val controls = listOf(
+            "complete" to By.text("Complete payment"), "completed" to By.text("Payment completed"),
+            "return" to By.text("Return to ShopKMP"), "send_anyway" to By.text("Send anyway"),
+            "send_anyway_title" to By.text("Send Anyway"), "send" to By.text("Send"), "go_back" to By.text("Go back"),
+            "continue" to By.text("Continue"), "no_thanks" to By.text("No thanks"), "got_it" to By.text("Got it"),
+            "cors" to By.textContains("CORS_ORIGIN_DENIED"), "forbidden" to By.textContains("DEMO_PAYMENT_FORBIDDEN"),
+            "url_bar" to By.res("com.android.chrome:id/url_bar"), "webview" to By.clazz("android.webkit.WebView"),
+        )
+        controls.forEach { (code, selector) ->
+            val node = device.findObject(selector)
+            val rect = node?.visibleBounds
+            milestone("BROWSER_CONTROL stage=$stage code=$code exists=${node != null} enabled=${node?.isEnabled == true} clickable=${node?.isClickable == true} bounds=${rect?.let { "${it.left},${it.top},${it.width()},${it.height()}" } ?: "0,0,0,0"}")
+        }
+        device.findObjects(By.pkg("com.android.chrome").clickable(true)).take(20).forEach { node ->
+            val resource = node.resourceName?.takeIf { Regex("com\\.android\\.chrome:id/[a-zA-Z0-9_]+").matches(it) } ?: "web_control"
+            val rect = node.visibleBounds
+            milestone("BROWSER_CLICK stage=$stage resource=$resource enabled=${node.isEnabled} bounds=${rect.left},${rect.top},${rect.width()},${rect.height()}")
+        }
     }
 
     private fun await(label: String, predicate: () -> Boolean) {
@@ -295,6 +432,7 @@ class InstalledJourneyTest {
     }
 
     private fun screenshot(name: String) {
+        assertTrue("Screenshot uses the explicit safe export list", name in allowedScreenshots)
         assertEquals("Capture app screens only", context.packageName, device.currentPackageName)
         val directory = File(context.getExternalFilesDir(null), "android-e2e").apply { mkdirs() }
         assertTrue("Nonsecret screenshot captured", device.takeScreenshot(File(directory, "$name.png")))

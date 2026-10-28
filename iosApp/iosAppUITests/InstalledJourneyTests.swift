@@ -5,6 +5,11 @@ final class InstalledJourneyTests: UITestBase {
     private let api = JourneyVerifier()
     private var app: XCUIApplication!
     private let timeout: TimeInterval = 40
+    private let allowedScreenshots: Set<String> = [
+        "login", "registration", "pin-create-partial-2", "pin-login-partial-3", "home",
+        "product", "cart-checkout", "orders-paid", "profile", "profile-actions", "edit-profile",
+        "checkout-confirmation", "order-detail",
+    ]
 
     func testRealCardJourney() {
         do {
@@ -19,8 +24,9 @@ final class InstalledJourneyTests: UITestBase {
     private func runJourney() throws {
         let nonce = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
         let email = "ios-\(nonce)@example.org"
-        let password = "Mobile!9\(nonce)"
-        let buyer = "iOS Buyer"
+        // Public synthetic email identifiers must not disclose a password derivation.
+        let password = "Mobile!9\(UUID().uuidString)"
+        let buyer = "iOS Buyer \(nonce.prefix(4))"
         let productName = "Тестовая лампа"
         let query = productName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
         let candidates = try api.get("/products/search?q=\(query)&size=20").objects("items")
@@ -39,11 +45,13 @@ final class InstalledJourneyTests: UITestBase {
             else if element("pin.secondary").exists { try tap("pin.secondary") }
         }
         _ = try node("login.email")
+        try check(["login.email", "login.password"].allSatisfy { (element($0).value as? String ?? "").isEmpty }, "login_capture_empty_inputs")
+        try screenshot("login")
         try register(buyer: buyer, email: email, password: password)
         milestone("registered_native_pin_visible")
         try api.login(email: email, password: password)
         try check(try api.get("/users/me").string("fullName") == buyer, "registered_profile_identity")
-        try configureStrongPin()
+        let pin = try configureStrongPin()
         try assertHome(buyer: buyer, email: email)
         let devices = try api.array("/auth/pin/devices")
         try check(devices.count == 1, "one_persisted_pin_device")
@@ -51,11 +59,17 @@ final class InstalledJourneyTests: UITestBase {
         milestone("pin_home_identity_verified")
 
         try logout()
+        try loginWithPin(pin, buyer: buyer, email: email)
+        milestone("six_digit_pin_login_verified")
+        try logout()
         try type("login.email", email)
         try type("login.password", password)
         try tap("login.submit")
         try assertHome(buyer: buyer, email: email)
         milestone("password_login_home_verified")
+        // Refresh only this independent observer, never app tokens or server expiry.
+        try api.login(email: email, password: password)
+        try screenshot("home")
 
         try tap("nav.catalog")
         _ = try node("catalog.title")
@@ -64,7 +78,7 @@ final class InstalledJourneyTests: UITestBase {
         try tap("product.\(productId).open", scroll: "sdui.vertical")
         try check(try text("product.title") == productName, "product_title")
         try reveal("product.price")
-        try check(try text("product.price") == "\(price) ₽", "product_exact_price")
+        try check(try text("product.price") == rubDisplay(price), "product_exact_price")
         try screenshot("product")
         try tap("product.buy", scroll: "sdui.vertical")
         try wait("cart_add_persisted") {
@@ -79,6 +93,11 @@ final class InstalledJourneyTests: UITestBase {
         milestone("catalog_product_cart_verified")
 
         try fillCheckout()
+        try tap("checkout.address.edit", scroll: "sdui.vertical")
+        try tap("checkout.payment.edit", scroll: "sdui.vertical")
+        try showTop("cart.\(productId)")
+        try check(try api.get("/orders").int("totalItems") == 0, "no_order_before_cart_capture")
+        try screenshot("cart-checkout")
         try tap("checkout.button", scroll: "sdui.vertical")
         try visibleText("Оформить заказ?")
         try check(try api.get("/orders").int("totalItems") == 0, "no_order_before_confirmation")
@@ -108,7 +127,7 @@ final class InstalledJourneyTests: UITestBase {
         try check(try !payment.string("transactionId").isEmpty, "captured_payment_transaction")
         milestone("safari_captured_paid_verified")
         try returnFromSafari()
-        try inspectPaidOrder(orderId: orderId, productId: productId, productName: productName, deviceName: deviceName)
+        try inspectPaidOrder(orderId: orderId, productId: productId, productName: productName, deviceName: deviceName, buyer: buyer, email: email)
         milestone("paid_order_details_devices_verified")
         try logout()
         milestone("logout_ui_login_verified")
@@ -127,22 +146,35 @@ final class InstalledJourneyTests: UITestBase {
 
     private func register(buyer: String, email: String, password: String) throws {
         try tap("login.signup")
+        _ = try node("signup.name")
+        try check(["signup.name", "signup.email", "signup.phone", "signup.password", "signup.passwordRepeat"].allSatisfy {
+            (element($0).value as? String ?? "").isEmpty
+        }, "registration_capture_empty_inputs")
+        try screenshot("registration")
         try type("signup.name", buyer, scroll: "signup.scroll")
         try type("signup.email", email, scroll: "signup.scroll")
         try type("signup.phone", "+79991234567", scroll: "signup.scroll")
         try type("signup.password", password, scroll: "signup.scroll")
         try type("signup.passwordRepeat", password, scroll: "signup.scroll")
+        probeRegistration(buyer: buyer, email: email, password: password, stage: "before_terms")
+        probeTerms(stage: "before")
         try tap("signup.terms", scroll: "signup.scroll")
+        probeTerms(stage: "after")
+        probeRegistration(buyer: buyer, email: email, password: password, stage: "after_terms")
         try tap("signup.submit", scroll: "signup.scroll")
-        _ = try node("pin.submit")
+        _ = try node("pin.header")
     }
 
-    private func configureStrongPin() throws {
+    private func configureStrongPin() throws -> [Int] {
         var digits: [Int]
         repeat {
             digits = Array(0...9).shuffled().prefix(6).map { $0 }
         } while !(2...8).contains((digits[1] - digits[0] + 10) % 10)
-        for digit in digits { try tap("pin.digit.\(digit)") }
+        for (index, digit) in digits.enumerated() {
+            try tap("pin.digit.\(digit)")
+            if index == 1 { try capturePartialPin(count: 2, name: "pin-create-partial-2") }
+            if index == 3 { try check(element("pin.submit").exists && element("pin.header").exists && !element("home.title").exists, "pin_create_no_auto_four") }
+        }
         try wait("six_digit_native_pin_filled") { !self.element("pin.digit.0").isEnabled }
         try tap("pin.submit")
         if !element("home.title").waitForExistence(timeout: timeout) {
@@ -150,6 +182,28 @@ final class InstalledJourneyTests: UITestBase {
             print("E2E-PIN: persisted_count=\(try api.array("/auth/pin/devices").count)")
             throw JourneyFailure.check("pin_home_transition")
         }
+        return digits
+    }
+
+    private func capturePartialPin(count: Int, name: String) throws {
+        try check(!element("pin.submit").exists && !element("home.title").exists, "partial_pin_no_submit_or_navigation")
+        for digit in 0...9 { try check(element("pin.digit.\(digit)").isEnabled, "partial_pin_keys_enabled") }
+        let dots = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "PIN-код")).firstMatch
+        try check(dots.exists && (dots.value as? String) == "Введено цифр: \(count)", "partial_pin_count")
+        try screenshot(name)
+    }
+
+    private func loginWithPin(_ digits: [Int], buyer: String, email: String) throws {
+        try tap("login.pin")
+        _ = try node("pin.header")
+        for (index, digit) in digits.enumerated() {
+            try tap("pin.digit.\(digit)")
+            if index == 2 { try capturePartialPin(count: 3, name: "pin-login-partial-3") }
+            if index == 3 { try check(element("pin.submit").exists && element("pin.header").exists && !element("home.title").exists, "pin_login_no_auto_four") }
+        }
+        try wait("six_digit_login_pin_filled") { !self.element("pin.digit.0").isEnabled }
+        try tap("pin.submit")
+        try assertHome(buyer: buyer, email: email)
     }
 
     private func probePin() {
@@ -164,19 +218,43 @@ final class InstalledJourneyTests: UITestBase {
             let match = safari.descendants(matching: .any).matching(NSPredicate(format: "label == %@", label)).firstMatch
             print("E2E-BROWSER: \(label.replacingOccurrences(of: " ", with: "_")) exists=\(match.exists) type=\(match.exists ? match.elementType.rawValue : 0)")
         }
+        for (ownerName, owner) in [("safari", safari), ("springboard", XCUIApplication(bundleIdentifier: "com.apple.springboard"))] {
+            for label in ["Send", "Send Anyway", "Отправить", "Все равно отправить", "Continue", "Продолжить", "Cancel", "Отменить", "Open", "Открыть"] {
+                let match = owner.descendants(matching: .any).matching(NSPredicate(format: "label == %@", label)).firstMatch
+                print("E2E-SAFARI-PROMPT: owner=\(ownerName) label=\(label.replacingOccurrences(of: " ", with: "_")) exists=\(match.exists) hittable=\(match.exists && match.isHittable) enabled=\(match.exists && match.isEnabled) type=\(match.exists ? match.elementType.rawValue : 0)")
+            }
+        }
+        probePaymentGeometry(safari)
+    }
+
+    private func probePaymentGeometry(_ safari: XCUIApplication) {
+        let control = safari.webViews.buttons["Complete payment"].firstMatch
+        guard control.exists else { return }
+        let frame = control.frame
+        let viewport = safari.frame.intersection(safari.webViews.firstMatch.frame)
+        func rect(_ value: CGRect) -> String { String(format: "%.1f,%.1f,%.1f,%.1f", value.minX, value.minY, value.width, value.height) }
+        print("E2E-PAYMENT-FRAME: target=\(rect(frame)) viewport=\(rect(viewport)) centerInside=\(viewport.contains(CGPoint(x: frame.midX, y: frame.midY))) frameInside=\(viewport.contains(frame)) hittable=\(control.isHittable) enabled=\(control.isEnabled)")
     }
 
     private func assertHome(buyer: String, email: String) throws {
         _ = try node("home.title")
-        try reveal("home.profile")
-        try check(app.staticTexts[buyer].firstMatch.exists, "home_buyer_identity")
-        try check(app.staticTexts[email].firstMatch.exists, "home_account_identity")
+        try tap("home.profile")
+        _ = try node("profile.title")
+        try reveal("profile.header")
+        try check(app.staticTexts[buyer].firstMatch.exists, "profile_buyer_identity")
+        try check(app.staticTexts[email].firstMatch.exists, "profile_account_identity")
+        try tap("nav.home")
+        _ = try node("home.title")
     }
 
     private func fillCheckout() throws {
+        try reveal("checkout.address.edit")
+        if !element("checkout.city").exists { try tap("checkout.address.edit") }
         for (id, value) in [("city", "Moscow"), ("street", "Mobile Journey"), ("house", "5"), ("apartment", "1")] {
             try type("checkout.\(id)", value, scroll: "sdui.vertical")
         }
+        try reveal("checkout.payment.edit")
+        if !element("checkout.paymentMethod.option.CARD").exists { try tap("checkout.payment.edit") }
         try tap("checkout.paymentMethod.option.CARD", scroll: "sdui.vertical")
         let card = try node("checkout.paymentMethod.option.CARD")
         // CMP selection is exposed as the native selected trait/value, queried on-device.
@@ -222,6 +300,7 @@ final class InstalledJourneyTests: UITestBase {
         try check(complete.waitForExistence(timeout: timeout), "safari_complete_action_visible")
         try check(safari.state == .runningForeground && app.state != .runningForeground, "payment_external_browser")
         try wait("safari_complete_action_ready") { complete.isHittable && complete.isEnabled }
+        probePaymentGeometry(safari)
         complete.tap() // Exactly one payment submission, never automatically retried.
         let completed = safari.webViews.staticTexts["Payment completed"].firstMatch
         var sentNativePrompt = false
@@ -269,7 +348,7 @@ final class InstalledJourneyTests: UITestBase {
         _ = try node("nav.profile")
     }
 
-    private func inspectPaidOrder(orderId: String, productId: String, productName: String, deviceName: String) throws {
+    private func inspectPaidOrder(orderId: String, productId: String, productName: String, deviceName: String, buyer: String, email: String) throws {
         try tap("nav.profile")
         _ = try node("profile.title")
         try tap("profile.orders", scroll: "sdui.vertical")
@@ -277,7 +356,7 @@ final class InstalledJourneyTests: UITestBase {
         let id = "order.\(orderId).open"
         try reveal(id)
         let card = try node(id)
-        try check(card.label.contains("PAID") || card.descendants(matching: .staticText)["PAID"].firstMatch.exists, "paid_specific_order_card")
+        try check(card.label.contains("Оплачен") || card.descendants(matching: .staticText).matching(NSPredicate(format: "label CONTAINS %@", "Оплачен")).firstMatch.exists, "paid_specific_order_card")
         try screenshot("orders-paid")
         try tap(id)
         _ = try node("order.title")
@@ -286,11 +365,40 @@ final class InstalledJourneyTests: UITestBase {
         try screenshot("order-detail")
         try tap("nav.profile")
         _ = try node("profile.title")
+        try captureProfileAndEditor(buyer: buyer, email: email)
         try tap("profile.devices", scroll: "sdui.vertical")
         _ = try node("devices.title")
         try check(!element("devices.empty").exists, "devices_nonempty")
         try check(app.staticTexts[deviceName].firstMatch.waitForExistence(timeout: timeout), "persisted_device_visible")
         try check(try api.array("/auth/pin/devices").count == 1, "final_one_pin_device")
+    }
+
+    private func captureProfileAndEditor(buyer: String, email: String) throws {
+        let before = try api.get("/users/me")
+        try showTop("profile.header")
+        try screenshot("profile")
+        try reveal("profile.logout.button")
+        let biometric = try node("profile.biometric.button")
+        print("E2E-VISUAL-BIOMETRIC: checked=\(biometric.isSelected || (biometric.value as? String) == "1") enabled=\(biometric.isEnabled)")
+        try screenshot("profile-actions")
+        try tap("profile.edit.button")
+        let name = try node("editProfile.name")
+        try wait("native_editor_name_loaded") { (name.value as? String) == buyer }
+        try check(["nav.home", "nav.catalog", "nav.cart", "nav.profile", "nav.refresh"].allSatisfy { !element($0).exists }, "native_editor_no_host_navigation")
+        let emailInput = try node("editProfile.email")
+        try check((emailInput.value as? String) == email, "native_editor_email_loaded")
+        try check(!app.keyboards.firstMatch.exists, "native_editor_initial_no_keyboard")
+        emailInput.tap()
+        try check(!app.keyboards.firstMatch.exists && (emailInput.value as? String) == email, "native_editor_email_readonly")
+        try check(!element("editProfile.photo").isEnabled, "native_editor_photo_unavailable")
+        try check(app.staticTexts["Изменение фото пока недоступно"].firstMatch.exists, "native_editor_photo_caption")
+        try screenshot("edit-profile")
+        try tap("editProfile.back")
+        _ = try node("profile.title")
+        let after = try api.get("/users/me")
+        for key in ["fullName", "email", "phone"] { try check(try before.string(key) == after.string(key), "native_editor_cancel_no_profile_mutation") }
+        try check(before.optionalString("defaultAddressId") == after.optionalString("defaultAddressId"), "native_editor_cancel_no_address_mutation")
+        milestone("native_editor_readonly_cancel_verified")
     }
 
     private func logout() throws {
@@ -314,6 +422,7 @@ final class InstalledJourneyTests: UITestBase {
         if let scroll = scroll { try reveal(id, scroll: scroll) }
         let target = try node(id)
         try wait("enabled_\(id)") { target.isEnabled && target.isHittable }
+        if id.hasPrefix("signup.") { probeFrame(id, stage: "before_tap") }
         target.tap()
     }
 
@@ -322,6 +431,7 @@ final class InstalledJourneyTests: UITestBase {
         let target = try node(id)
         // Query actual native type; do not dump labels/values or credential hierarchy.
         print("E2E-TYPE: \(id) native=\(target.elementType.rawValue)")
+        if id.hasPrefix("signup.") { probeFrame(id, stage: "before_tap") }
         target.tap()
         // XCTest logs typeText values internally. The runner withholds all raw
         // activities and destroys the temporary xcresult after safe extraction.
@@ -330,22 +440,96 @@ final class InstalledJourneyTests: UITestBase {
             let key = app.keyboards.buttons.matching(NSPredicate(format: "identifier IN %@ OR label IN %@", ["Return", "Done", "return", "Готово", "Ввод"], ["Return", "Done", "return", "Готово", "Ввод"])).firstMatch
             if key.exists { key.tap() }
         }
+        if id.hasPrefix("signup.") { probeInput(id, expected: value, stage: "after_type") }
+    }
+
+    // Fixed identifiers and booleans/geometry only. Never print input, labels,
+    // credentials, lengths, nonces, keyboard contents or accessibility trees.
+    private func probeInput(_ id: String, expected: String, stage: String) {
+        let target = element(id)
+        let actual = target.exists ? target.value as? String : nil
+        let masked = actual.map { !$0.isEmpty && $0.allSatisfy { "•●*".contains($0) } } ?? false
+        print("E2E-FIELD: \(id) stage=\(stage) valueMatches=\(actual == expected) lengthMatches=\(actual?.count == expected.count) masked=\(masked) exists=\(target.exists)")
+    }
+
+    private func probeRegistration(buyer: String, email: String, password: String, stage: String) {
+        for (id, expected) in [("signup.name", buyer), ("signup.email", email), ("signup.phone", "+79991234567"), ("signup.password", password), ("signup.passwordRepeat", password)] {
+            probeInput(id, expected: expected, stage: stage)
+        }
+    }
+
+    private func probeTerms(stage: String) {
+        let target = element("signup.terms")
+        let value = target.exists ? target.value as? String : nil
+        print("E2E-TERMS: stage=\(stage) exists=\(target.exists) selected=\(target.isSelected) valueChecked=\(value.map { ["1", "true", "Checked", "checked", "On"].contains($0) } ?? false) submitEnabled=\(element("signup.submit").isEnabled)")
+        probeFrame("signup.terms", stage: stage == "before" ? "before_terms" : "after_terms")
+    }
+
+    private func probeFrame(_ id: String, stage: String) {
+        let target = element(id)
+        guard target.exists else { return }
+        let viewport = visibleViewport(element("signup.scroll"))
+        let frame = target.frame
+        let centerInside = viewport.contains(CGPoint(x: frame.midX, y: frame.midY))
+        func rect(_ value: CGRect) -> String { String(format: "%.1f,%.1f,%.1f,%.1f", value.minX, value.minY, value.width, value.height) }
+        print("E2E-FRAME: \(id) stage=\(stage) target=\(rect(frame)) viewport=\(rect(viewport)) centerInside=\(centerInside) frameInside=\(viewport.contains(frame)) hittable=\(target.isHittable) keyboard=\(app.keyboards.firstMatch.exists)")
+    }
+
+    private func visibleViewport(_ container: XCUIElement) -> CGRect {
+        var viewport = app.frame.intersection(container.exists ? container.frame : app.frame)
+        let keyboard = app.keyboards.firstMatch
+        if keyboard.exists && keyboard.frame.intersects(viewport) {
+            viewport.size.height = max(0, min(viewport.maxY, keyboard.frame.minY) - viewport.minY)
+        }
+        return viewport
     }
 
     private func reveal(_ id: String, scroll: String = "sdui.vertical") throws {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             let target = element(id)
-            if target.exists && target.isHittable { return }
             let container = try node(scroll)
-            container.swipeUp()
+            let viewport = visibleViewport(container)
+            try check(!viewport.isEmpty && !viewport.isNull, "scroll_viewport_unavailable")
+            // isHittable can be true for a six-point sliver above/below the
+            // viewport. Require the actual control to be visible before tapping.
+            if target.exists && target.isHittable && viewport.insetBy(dx: 0, dy: 8).contains(target.frame) { return }
+            let above = target.exists && !target.frame.isEmpty && target.frame.midY < viewport.midY
+            let distance = min(viewport.height * 0.35, 180)
+            let start = CGPoint(x: viewport.midX, y: above ? viewport.minY + 16 : viewport.maxY - 16)
+            let end = CGPoint(x: start.x, y: start.y + (above ? distance : -distance))
+            let origin = app.coordinate(withNormalizedOffset: .zero)
+            let from = origin.withOffset(CGVector(dx: start.x - app.frame.minX, dy: start.y - app.frame.minY))
+            let to = origin.withOffset(CGVector(dx: end.x - app.frame.minX, dy: end.y - app.frame.minY))
+            from.press(forDuration: 0.05, thenDragTo: to, withVelocity: .slow, thenHoldForDuration: 0.05)
         }
         throw JourneyFailure.check("scroll_\(id)")
+    }
+
+    private func showTop(_ anchor: String) throws {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            let container = try node("sdui.vertical")
+            let target = element(anchor)
+            if target.exists && target.isHittable && visibleViewport(container).contains(target.frame) { return }
+            container.swipeDown()
+        }
+        throw JourneyFailure.check("visual_top_anchor")
     }
 
     private func text(_ id: String) throws -> String {
         let target = try node(id)
         return target.label
+    }
+
+    private func rubDisplay(_ wire: String) -> String {
+        let parts = wire.split(separator: ".")
+        guard parts.count == 2 else { return "invalid money" }
+        let digits = Array(parts[0].reversed())
+        let grouped = stride(from: 0, to: digits.count, by: 3).map {
+            String(digits[$0..<min($0 + 3, digits.count)])
+        }.joined(separator: " ")
+        return "\(String(grouped.reversed())),\(parts[1]) ₽"
     }
 
     private func visibleText(_ title: String) throws {
@@ -380,6 +564,7 @@ final class InstalledJourneyTests: UITestBase {
     }
 
     private func screenshot(_ name: String) throws {
+        try check(allowedScreenshots.contains(name), "screenshot_name_allowlist")
         try check(app.state == .runningForeground, "screenshot_app_foreground")
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "e2e-\(name)"
@@ -439,8 +624,12 @@ private final class JourneyVerifier {
     }
 
     private func request(_ path: String, login: [String: String]? = nil) throws -> Any {
+        guard let origin = ProcessInfo.processInfo.environment["JOURNEY_BACKEND_URL"],
+              let base = URLComponents(string: origin), ["http", "https"].contains(base.scheme ?? ""),
+              base.host != nil, base.user == nil, base.password == nil,
+              base.query == nil, base.fragment == nil, ["", "/"].contains(base.path) else { throw JourneyFailure.check("verifier_origin_configuration") }
         guard path.hasPrefix("/"), !path.contains("://"), login == nil || path == "/auth/login",
-              let url = URL(string: "http://127.0.0.1:58095/api/v1\(path)") else { throw JourneyFailure.check("api_path") }
+              let url = URL(string: "\(origin.trimmingCharacters(in: CharacterSet(charactersIn: "/")))/api/v1\(path)") else { throw JourneyFailure.check("api_path") }
         var request = URLRequest(url: url, timeoutInterval: 15)
         request.httpMethod = login == nil ? "GET" : "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

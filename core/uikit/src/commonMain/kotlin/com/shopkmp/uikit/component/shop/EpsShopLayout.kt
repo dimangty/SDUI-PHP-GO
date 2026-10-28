@@ -1,16 +1,21 @@
 package com.shopkmp.uikit.component.shop
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.shopkmp.uikit.component.avatar.EpsAvatar
 import com.shopkmp.uikit.component.avatar.EpsAvatarState
 import com.shopkmp.uikit.component.button.defaultbutton.EpsButton
 import com.shopkmp.uikit.component.button.defaultbutton.EpsButtonState
+import com.shopkmp.uikit.component.button.defaultbutton.EpsButtonType
 import com.shopkmp.uikit.component.card.EpsCardState
+import com.shopkmp.uikit.component.icon.EpsIcon
+import com.shopkmp.uikit.component.icon.EpsIconName
 import com.shopkmp.uikit.component.spacer.EpsSpacer
 import com.shopkmp.uikit.component.spacer.EpsSpacerState
 import com.shopkmp.uikit.component.textfield.defaulttextfield.EpsTextField
@@ -146,6 +151,7 @@ fun EpsProfileActions(
 data class EpsEditAvatarState(
     val initials: String,
     val actionText: String,
+    val onChangePhoto: (() -> Unit)? = null,
 )
 
 @Composable
@@ -153,12 +159,24 @@ fun EpsEditAvatar(
     state: EpsEditAvatarState,
     modifier: Modifier = Modifier,
 ) {
-    androidx.compose.foundation.layout.Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        EpsAvatar(EpsAvatarState(state.initials), size = 88.dp)
-        EpsSecondaryText(state.actionText)
+        EpsAvatar(EpsAvatarState(state.initials), size = 56.dp)
+        androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
+            EpsButton(
+                EpsButtonState(
+                    text = state.actionText,
+                    type = EpsButtonType.Text,
+                    enabled = state.onChangePhoto != null,
+                    onClick = state.onChangePhoto,
+                ),
+                Modifier.testTag("editProfile.photo"),
+            )
+            if (state.onChangePhoto == null) EpsSecondaryText("Изменение фото пока недоступно")
+        }
     }
 }
 
@@ -169,14 +187,18 @@ fun EpsProfileFormFields(
     emailTextFieldState: EpsTextFieldState,
     addressTextFieldState: EpsTextFieldState,
     modifier: Modifier = Modifier,
+    testTagPrefix: String = "",
 ) {
     androidx.compose.foundation.layout.Column(modifier = modifier.fillMaxWidth()) {
-        EpsTextField(nameTextFieldState)
+        fun fieldTag(name: String) = if (testTagPrefix.isBlank()) Modifier else Modifier.testTag("$testTagPrefix.$name")
+        EpsTextField(nameTextFieldState, fieldTag("name"))
         EpsSpacer(EpsSpacerState.height(12.dp))
-        EpsTextField(phoneTextFieldState)
+        EpsTextField(phoneTextFieldState, fieldTag("phone"))
         EpsSpacer(EpsSpacerState.height(12.dp))
-        EpsTextField(emailTextFieldState)
+        EpsTextField(emailTextFieldState, fieldTag("email"), trailingIcon = {
+            if (emailTextFieldState.readOnly) EpsIcon(EpsIconName.Lock, "Email можно изменить через поддержку")
+        })
         EpsSpacer(EpsSpacerState.height(12.dp))
-        EpsTextField(addressTextFieldState)
+        EpsTextField(addressTextFieldState, fieldTag("address"))
     }
 }

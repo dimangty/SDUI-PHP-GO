@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.shopkmp.ui.theme.ShopTokens
 
 @Composable
 fun EpsScaffold(
@@ -13,6 +14,8 @@ fun EpsScaffold(
 ) {
     Scaffold(
         modifier = modifier,
+        containerColor = ShopTokens.Background,
+        contentColor = ShopTokens.Text,
         bottomBar = bottomBar,
         content = content,
     )

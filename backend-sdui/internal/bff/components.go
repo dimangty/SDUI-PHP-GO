@@ -79,6 +79,15 @@ func orderCard(d *sdui.Screen, o yii.Order) sdui.Node {
 	ref := action(d, sdui.Action{ID: "order." + o.ID + ".open", Type: "OpenOrder", OrderID: o.ID})
 	return sdui.N("order."+o.ID, "OrderCard", sdui.OrderProps{OrderID: o.ID, Number: o.Number, Status: o.Status, Total: o.TotalAmount, DeliveryAddress: o.DeliveryAddress, PaymentMethod: o.PaymentMethod, CreatedAt: o.CreatedAt, OpenAction: ref})
 }
+
+// Labels are presentation only. Query values and OrderProps retain canonical enums.
+func orderStatusLabel(status string) string {
+	return map[string]string{"CREATED": "Создан", "PAID": "Оплачен", "ASSEMBLING": "Собирается", "DELIVERING": "Доставляется", "COMPLETED": "Выполнен", "CANCELLED": "Отменён"}[status]
+}
+
+func paymentLabel(method string) string {
+	return map[string]string{"CARD": "Карта", "SBP": "СБП", "ON_DELIVERY": "При получении"}[method]
+}
 func price(id string, m yii.Money) sdui.Node {
 	return sdui.N(id, "Price", sdui.PriceProps{Amount: m, Currency: "RUB"})
 }

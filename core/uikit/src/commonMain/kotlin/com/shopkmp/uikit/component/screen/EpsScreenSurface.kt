@@ -6,9 +6,10 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.shopkmp.ui.theme.ShopTokens
 
 data class EpsScreenSurfaceState(
-    val backgroundColor: Color = Color(0xFFF6F7F9),
+    val backgroundColor: Color = ShopTokens.Background,
 )
 
 @Composable

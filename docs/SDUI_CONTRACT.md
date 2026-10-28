@@ -193,6 +193,10 @@ Money is always a **string** matching
 Currency is `RUB`. Never decode money via Float/Double. Use existing money
 formatting or integer kopecks. Rating is a nullable number 1–5 and is not money.
 
+Russian display uses grouped rubles, a comma and two kopeck digits (for example
+`1 234,50 ₽`). This is local presentation only; amounts and currency on the wire
+remain `"1234.50"` and `RUB`, with no Float/Double conversion.
+
 ### Controlled state
 
 `state.fields` is a string→string map with only these keys:
@@ -350,7 +354,8 @@ and never replaces Yii ownership checks.
   No mutation POST.
 * `orders`: collect status/size, reset page=0, validate, refresh finite orders.
 * `profile`: collect fullName/phone and send `UpdateProfile`. Native edit-profile
-  remains available for other capabilities; the generic form never edits email,
+  is the editor used by the current overview; the legacy generic form is still
+  decoded and supported. It never edits email,
   password, avatar uploads or credentials.
 * `checkout`: prefilled trusted default/first address, four editable address
   strings and payment selection. Map `CARD → ShopPaymentMethod.Card`,
@@ -367,6 +372,53 @@ The host allows one mutation at a time, disables submitting controls, retains
 local input on validation/network errors, handles cancellation, and clears
 account-scoped state on logout/401/account change. Reuse the existing
 RequestExecutor refresh mutex; do not add another token refresh loop.
+
+### Shared mobile presentation (v1 unchanged)
+
+The host promotes an actual `ScreenTitle` Text and existing typed EditProfile /
+Home catalog-profile actions into one native teal app bar. Their original node
+IDs tag the actual title/icon controls exactly once. Only promoted nodes are
+excluded from the body. `product.title` is the actual product name in body
+`Title` style after the image nodes; the local app-bar title is `Товар`.
+`nav.back` and `nav.refresh` are real local icon controls. Native Edit Profile
+has its own app bar and no bottom navigation; its lifetime is keyed by the raw
+account owner and captured editor ID. The host owns safe-area insets once.
+
+`SduiScreen` accepts defaulted local `chromeNodeIds`, `biometricAvailable` and
+`biometricConfigured` before `onEvent`; old named, trailing-lambda and fully
+positional calls remain supported. These parameters are not serialized state.
+The biometric row is controlled by the real configured snapshot, including when
+hardware is unavailable. It can activate only the original typed ManageBiometric
+action, once, while idle and available or configured. There is no optimistic
+toggle, fabricated notifications action or new wire enum.
+
+Home puts compact search, bounded categories/paging and popular product cards
+before ancillary navigation. Identity remains on Profile; Home still validates
+session ownership and publishes account metadata/cart counts. Product details
+keep all media IDs, full ordered description chunks, real rating/stock and the
+controlled quantity/action. Purchase and checkout CTAs use the available width.
+CartItem's optional public image passes through the existing `MediaPolicy` to
+the shared loader; protected uploads and external/traversal paths still fall
+back to the placeholder. `cart.total` tags the actual value on the right of the
+local `Итого` row.
+
+Checkout displays address/payment summaries. `checkout.address.edit` and
+`checkout.payment.edit` only expand local controls; they do not submit or send
+requests. Missing required fields or field errors automatically unfold their
+section. The existing four structured fields and canonical payment options keep
+their IDs, controlled draft values, validation and native confirmation flow.
+The compact orders filter similarly unfolds through `orders.filter.edit`;
+only the original explicit Apply action submits. Real paging remains reachable.
+Order/filter labels and status colors are local presentation; OrderCard status,
+payment props and query values remain the canonical enums above.
+
+The current Profile overview omits `profile.form`, retains all returned address
+nodes and adds `profile.address.default`, selected from the trusted default ID
+(first address if none matches, or `Адрес не указан`). The renderer shows the
+summary and discloses other returned addresses through `profile.addresses.expand`;
+large bounded address blocks remain intact. Native action rows use chevrons;
+the typed Logout control is full-width, outlined and destructive. Legacy profile
+form decoding and all six command schemas remain supported.
 
 ### Required native host handoff
 

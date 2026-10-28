@@ -23,7 +23,7 @@ value class Money private constructor(
         val rubles = kopecks / KOPECKS_PER_RUBLE
         val fraction = (kopecks % KOPECKS_PER_RUBLE).toString().padStart(2, '0')
         val groupedRubles = rubles.toString().reversed().chunked(3).joinToString(" ").reversed()
-        return if (fraction == "00") "$groupedRubles RUB" else "$groupedRubles.$fraction RUB"
+        return "$groupedRubles,$fraction ₽"
     }
 
     override fun toString(): String {

@@ -15,7 +15,7 @@ data class PinState(
         subtitle = "Для быстрого входа без пароля",
     ),
     val digitButtonStates: Map<Int, EpsButtonState> = emptyMap(),
-    val backspaceButtonState: EpsButtonState = EpsButtonState(text = "<"),
+    val backspaceButtonState: EpsButtonState = EpsButtonState(text = "Удалить последнюю цифру"),
     val keypadState: EpsPinKeypadState = EpsPinKeypadState(
         digitButtonStates = digitButtonStates,
         backspaceButtonState = backspaceButtonState,

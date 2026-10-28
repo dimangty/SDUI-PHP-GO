@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import com.shopkmp.ui.theme.ShopTokens
 
 @Composable
 fun EpsText(
@@ -25,11 +26,11 @@ fun EpsText(
         EpsTextStyle.PinDot -> MaterialTheme.typography.headlineMedium
     }
     val color = state.color ?: when (state.style) {
-        EpsTextStyle.Secondary -> Color(0xFF5E6673)
-        EpsTextStyle.Price -> Color(0xFF0F7A3B)
-        EpsTextStyle.Error -> Color(0xFFC0392B)
+        EpsTextStyle.Secondary -> ShopTokens.SecondaryText
+        EpsTextStyle.Price -> ShopTokens.Primary
+        EpsTextStyle.Error -> ShopTokens.Danger
         EpsTextStyle.Avatar -> Color.White
-        else -> Color.Unspecified
+        else -> ShopTokens.Text
     }
     val fontWeight = state.fontWeight ?: when (state.style) {
         EpsTextStyle.HeroTitle,

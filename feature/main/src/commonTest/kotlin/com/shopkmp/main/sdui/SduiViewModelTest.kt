@@ -9,6 +9,152 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SduiViewModelTest {
+    @Test fun callbacksFromAnOlderEditorCannotCloseOrRebaseTheCurrentEditor() = runTest {
+        val repo = FakeRepository().apply { transform = { profileDocument(it, "Server name") } }
+        val vm = SduiViewModel(repo, FakeNative(), backgroundScope)
+        vm.open(Destination(ScreenName.profile)); advanceTimeBy(1001); runCurrent()
+        vm.event(SduiEvent.FieldChanged("name", "Unsent name"))
+        vm.event(SduiEvent.Activate("edit")); runCurrent()
+        val oldEditor = vm.state.value.profileEditorId
+        vm.back(); advanceTimeBy(1001); runCurrent()
+        vm.event(SduiEvent.Activate("edit")); runCurrent()
+        val currentEditor = vm.state.value.profileEditorId
+        vm.nativeProfileSaved("account", oldEditor)
+        vm.nativeProfileCancelled("account", oldEditor)
+        assertTrue(vm.state.value.editProfile)
+        assertEquals("Unsent name", vm.state.value.fields["profile.fullName"])
+        vm.nativeProfileCancelled("account", currentEditor); advanceTimeBy(1001); runCurrent()
+        assertFalse(vm.state.value.editProfile)
+        assertEquals("Unsent name", vm.state.value.fields["profile.fullName"])
+    }
+
+    @Test fun lateEditorSaveChecksTheLatestAccountBeforeChangingTheHost() = runTest {
+        val native = FakeNative()
+        val repo = FakeRepository().apply { transform = { profileDocument(it, "Server name") } }
+        val vm = SduiViewModel(repo, native, backgroundScope)
+        vm.open(Destination(ScreenName.profile)); advanceTimeBy(1001); runCurrent()
+        vm.event(SduiEvent.Activate("edit")); runCurrent()
+        native.account = "other"
+        vm.nativeProfileSaved(); runCurrent()
+        assertEquals("other", vm.stateOwner)
+        assertNull(vm.state.value.document)
+        assertTrue(vm.state.value.fields.isEmpty())
+    }
+
+    @Test fun leavingTheNativeEditorRejectsALateSaveCallback() = runTest {
+        val repo = FakeRepository().apply { transform = { profileDocument(it, "Server name") } }
+        val vm = SduiViewModel(repo, FakeNative(), backgroundScope)
+        vm.open(Destination(ScreenName.profile)); advanceTimeBy(1001); runCurrent()
+        vm.event(SduiEvent.Activate("edit")); runCurrent()
+        vm.leave()
+        val loads = repo.loads
+        vm.nativeProfileSaved(); runCurrent()
+        assertFalse(vm.state.value.editProfile)
+        assertEquals(loads, repo.loads)
+    }
+
+    @Test fun biometricSnapshotsComeFromNativeOnStartProfileEntryAndRestore() = runTest {
+        val native = FakeNative().apply { biometricAvailable = true; biometricConfigured = true }
+        val vm = SduiViewModel(FakeRepository(), native, backgroundScope)
+        vm.start(); runCurrent()
+        assertTrue(vm.state.value.biometricAvailable)
+        assertTrue(vm.state.value.biometricConfigured)
+        val saved = vm.save()
+        assertFalse(saved.contains("biometricConfigured"))
+        native.biometricAvailable = false
+        vm.selectTab(ScreenName.profile); runCurrent()
+        assertFalse(vm.state.value.biometricAvailable)
+        assertTrue(vm.state.value.biometricConfigured)
+        native.biometricConfigured = false
+        val restored = SduiViewModel(FakeRepository(), native, backgroundScope)
+        restored.restore(saved); runCurrent()
+        assertFalse(restored.state.value.biometricConfigured)
+    }
+
+    @Test fun biometricToggleIsSingleFlightAndNeverOptimisticallyChecked() = runTest {
+        val native = FakeNative().apply { biometricAvailable = true; biometricGate = CompletableDeferred() }
+        val repo = FakeRepository().apply { transform = { biometricDocument(it) } }
+        val vm = SduiViewModel(repo, native, backgroundScope)
+        vm.open(Destination(ScreenName.profile)); advanceTimeBy(1001); runCurrent()
+        vm.event(SduiEvent.Activate("biometric")); vm.event(SduiEvent.Activate("biometric")); runCurrent()
+        assertEquals(1, native.biometricCalls)
+        assertTrue(vm.state.value.actionInProgress)
+        assertFalse(vm.state.value.biometricConfigured)
+        native.biometricConfigured = true
+        native.biometricGate!!.complete(NativeResult.Completed); runCurrent()
+        assertTrue(vm.state.value.biometricConfigured)
+        assertFalse(vm.state.value.actionInProgress)
+    }
+
+    @Test fun failedBiometricToggleKeepsConfiguredTruthAndShowsTheFailure() = runTest {
+        val native = FakeNative().apply {
+            biometricConfigured = true
+            biometricGate = CompletableDeferred()
+        }
+        val repo = FakeRepository().apply { transform = { biometricDocument(it) } }
+        val vm = SduiViewModel(repo, native, backgroundScope)
+        vm.open(Destination(ScreenName.profile)); advanceTimeBy(1001); runCurrent()
+        vm.event(SduiEvent.Activate("biometric")); runCurrent()
+        native.biometricGate!!.complete(NativeResult.Failed("Отмена или ошибка")); runCurrent()
+        assertFalse(vm.state.value.biometricAvailable)
+        assertTrue(vm.state.value.biometricConfigured)
+        assertEquals("Отмена или ошибка", vm.state.value.notice)
+        assertFalse(vm.state.value.actionInProgress)
+    }
+
+    @Test fun cancelledBiometricOperationReleasesFlightWithoutChangingTheSnapshot() = runTest {
+        val native = FakeNative().apply {
+            biometricAvailable = true; biometricConfigured = true; biometricGate = CompletableDeferred()
+        }
+        val repo = FakeRepository().apply { transform = { biometricDocument(it) } }
+        val vm = SduiViewModel(repo, native, backgroundScope)
+        vm.open(Destination(ScreenName.profile)); advanceTimeBy(1001); runCurrent()
+        vm.event(SduiEvent.Activate("biometric")); runCurrent()
+        native.biometricGate!!.completeExceptionally(CancellationException("cancelled")); runCurrent()
+        assertTrue(vm.state.value.biometricConfigured)
+        assertFalse(vm.state.value.actionInProgress)
+        assertNull(vm.state.value.notice)
+    }
+
+    @Test fun biometricAccountTransitionRederivesSnapshotsAndRejectsLateNativeCompletion() = runTest {
+        val native = FakeNative().apply {
+            biometricAvailable = true; biometricConfigured = true; biometricGate = CompletableDeferred()
+        }
+        val repo = FakeRepository().apply { transform = { biometricDocument(it) } }
+        val vm = SduiViewModel(repo, native, backgroundScope)
+        vm.open(Destination(ScreenName.profile)); advanceTimeBy(1001); runCurrent()
+        vm.event(SduiEvent.Activate("biometric")); runCurrent()
+        native.account = "other"
+        native.biometricConfigured = false
+        native.biometricGate!!.complete(NativeResult.Failed("Old account failure")); runCurrent()
+        assertEquals("other", vm.stateOwner)
+        assertFalse(vm.state.value.biometricConfigured)
+        assertNull(vm.state.value.notice)
+        assertNull(vm.state.value.document)
+        native.account = "third"
+        native.biometricAvailable = false
+        native.biometricConfigured = true
+        native.changes.value = "third"; runCurrent()
+        assertEquals("third", vm.stateOwner)
+        assertFalse(vm.state.value.biometricAvailable)
+        assertTrue(vm.state.value.biometricConfigured)
+    }
+
+    @Test fun currentDeviceRevokeRefreshesBiometricSnapshot() = runTest {
+        val native = FakeNative().apply { biometricConfigured = true }
+        val repo = FakeRepository().apply {
+            transform = { it.copy(actions = listOf(Action.RevokeDevice("revoke", "test-device", DeviceKind.biometric,
+                Confirmation("Revoke?", "Message", "Revoke")))) }
+            acknowledgement = Acknowledgement(1, CommandName.RevokeDevice, "applied", Destination(ScreenName.devices))
+        }
+        val vm = SduiViewModel(repo, native, backgroundScope)
+        vm.open(Destination(ScreenName.devices)); advanceTimeBy(1001); runCurrent()
+        assertTrue(vm.state.value.biometricConfigured)
+        vm.event(SduiEvent.Activate("revoke")); vm.event(SduiEvent.Confirm); advanceTimeBy(1001); runCurrent()
+        assertFalse(native.biometricConfigured)
+        assertFalse(vm.state.value.biometricConfigured)
+    }
+
     @Test fun nativeProfileSaveRebasesGenericFormBeforePhoneOnlySubmit() = runTest {
         var serverName = "Old name"
         val repo = FakeRepository().apply { transform = { profileDocument(it, serverName) } }
@@ -278,11 +424,25 @@ private class FakeNative : NativeSduiAdapter {
     var authLost = 0
     val transitions = mutableListOf<String>()
     var logoutGate: CompletableDeferred<Unit>? = null
+    var biometricAvailable = false
+    var biometricConfigured = false
+    var biometricCalls = 0
+    var biometricGate: CompletableDeferred<NativeResult>? = null
+    override fun isBiometricAvailable() = biometricAvailable
+    override fun hasConfiguredBiometric() = biometricConfigured
     override fun accountId() = account
     override fun deviceId() = "test-device"
     override suspend fun checkout(input: CheckoutInput) = NativeResult.Completed
-    override fun commandApplied(command: Command) = Unit
+    override fun commandApplied(command: Command) {
+        if (command is Command.RevokeDevice && command.input.deviceId == deviceId() && command.input.deviceKind == DeviceKind.biometric) {
+            biometricConfigured = false
+        }
+    }
     override suspend fun execute(kind: NativeKind): NativeResult {
+        if (kind == NativeKind.ManageBiometric) {
+            biometricCalls++
+            return biometricGate?.await() ?: NativeResult.Completed
+        }
         if (kind == NativeKind.EditProfile) return NativeResult.EditProfile
         if (kind == NativeKind.Logout) {
             transitions += "logout"
@@ -293,6 +453,10 @@ private class FakeNative : NativeSduiAdapter {
     }
     override fun authenticationLost() { authLost++; transitions += "root" }
 }
+
+private fun biometricDocument(document: ScreenDocument) = document.copy(
+    actions = listOf(Action.Native("biometric", NativeKind.ManageBiometric)),
+)
 
 private fun profileDocument(document: ScreenDocument, name: String) = document.copy(
     components = listOf(

@@ -29,6 +29,7 @@ import org.koin.dsl.module
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -69,6 +70,55 @@ class PinViewModelTest {
         assertEquals("", state.pin)
         assertFalse(state.isVerifyEnabled)
         assertEquals("Неверный PIN. Осталось попыток: 2", state.pinError)
+    }
+
+    @Test
+    fun loginGreetingDoesNotInventAnAccountIdentity() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        setupKoin()
+        val viewModel = PinViewModel(PinFakeAuthService(), PinScreenMode.Login)
+
+        assertEquals("С возвращением!", viewModel.stateFlow.value.state.headerState.subtitle)
+    }
+
+    @Test
+    fun keypadWaitsForExplicitSubmitAndSendsAllSixDigits() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val navigator = setupKoin()
+        val auth = PinFakeAuthService()
+        val viewModel = PinViewModel(auth, PinScreenMode.Login)
+
+        (1..4).forEach { viewModel.stateFlow.value.state.digitButtonStates.getValue(it).onClick?.invoke() }
+        advanceUntilIdle()
+        assertTrue(viewModel.stateFlow.value.state.continueButtonState.enabled)
+        assertNull(auth.loginPin)
+        assertNull(navigator.replacedWith)
+
+        (5..6).forEach { viewModel.stateFlow.value.state.digitButtonStates.getValue(it).onClick?.invoke() }
+        advanceUntilIdle()
+        assertEquals("123456", viewModel.stateFlow.value.state.pin)
+        assertNull(auth.loginPin)
+
+        viewModel.stateFlow.value.state.continueButtonState.onClick?.invoke()
+        advanceUntilIdle()
+        assertEquals("123456", auth.loginPin)
+        assertEquals(NavigationAction.NavigateToMain, navigator.replacedWith)
+    }
+
+    @Test
+    fun backspaceReturnsValidPinToPartialWithoutSubmitting() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        setupKoin()
+        val auth = PinFakeAuthService()
+        val viewModel = PinViewModel(auth, PinScreenMode.Login)
+        viewModel.onUiEvent(PinUiEvent.OnPinChanged("1234"))
+
+        viewModel.stateFlow.value.state.backspaceButtonState.onClick?.invoke()
+        advanceUntilIdle()
+
+        assertEquals("123", viewModel.stateFlow.value.state.pin)
+        assertFalse(viewModel.stateFlow.value.state.continueButtonState.enabled)
+        assertNull(auth.loginPin)
     }
 
     private fun setupKoin(): PinFakeNavigator {

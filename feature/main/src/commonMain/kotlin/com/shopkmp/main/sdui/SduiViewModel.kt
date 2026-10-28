@@ -58,12 +58,17 @@ data class HostState(
     val editProfile: Boolean = false,
     val notice: String? = null,
     val pendingAdds: List<PendingAddIntent> = emptyList(),
+    val biometricAvailable: Boolean = false,
+    val biometricConfigured: Boolean = false,
+    val profileEditorId: Int = 0,
 )
 @Serializable data class PendingAddIntent(val key: String, val input: AddInput)
 interface NativeSduiAdapter {
     val accountChanges: Flow<String> get() = emptyFlow()
     fun accountId(): String
     fun deviceId(): String
+    fun isBiometricAvailable(): Boolean = false
+    fun hasConfiguredBiometric(): Boolean = false
     suspend fun checkout(input: CheckoutInput): NativeResult
     suspend fun execute(kind: NativeKind): NativeResult
     fun commandApplied(command: Command)
@@ -109,6 +114,7 @@ class SduiViewModel(
     private var pending: Action? = null
     private var initialized = false
     private var selectedTab = ScreenName.home
+    private var editorSequence = 0
 
     init {
         this.scope.launch {
@@ -122,7 +128,18 @@ class SduiViewModel(
         }
     }
 
-    fun start() { if (!initialized && !signingOut) { initialized = true; fetch(state.value.destination) } }
+    fun start() {
+        if (signingOut) return
+        checkAccount()
+        refreshBiometric()
+        if (!initialized) { initialized = true; fetch(state.value.destination) }
+    }
+    private fun refreshBiometric() {
+        mutableState.value = state.value.copy(
+            biometricAvailable = account.isNotBlank() && native.isBiometricAvailable(),
+            biometricConfigured = account.isNotBlank() && native.hasConfiguredBiometric(),
+        )
+    }
     fun open(destination: Destination) {
         if (signingOut) return
         validateDestination(destination)
@@ -139,6 +156,7 @@ class SduiViewModel(
     fun selectTab(screen: ScreenName) {
         if (signingOut) return
         require(screen in tabScreens)
+        checkAccount()
         saveDraft()
         selectedTab = screen
         val destination = tabs[screen] ?: Destination(screen)
@@ -147,6 +165,7 @@ class SduiViewModel(
     }
     fun back() {
         if (signingOut) return
+        if (checkAccount()) return
         if (state.value.editProfile) { nativeProfileCancelled(); return }
         if (stack.size > 1) {
             saveDraft(); stack = stack.dropLast(1)
@@ -165,8 +184,10 @@ class SduiViewModel(
             fieldErrors = draft?.errors.orEmpty(), pendingAdds = pendingAdds.values.toList(), canGoBack = stack.size > 1 || destination.screen !in tabScreens)
         fetch(destination)
     }
-    fun nativeProfileSaved() {
-        if (!state.value.editProfile) return
+    fun nativeProfileSaved() = nativeProfileSaved(account, state.value.profileEditorId)
+
+    fun nativeProfileSaved(accountKey: String, editorId: Int) {
+        if (!ownsEditor(accountKey, editorId)) return
         invalidateProfileDrafts()
         nativeProfileError = null
         mutableState.value = state.value.copy(editProfile = false, document = null,
@@ -174,12 +195,17 @@ class SduiViewModel(
             fieldErrors = state.value.fieldErrors.filterKeys { !it.startsWith("profile.") }, error = null)
         fetch(state.value.destination)
     }
-    private fun nativeProfileCancelled() {
+    private fun nativeProfileCancelled() = nativeProfileCancelled(account, state.value.profileEditorId)
+
+    fun nativeProfileCancelled(accountKey: String, editorId: Int) {
+        if (!ownsEditor(accountKey, editorId)) return
         mutableState.value = state.value.copy(editProfile = false, error = nativeProfileError)
         nativeProfileError = null
         saveDraft()
         fetch(state.value.destination, preserveError = true)
     }
+    private fun ownsEditor(accountKey: String, editorId: Int): Boolean =
+        !checkAccount() && accountKey == account && state.value.editProfile && editorId == state.value.profileEditorId
     fun leave() {
         initialized = false
         generation++
@@ -187,7 +213,7 @@ class SduiViewModel(
         mutationJob?.cancel(); mutationJob = null
         logoutJob?.cancel()
         pending = null
-        mutableState.value = state.value.copy(actionInProgress = false, confirmation = null)
+        mutableState.value = state.value.copy(actionInProgress = false, confirmation = null, editProfile = false)
     }
     fun event(event: SduiEvent) {
         if (signingOut) return
@@ -355,12 +381,13 @@ class SduiViewModel(
         mutationJob = scope.launch {
             try {
                 val result = operation()
-                if (token != generation) return@launch
+                if (token != generation || checkAccount()) return@launch
                 mutationJob = null
+                refreshBiometric()
                 mutableState.value = state.value.copy(actionInProgress = false)
                 when (result) {
                     NativeResult.SignedOut -> { clearAccount(); native.authenticationLost() }
-                    NativeResult.EditProfile -> mutableState.value = state.value.copy(editProfile = true)
+                    NativeResult.EditProfile -> mutableState.value = state.value.copy(editProfile = true, profileEditorId = ++editorSequence)
                     NativeResult.Completed -> fetch(state.value.destination)
                     is NativeResult.Failed -> mutableState.value = state.value.copy(notice = result.message)
                     is NativeResult.CheckoutComplete -> {
@@ -369,8 +396,13 @@ class SduiViewModel(
                     }
                 }
             } catch (e: CancellationException) { throw e
-            } catch (_: Exception) { if (token == generation) mutableState.value = state.value.copy(notice = "Не удалось завершить действие. Проверьте состояние перед повтором.")
-            } finally { if (token == generation) mutableState.value = state.value.copy(actionInProgress = false) }
+            } catch (_: Exception) { if (token == generation && !checkAccount()) mutableState.value = state.value.copy(notice = "Не удалось завершить действие. Проверьте состояние перед повтором.")
+            } finally {
+                if (token == generation && !checkAccount()) {
+                    refreshBiometric()
+                    mutableState.value = state.value.copy(actionInProgress = false)
+                }
+            }
         }
     }
     private fun logout() {
@@ -398,6 +430,7 @@ class SduiViewModel(
     }
     private fun fetch(destination: Destination, preserveError: Boolean = false) {
         loadJob?.cancel()
+        refreshBiometric()
         val token = ++generation
         mutableState.value = state.value.copy(phase = ScreenPhase.Loading, error = if (preserveError) state.value.error else null)
         loadJob = scope.launch {

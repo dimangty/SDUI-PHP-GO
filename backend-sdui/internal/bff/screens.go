@@ -45,7 +45,7 @@ func (s *Application) build(ctx context.Context, id yii.Identity, user *yii.User
 }
 
 func (s *Application) home(ctx context.Context, id yii.Identity, u *yii.User, q url.Values) (sdui.Screen, error) {
-	d := screenBase("home", "Магазин", u)
+	d := screenBase("home", "ShopKMP", u)
 	categoryQuery, err := collectionQuery(q, "categoryPage", "categorySize", sdui.MaxCategoryPageSize)
 	if err != nil {
 		return d, err
@@ -87,25 +87,26 @@ func (s *Application) home(ctx context.Context, id yii.Identity, u *yii.User, q 
 	if ctx.Err() != nil {
 		return d, ctx.Err()
 	}
-	nodes := []sdui.Node{text("home.title", "Магазин", "ScreenTitle"), nav(&d, "home.catalog", "Каталог", "catalog")}
+	nodes := []sdui.Node{text("home.title", "ShopKMP", "ScreenTitle")}
+	ancillary := []sdui.Node{nav(&d, "home.catalog", "Каталог", "catalog")}
 	search := action(&d, sdui.Action{ID: "home.search.submit", Type: "SubmitForm", FormID: "catalog"})
 	nodes = append(nodes, sdui.N("home.search.form", "Form", sdui.FormProps{FormID: "catalog", Title: "Поиск", SubmitAction: search}, field(&d, "catalog.q", "Поиск товаров", "", "Text", false, 200, nil), button("home.search.button", "Найти", search, true)))
 	d.State.Fields["catalog.page"] = "0"
 	d.State.Fields["catalog.size"] = "20"
 	if u != nil {
-		nodes = append(nodes, sdui.N("home.profile", "ProfileHeader", sdui.ProfileProps{FullName: u.FullName, Email: u.Email, Phone: u.Phone, Avatar: mediaPointer(u.AvatarURL)}))
+		ancillary = append(ancillary, nav(&d, "home.profile", "Профиль", "profile"))
 		if se == nil {
 			if err := ownership(domain.EqualID(session.User.ID, u.ID)); err != nil {
 				return d, err
 			}
 			d.State.CartItemsCount = session.CartItemsCount
-			nodes = append(nodes, nav(&d, "home.cart", fmt.Sprintf("Корзина (%d)", session.CartItemsCount), "cart"))
+			ancillary = append(ancillary, nav(&d, "home.cart", fmt.Sprintf("Корзина (%d)", session.CartItemsCount), "cart"))
 		} else {
-			nodes = append(nodes, partial(&d, "session", dest))
+			ancillary = append(ancillary, partial(&d, "session", dest))
 		}
 	} else {
 		ref := action(&d, sdui.Action{ID: "home.login.action", Type: "Login"})
-		nodes = append(nodes, button("home.login", "Войти", ref, true))
+		ancillary = append(ancillary, button("home.login", "Войти", ref, true))
 	}
 	if ce != nil {
 		nodes = append(nodes, partial(&d, "categories", dest))
@@ -132,6 +133,7 @@ func (s *Application) home(ctx context.Context, id yii.Identity, u *yii.User, q 
 			nodes = append(nodes, productGrid(&d, popular))
 		}
 	}
+	nodes = append(nodes, ancillary...)
 	root(&d, nodes...)
 	return d, nil
 }
@@ -197,7 +199,7 @@ func (s *Application) product(ctx context.Context, id yii.Identity, u *yii.User,
 		return d, &yii.TransportError{Kind: "resource_mismatch"}
 	}
 	refresh(&d, sdui.Destination{Screen: "product", ID: pid})
-	nodes := []sdui.Node{text("product.title", p.Name, "ScreenTitle")}
+	nodes := []sdui.Node{}
 	images := map[string]bool{}
 	for _, img := range p.ImageURLs {
 		if source := sdui.Media(img); source != nil {
@@ -212,13 +214,14 @@ func (s *Application) product(ctx context.Context, id yii.Identity, u *yii.User,
 	if p.DiscountPrice != nil {
 		sale = *p.DiscountPrice
 	}
-	nodes = append(nodes, price("product.price", sale))
-	nodes = append(nodes, descriptionNodes(p.Description)...)
+	nodes = append(nodes, text("product.title", p.Name, "Title"))
 	rating := "Нет оценок"
 	if p.Rating != nil {
 		rating = fmt.Sprintf("Рейтинг: %.1f", *p.Rating)
 	}
-	nodes = append(nodes, text("product.rating", fmt.Sprintf("%s · Отзывов: %d", rating, p.ReviewsCount), "Secondary"), text("product.stock", fmt.Sprintf("В наличии: %d", p.Stock), "Secondary"))
+	nodes = append(nodes, text("product.rating", fmt.Sprintf("%s · Отзывов: %d", rating, p.ReviewsCount), "Secondary"), price("product.price", sale))
+	nodes = append(nodes, descriptionNodes(p.Description)...)
+	nodes = append(nodes, text("product.stock", fmt.Sprintf("В наличии: %d", p.Stock), "Secondary"), text("product.quantity.label", "Количество", "SectionTitle"))
 	d.State.Fields["product.quantity"] = "1"
 	quantity := action(&d, sdui.Action{ID: "product.quantity.change", Type: "UpdateField", FieldID: "product.quantity"})
 	maxStock := min(1000000, max(1, p.Stock))
@@ -228,7 +231,7 @@ func (s *Application) product(ctx context.Context, id yii.Identity, u *yii.User,
 		a = sdui.Action{ID: "product.add", Type: "Login"}
 	}
 	ref := action(&d, a)
-	nodes = append(nodes, button("product.buy", "В корзину", ref, p.IsActive && p.Stock > 0))
+	nodes = append(nodes, button("product.buy", "Добавить в корзину", ref, p.IsActive && p.Stock > 0))
 	root(&d, nodes...)
 	return d, nil
 }
@@ -302,7 +305,7 @@ func (s *Application) orders(ctx context.Context, id yii.Identity, u *yii.User, 
 	submit := action(&d, sdui.Action{ID: "orders.submit", Type: "SubmitForm", FormID: "orders"})
 	options := []sdui.Option{{Value: "", Label: "Все"}}
 	for _, st := range []string{"CREATED", "PAID", "ASSEMBLING", "DELIVERING", "COMPLETED", "CANCELLED"} {
-		options = append(options, sdui.Option{Value: st, Label: st})
+		options = append(options, sdui.Option{Value: st, Label: orderStatusLabel(st)})
 	}
 	nodes := []sdui.Node{text("orders.title", "История заказов", "ScreenTitle"), sdui.N("orders.form", "Form", sdui.FormProps{FormID: "orders", Title: "Фильтр", SubmitAction: submit}, field(&d, "orders.status", "Статус", query.Status, "Select", false, 20, options), button("orders.filter", "Применить", submit, true))}
 	d.State.Fields["orders.page"] = quantityField(query.Page)
@@ -333,7 +336,7 @@ func (s *Application) order(ctx context.Context, id yii.Identity, u *yii.User, o
 		return d, &yii.TransportError{Kind: "resource_mismatch"}
 	}
 	refresh(&d, sdui.Destination{Screen: "order", ID: oid})
-	nodes := []sdui.Node{text("order.title", fmt.Sprintf("Заказ №%d", o.Number), "ScreenTitle"), orderCard(&d, o), text("order.address", o.DeliveryAddress, "Body"), text("order.payment", o.PaymentMethod, "Secondary")}
+	nodes := []sdui.Node{text("order.title", fmt.Sprintf("Заказ №%d", o.Number), "ScreenTitle"), orderCard(&d, o), text("order.address", o.DeliveryAddress, "Body"), text("order.payment", paymentLabel(o.PaymentMethod), "Secondary")}
 	items, err := orderItemNodes(o.Items)
 	if err != nil {
 		return d, err
@@ -357,7 +360,7 @@ func (s *Application) profile(ctx context.Context, id yii.Identity, u *yii.User)
 		return d, err
 	}
 	refresh(&d, sdui.Destination{Screen: "profile"})
-	nodes := []sdui.Node{text("profile.title", "Профиль", "ScreenTitle"), sdui.N("profile.header", "ProfileHeader", sdui.ProfileProps{FullName: u.FullName, Email: u.Email, Phone: u.Phone, Avatar: mediaPointer(u.AvatarURL)}), nav(&d, "profile.orders", "Заказы", "orders"), nav(&d, "profile.devices", "Устройства", "devices"), profileForm(&d, *u)}
+	nodes := []sdui.Node{text("profile.title", "Профиль", "ScreenTitle"), sdui.N("profile.header", "ProfileHeader", sdui.ProfileProps{FullName: u.FullName, Email: u.Email, Phone: u.Phone, Avatar: mediaPointer(u.AvatarURL)})}
 	for _, a := range addresses {
 		if err := ownership(domain.EqualID(a.UserID, u.ID)); err != nil {
 			return d, err
@@ -367,7 +370,9 @@ func (s *Application) profile(ctx context.Context, id yii.Identity, u *yii.User)
 	if err != nil {
 		return d, err
 	}
+	nodes = append(nodes, text("profile.address.default", defaultAddressSummary(addresses, u.DefaultAddressID), "Body"))
 	nodes = append(nodes, addressContent...)
+	nodes = append(nodes, nav(&d, "profile.orders", "Мои заказы", "orders"), nav(&d, "profile.devices", "Мои устройства", "devices"))
 	for _, v := range []struct{ id, label, kind string }{{"edit", "Редактировать профиль", "EditProfile"}, {"pin", "Изменить PIN", "ChangePin"}, {"biometric", "Биометрия", "ManageBiometric"}, {"logout", "Выйти", "Logout"}} {
 		ref := action(&d, sdui.Action{ID: "profile." + v.id, Type: v.kind})
 		nodes = append(nodes, button("profile."+v.id+".button", v.label, ref, true))

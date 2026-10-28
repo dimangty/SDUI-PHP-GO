@@ -2,7 +2,9 @@ package com.shopkmp.main.container
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,13 +24,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.unit.dp
 import com.shopkmp.main.sdui.ScreenPhase
 import com.shopkmp.main.sdui.SduiViewModel
 import com.shopkmp.main.sdui.PendingAddIntent
 import com.shopkmp.network.NetworkSettings
+import com.shopkmp.ui.theme.ShopTokens
 import com.shopkmp.profile.ui.EditProfileScreen
 import com.shopkmp.sdui.actions.SduiEvent
 import com.shopkmp.sdui.model.ScreenName
@@ -62,17 +64,24 @@ fun MainContainerScreen() {
     SideEffect { if (restored) saved = viewModel.save() }
     DisposableEffect(viewModel) { onDispose { viewModel.leave() } }
     BackHandler(enabled = state.canGoBack || state.editProfile) { viewModel.back() }
-    EpsNavigationScreen(EpsScreenSurfaceState(), listOf(
+    if (state.editProfile) {
+        val owner = viewModel.stateOwner
+        val editorId = state.profileEditorId
+        // Outside Scaffold: this branch owns system insets once; the editor bar has zero insets.
+        Column(Modifier.fillMaxSize().background(ShopTokens.Background).statusBarsPadding().navigationBarsPadding()) {
+            key(owner, editorId) {
+                EditProfileScreen(accountKey = owner,
+                    onBack = { viewModel.nativeProfileCancelled(owner, editorId) },
+                    onSaved = { viewModel.nativeProfileSaved(owner, editorId) })
+            }
+        }
+    } else EpsNavigationScreen(EpsScreenSurfaceState(), listOf(
         ScreenName.home to "Главная", ScreenName.catalog to "Каталог", ScreenName.cart to "Корзина", ScreenName.profile to "Профиль",
     ).map { (screen, title) -> EpsNavigationItemState(title, state.selectedTab == screen, "nav.${screen.name}") { viewModel.selectTab(screen) } }) {
-        if (state.editProfile) {
-            EditProfileScreen(onBack = viewModel::back, onSaved = viewModel::nativeProfileSaved)
-        } else Column(Modifier.fillMaxSize()) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-                if (state.canGoBack) EpsButton(EpsButtonState("Назад", EpsButtonType.Text, onClick = viewModel::back), Modifier.testTag("nav.back"))
-                EpsButton(EpsButtonState("Обновить", EpsButtonType.Text, !state.actionInProgress && state.phase != ScreenPhase.Loading,
-                    { viewModel.event(SduiEvent.Retry) }), Modifier.testTag("nav.refresh"))
-            }
+        Column(Modifier.fillMaxSize()) {
+            val chrome = sduiChromePlan(state.document, state.destination.screen)
+            SduiChrome(chrome, state.canGoBack, state.actionInProgress || state.phase == ScreenPhase.Loading || state.confirmation != null,
+                viewModel::back, viewModel::event)
             state.notice?.let { EpsText(EpsTextState(it), Modifier.padding(16.dp)) }
             state.error?.let { error ->
                 EpsErrorMessage(when (error) {
@@ -86,9 +95,12 @@ fun MainContainerScreen() {
             Box(Modifier.weight(1f)) {
                 state.document?.let { document ->
                     screenStates.SaveableStateProvider(Json.encodeToString(state.destination)) {
-                        SduiScreen(document, state.fields, state.fieldErrors, state.actionInProgress,
+                        SduiScreen(document, state.fields, state.fieldErrors, state.actionInProgress || state.confirmation != null,
                             settings.serverUrl,
                             leadingContent = if (state.pendingAdds.isEmpty()) null else ({ PendingAddRecoveries(state.pendingAdds, state.actionInProgress, viewModel::event) }),
+                            chromeNodeIds = chrome.nodeIds,
+                            biometricAvailable = state.biometricAvailable,
+                            biometricConfigured = state.biometricConfigured,
                             onEvent = viewModel::event)
                     }
                 }

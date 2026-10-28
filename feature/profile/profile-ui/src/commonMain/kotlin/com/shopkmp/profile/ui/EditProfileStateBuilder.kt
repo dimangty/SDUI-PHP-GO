@@ -22,9 +22,10 @@ internal class EditProfileStateBuilder {
         onPhone: (String) -> Unit,
         onAddress: (String) -> Unit,
         onSave: () -> Unit,
+        saving: Boolean = false,
     ) = EpsEditProfileContentState(
         headerState = EpsScreenHeaderState(
-            title = "Редактирование профиля",
+            title = "Редактирование",
             backButtonState = EpsButtonState(
                 text = "Назад",
                 type = EpsButtonType.Secondary,
@@ -38,26 +39,32 @@ internal class EditProfileStateBuilder {
         nameTextFieldState = EpsTextFieldState(
             value = name,
             label = "Имя и фамилия",
+            enabled = !saving,
             onValueChange = onName,
         ),
         phoneTextFieldState = EpsTextFieldState(
             value = phone,
             label = "Телефон",
+            enabled = !saving,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
             onValueChange = onPhone,
         ),
         emailTextFieldState = EpsTextFieldState(
             value = profile.email,
-            label = "Email",
-            enabled = false,
+            label = "Email (через поддержку)",
+            enabled = true,
+            readOnly = true,
         ),
         addressTextFieldState = EpsTextFieldState(
             value = address,
             label = "Адрес доставки по умолчанию",
+            placeholder = "Город, улица, дом, квартира",
+            enabled = !saving,
             onValueChange = onAddress,
         ),
         saveButtonState = EpsButtonState(
             text = "Сохранить изменения",
+            enabled = !saving,
             onClick = onSave,
         ),
     )

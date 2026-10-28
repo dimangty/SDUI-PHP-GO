@@ -1,8 +1,9 @@
-Started UTC: 2026-10-19T13:43:59.163074+00:00
-Device: 16B71172-52E2-47E6-A951-EFAB9627917B
+Started UTC: 2026-10-27T08:46:34.054937+00:00
+Device: 2E4889AB-D521-4B8C-A796-AD80A7536D00
+Evidence run: 20261027T084634054255Z
 Test isolation: reset only nonsecret backend_device_id; Keychain tokens preserved
-Build/test wall time: 164.212s
-XCTest test duration: 156.525s
+Build/test wall time: 243.695s
+XCTest test duration: 236.514s
 Milestone: public_product_discovered
 Milestone: registered_native_pin_visible
 Milestone: pin_home_identity_verified
@@ -28,8 +29,35 @@ XCUI field: checkout.city nativeType=52
 XCUI field: checkout.street nativeType=52
 XCUI field: checkout.house nativeType=52
 XCUI field: checkout.apartment nativeType=52
+E2E-FIELD: signup.name stage=after_type valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.email stage=after_type valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.phone stage=after_type valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.password stage=after_type valueMatches=false lengthMatches=true masked=true exists=true
+E2E-FIELD: signup.passwordRepeat stage=after_type valueMatches=false lengthMatches=true masked=true exists=true
+E2E-FIELD: signup.name stage=before_terms valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.email stage=before_terms valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.phone stage=before_terms valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.password stage=before_terms valueMatches=false lengthMatches=true masked=true exists=true
+E2E-FIELD: signup.passwordRepeat stage=before_terms valueMatches=false lengthMatches=true masked=true exists=true
+E2E-FIELD: signup.name stage=after_terms valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.email stage=after_terms valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.phone stage=after_terms valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.password stage=after_terms valueMatches=false lengthMatches=true masked=true exists=true
+E2E-FIELD: signup.passwordRepeat stage=after_terms valueMatches=false lengthMatches=true masked=true exists=true
+E2E-TERMS: stage=before exists=true selected=false valueChecked=false submitEnabled=false
+E2E-TERMS: stage=after exists=true selected=true valueChecked=false submitEnabled=true
+E2E-FRAME: signup.name stage=before_tap target=16.0,162.0,370.0,49.3 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.email stage=before_tap target=16.0,242.0,370.0,49.3 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.phone stage=before_tap target=16.0,322.0,370.0,49.3 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.password stage=before_tap target=16.0,228.0,370.0,49.3 viewport=0.0,126.0,402.0,166.0 centerInside=true frameInside=true hittable=true keyboard=true
+E2E-FRAME: signup.passwordRepeat stage=before_tap target=16.0,482.0,370.0,49.3 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.terms stage=before_terms target=16.0,542.0,48.0,48.0 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.terms stage=before_tap target=16.0,542.0,48.0,48.0 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.terms stage=after_terms target=16.0,542.0,48.0,48.0 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.submit stage=before_tap target=16.0,606.0,370.0,48.0 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-PAYMENT-FRAME: target=3.0,109.0,51.0,10.0 viewport=0.0,0.0,402.0,874.0 centerInside=true frameInside=true hittable=true enabled=true
 E2E-SELECT: card_type=9 selected=true value_one=false
-E2E-ORDER: b819b898-830f-445f-ad00-b27b86de06c4 product=96be9e50-793e-433f-82eb-689f5927b355 total=50.01 payment=CAPTURED order=PAID
+E2E-ORDER: a1acc888-eb33-4cfb-93d1-6bf8483fbe25 product=6c35a708-047f-433a-951d-b306fda833b3 total=50.01 payment=CAPTURED order=PAID
 XCTest result: Passed; total=1; passed=1; failed=0
 xcodebuild exit: 0
 Screenshot: docs/evidence/ios/order-detail.png

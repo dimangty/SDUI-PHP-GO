@@ -1,6 +1,7 @@
 package com.shopkmp.ui.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
 object AppShapes {
@@ -16,6 +17,15 @@ object AppShapes {
         bottomStart = 8.dp,
         bottomEnd = 8.dp
     )
-    val primary = RoundedCornerShape(8.dp)
+    val primary = RoundedCornerShape(12.dp)
+    val field = RoundedCornerShape(10.dp)
+    val card = RoundedCornerShape(14.dp)
     val rounded = RoundedCornerShape(22.dp)
+    val material = Shapes(
+        extraSmall = RoundedCornerShape(4.dp),
+        small = field,
+        medium = primary,
+        large = card,
+        extraLarge = RoundedCornerShape(20.dp),
+    )
 }

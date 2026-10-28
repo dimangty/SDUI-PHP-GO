@@ -45,6 +45,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.koin.core)
         }
+        iosTest.dependencies { implementation(libs.compose.ui.test) }
     }
 }
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "screenId": "orders",
-  "revision": "268031da70565f35595ac9459405333634d3ac687107b154d27934b4088585f6",
+  "revision": "c50f4588bf7fdef57c748cd7d796276f5f115e4e169a7086b4b4884e0826281c",
   "components": [
     {
       "id": "screen.content",
@@ -46,27 +46,27 @@
                   },
                   {
                     "value": "CREATED",
-                    "label": "CREATED"
+                    "label": "Создан"
                   },
                   {
                     "value": "PAID",
-                    "label": "PAID"
+                    "label": "Оплачен"
                   },
                   {
                     "value": "ASSEMBLING",
-                    "label": "ASSEMBLING"
+                    "label": "Собирается"
                   },
                   {
                     "value": "DELIVERING",
-                    "label": "DELIVERING"
+                    "label": "Доставляется"
                   },
                   {
                     "value": "COMPLETED",
-                    "label": "COMPLETED"
+                    "label": "Выполнен"
                   },
                   {
                     "value": "CANCELLED",
-                    "label": "CANCELLED"
+                    "label": "Отменён"
                   }
                 ],
                 "changeAction": "field.orders.status"

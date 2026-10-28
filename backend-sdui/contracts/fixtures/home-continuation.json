@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "screenId": "home",
-  "revision": "0d338035a6d2cf5ffdb8ff133990c50512d53a34098cf213aba8c20dcecd2535",
+  "revision": "7d6d66794025f1dbdf582d9af2bc48a9fc20dcc726d07cee8bfe9a45c8d29d8b",
   "components": [
     {
       "id": "screen.content",
@@ -16,18 +16,8 @@
           "id": "home.title",
           "type": "Text",
           "props": {
-            "text": "Магазин",
+            "text": "ShopKMP",
             "style": "ScreenTitle"
-          }
-        },
-        {
-          "id": "home.catalog",
-          "type": "Button",
-          "props": {
-            "label": "Каталог",
-            "actionId": "home.catalog.navigate",
-            "style": "Primary",
-            "enabled": true
           }
         },
         {
@@ -64,26 +54,6 @@
               }
             }
           ]
-        },
-        {
-          "id": "home.profile",
-          "type": "ProfileHeader",
-          "props": {
-            "fullName": "Buyer",
-            "email": "buyer@example.org",
-            "phone": "+79991234567",
-            "avatar": null
-          }
-        },
-        {
-          "id": "home.cart",
-          "type": "Button",
-          "props": {
-            "label": "Корзина (2)",
-            "actionId": "home.cart.navigate",
-            "style": "Primary",
-            "enabled": true
-          }
         },
         {
           "id": "home.categories.title",
@@ -166,6 +136,36 @@
               }
             }
           ]
+        },
+        {
+          "id": "home.catalog",
+          "type": "Button",
+          "props": {
+            "label": "Каталог",
+            "actionId": "home.catalog.navigate",
+            "style": "Primary",
+            "enabled": true
+          }
+        },
+        {
+          "id": "home.profile",
+          "type": "Button",
+          "props": {
+            "label": "Профиль",
+            "actionId": "home.profile.navigate",
+            "style": "Primary",
+            "enabled": true
+          }
+        },
+        {
+          "id": "home.cart",
+          "type": "Button",
+          "props": {
+            "label": "Корзина (2)",
+            "actionId": "home.cart.navigate",
+            "style": "Primary",
+            "enabled": true
+          }
         }
       ]
     }
@@ -198,6 +198,13 @@
       "id": "field.catalog.q",
       "type": "UpdateField",
       "fieldId": "catalog.q"
+    },
+    {
+      "id": "home.profile.navigate",
+      "type": "Navigate",
+      "destination": {
+        "screen": "profile"
+      }
     },
     {
       "id": "home.cart.navigate",
@@ -273,7 +280,7 @@
     }
   },
   "metadata": {
-    "title": "Магазин",
+    "title": "ShopKMP",
     "locale": "ru-RU",
     "accountId": "11111111-1111-4111-8111-111111111111",
     "partial": false

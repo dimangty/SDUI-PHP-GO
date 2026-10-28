@@ -27,6 +27,8 @@ class ShopNativeSduiAdapter(
     override val accountChanges get() = session.accountIdFlow
     override fun accountId() = session.userId
     override fun deviceId() = session.ensureDeviceId()
+    override fun isBiometricAvailable() = auth.isBiometricAvailable()
+    override fun hasConfiguredBiometric() = auth.hasConfiguredBiometric()
     override fun authenticationLost() { navigator.replaceAll(NavigationAction.NavigateToLogin) }
     override fun commandApplied(command: Command) {
         if (command is Command.RevokeDevice && command.input.deviceId == session.ensureDeviceId()) {
@@ -42,7 +44,7 @@ class ShopNativeSduiAdapter(
         NativeKind.Login -> { navigator.replaceAll(NavigationAction.NavigateToLogin); NativeResult.Completed }
         NativeKind.ChangePin -> { navigator.push(NavigationAction.NavigateToChangePin); NativeResult.Completed }
         NativeKind.ManageBiometric -> {
-            if (!auth.isBiometricAvailable()) NativeResult.Failed("Биометрия недоступна на устройстве")
+            if (!auth.hasConfiguredBiometric() && !auth.isBiometricAvailable()) NativeResult.Failed("Биометрия недоступна на устройстве")
             else {
                 val result = if (auth.hasConfiguredBiometric()) auth.disableBiometric() else auth.enableBiometric()
                 if (result.isSuccess) NativeResult.Completed else NativeResult.Failed("Не удалось изменить настройки биометрии")

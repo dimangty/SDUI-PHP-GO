@@ -77,7 +77,7 @@ class PinViewModel(
             )
         }
         val backspaceButtonState = EpsButtonState(
-            text = "<",
+            text = "Удалить последнюю цифру",
             type = EpsButtonType.Secondary,
             enabled = pin.isNotEmpty(),
             onClick = { onUiEvent(PinUiEvent.OnBackspaceClicked) },

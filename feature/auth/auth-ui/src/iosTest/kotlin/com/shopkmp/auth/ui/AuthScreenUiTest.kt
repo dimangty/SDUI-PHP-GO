@@ -2,6 +2,7 @@ package com.shopkmp.auth.ui
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
@@ -11,6 +12,7 @@ import com.shopkmp.auth.ui.pin.PinContent
 import com.shopkmp.auth.ui.pin.PinState
 import com.shopkmp.uikit.component.button.defaultbutton.EpsButtonState
 import com.shopkmp.uikit.component.textfield.defaulttextfield.EpsTextFieldState
+import androidx.compose.runtime.mutableStateOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -37,7 +39,7 @@ class AuthScreenUiTest {
             )
         }
 
-        onNodeWithText("Email").performTextInput("user@example.com")
+        onNodeWithTag("login.email").performTextInput("user@example.com")
         onNodeWithText("Войти").performClick()
 
         assertEquals("user@example.com", email)
@@ -51,6 +53,9 @@ class AuthScreenUiTest {
         setContent {
             PinContent(
                 PinState(
+                    // Submit is only presented for a valid PIN; keep the original action assertions.
+                    pin = "1234",
+                    isVerifyEnabled = true,
                     digitButtonStates = (0..9).associateWith { digit ->
                         EpsButtonState(
                             text = digit.toString(),
@@ -70,5 +75,42 @@ class AuthScreenUiTest {
 
         assertEquals(1, selectedDigit)
         assertTrue(continued)
+    }
+
+    @Test
+    fun emptyAndPartialPinDoNotExposeSubmit() = runComposeUiTest {
+        val pin = mutableStateOf("")
+        setContent {
+            PinContent(
+                PinState(
+                    pin = pin.value,
+                    digitButtonStates = (0..9).associateWith { EpsButtonState(text = it.toString()) },
+                    continueButtonState = EpsButtonState(text = "Продолжить", enabled = false),
+                ),
+            )
+        }
+
+        listOf("", "1", "12", "123").forEach { partial ->
+            runOnIdle { pin.value = partial }
+            onNodeWithTag("pin.submit").assertDoesNotExist()
+            onNodeWithTag("pin.secondary").assertExists()
+        }
+    }
+
+    @Test
+    fun pinBackspaceInvokesTheActualKeyAction() = runComposeUiTest {
+        var deleted = false
+        setContent {
+            PinContent(
+                PinState(
+                    pin = "123",
+                    digitButtonStates = (0..9).associateWith { EpsButtonState(text = it.toString()) },
+                    backspaceButtonState = EpsButtonState(onClick = { deleted = true }),
+                ),
+            )
+        }
+
+        onNodeWithTag("pin.backspace").performClick()
+        assertTrue(deleted)
     }
 }

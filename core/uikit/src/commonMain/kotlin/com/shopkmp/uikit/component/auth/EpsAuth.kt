@@ -1,6 +1,8 @@
 package com.shopkmp.uikit.component.auth
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -16,6 +18,7 @@ import com.shopkmp.uikit.component.spacer.EpsSpacerState
 import com.shopkmp.uikit.component.text.EpsText
 import com.shopkmp.uikit.component.text.EpsTextState
 import com.shopkmp.uikit.component.text.EpsTextStyle
+import com.shopkmp.ui.theme.ShopTokens
 
 data class EpsAuthHeaderState(
     val title: String,
@@ -32,7 +35,9 @@ fun EpsAuthHeader(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        EpsText(EpsTextState(state.title, style = state.titleStyle))
+        EpsText(EpsTextState(state.title, style = state.titleStyle,
+            color = if (state.titleStyle == EpsTextStyle.HeroTitle) ShopTokens.Primary else ShopTokens.Text))
+        EpsSpacer(EpsSpacerState.height(6.dp))
         EpsText(EpsTextState(state.subtitle, style = EpsTextStyle.Secondary))
     }
 }
@@ -84,11 +89,12 @@ fun EpsInlineAction(
     modifier: Modifier = Modifier,
     buttonModifier: Modifier = Modifier,
 ) {
-    Row(
+    Column(
         modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        EpsText(EpsTextState(state.label))
+        EpsText(EpsTextState(state.label, style = EpsTextStyle.Secondary))
         EpsButton(state.buttonState, buttonModifier)
     }
 }

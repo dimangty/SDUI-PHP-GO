@@ -11,7 +11,20 @@ class MoneyTest {
         assertEquals("4990.00", requireNotNull(Money.parseOrNull("4990")).toString())
         assertEquals("4990.50", requireNotNull(Money.parseOrNull("4990.5")).toString())
         assertEquals("4990.05", requireNotNull(Money.parseOrNull("4990.05")).toString())
-        assertEquals("4 990.50 RUB", Money.parseOrNull("4990.50")?.formatRub())
+        assertEquals("4 990,50 ₽", Money.parseOrNull("4990.50")?.formatRub())
+    }
+
+    @Test
+    fun russianDisplayKeepsKopecksGroupingAndExactLargeAmounts() {
+        for ((wire, display) in listOf(
+            "0.00" to "0,00 ₽", "100.00" to "100,00 ₽", "0.01" to "0,01 ₽",
+            "1234567.09" to "1 234 567,09 ₽",
+            "92233720368547758.07" to "92 233 720 368 547 758,07 ₽",
+        )) {
+            val money = requireNotNull(Money.parseOrNull(wire))
+            assertEquals(display, money.formatRub())
+            assertEquals(wire, money.toString())
+        }
     }
 
     @Test

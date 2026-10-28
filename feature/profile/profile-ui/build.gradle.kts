@@ -16,6 +16,7 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core:uikit"))
             implementation(project(":core:mvvm"))
+            implementation(project(":core:network"))
             implementation(project(":feature:auth:auth-domain"))
             implementation(project(":feature:profile:domain"))
             implementation(libs.bundles.compose)
@@ -23,7 +24,13 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.kotlinx.coroutines.core)
         }
-        commonTest.dependencies { implementation(libs.kotlin.test) }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+        }
+        iosTest.dependencies {
+            implementation(libs.compose.ui.test)
+        }
     }
 }
 

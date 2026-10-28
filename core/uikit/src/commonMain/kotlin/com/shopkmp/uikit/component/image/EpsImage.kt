@@ -3,6 +3,8 @@ package com.shopkmp.uikit.component.image
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import com.shopkmp.ui.theme.AppShapes
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.LocalPlatformContext
 import coil3.request.ImageRequest
@@ -22,7 +24,7 @@ fun EpsImage(
             .crossfade(true)
             .build(),
         contentDescription = state.contentDescription,
-        modifier = modifier,
+        modifier = modifier.clip(AppShapes.field),
         contentScale = ContentScale.Crop,
         loading = { EpsImagePlaceholder(state.placeholder, Modifier.matchParentSize()) },
         error = { EpsImagePlaceholder(state.placeholder.copy(label = "Нет фото"), Modifier.matchParentSize()) },

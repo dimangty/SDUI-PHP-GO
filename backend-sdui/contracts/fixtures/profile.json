@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "screenId": "profile",
-  "revision": "6b3f143007645be76c39aeb408ea57a4b8207d8f402ce2b4bb90043c56247e1a",
+  "revision": "82655b95d1104af33d23069070c3c25876b453f6352bf3499094de2f3de212bb",
   "components": [
     {
       "id": "screen.content",
@@ -31,10 +31,26 @@
           }
         },
         {
+          "id": "profile.address.default",
+          "type": "Text",
+          "props": {
+            "text": "Moscow, Light, 1, 2",
+            "style": "Body"
+          }
+        },
+        {
+          "id": "address.44444444-4444-4444-8444-444444444444",
+          "type": "Text",
+          "props": {
+            "text": "Moscow, Light, 1, 2",
+            "style": "Body"
+          }
+        },
+        {
           "id": "profile.orders",
           "type": "Button",
           "props": {
-            "label": "Заказы",
+            "label": "Мои заказы",
             "actionId": "profile.orders.navigate",
             "style": "Primary",
             "enabled": true
@@ -44,65 +60,10 @@
           "id": "profile.devices",
           "type": "Button",
           "props": {
-            "label": "Устройства",
+            "label": "Мои устройства",
             "actionId": "profile.devices.navigate",
             "style": "Primary",
             "enabled": true
-          }
-        },
-        {
-          "id": "profile.form",
-          "type": "Form",
-          "props": {
-            "formId": "profile",
-            "title": "Изменить профиль",
-            "submitAction": "profile.submit"
-          },
-          "children": [
-            {
-              "id": "profile.fullName",
-              "type": "FormField",
-              "props": {
-                "fieldId": "profile.fullName",
-                "label": "Имя",
-                "input": "Text",
-                "required": true,
-                "readOnly": false,
-                "maxLength": 255,
-                "changeAction": "field.profile.fullName"
-              }
-            },
-            {
-              "id": "profile.phone",
-              "type": "FormField",
-              "props": {
-                "fieldId": "profile.phone",
-                "label": "Телефон",
-                "input": "Phone",
-                "required": true,
-                "readOnly": false,
-                "maxLength": 16,
-                "changeAction": "field.profile.phone"
-              }
-            },
-            {
-              "id": "profile.save",
-              "type": "Button",
-              "props": {
-                "label": "Сохранить",
-                "actionId": "profile.submit",
-                "style": "Primary",
-                "enabled": true
-              }
-            }
-          ]
-        },
-        {
-          "id": "address.44444444-4444-4444-8444-444444444444",
-          "type": "Text",
-          "props": {
-            "text": "Moscow, Light, 1, 2",
-            "style": "Body"
           }
         },
         {
@@ -171,21 +132,6 @@
       }
     },
     {
-      "id": "profile.submit",
-      "type": "SubmitForm",
-      "formId": "profile"
-    },
-    {
-      "id": "field.profile.fullName",
-      "type": "UpdateField",
-      "fieldId": "profile.fullName"
-    },
-    {
-      "id": "field.profile.phone",
-      "type": "UpdateField",
-      "fieldId": "profile.phone"
-    },
-    {
       "id": "profile.edit",
       "type": "EditProfile"
     },
@@ -204,10 +150,7 @@
   ],
   "state": {
     "authenticated": true,
-    "fields": {
-      "profile.fullName": "Buyer",
-      "profile.phone": "+79991234567"
-    },
+    "fields": {},
     "cartItemsCount": 0
   },
   "metadata": {

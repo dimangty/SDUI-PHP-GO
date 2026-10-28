@@ -51,7 +51,7 @@ enum class PinScreenMode(
     ),
     Login(
         title = "Введите PIN-код",
-        subtitle = "Иван, с возвращением!",
+        subtitle = "С возвращением!",
     ),
     Change(
         title = "Введите текущий PIN",

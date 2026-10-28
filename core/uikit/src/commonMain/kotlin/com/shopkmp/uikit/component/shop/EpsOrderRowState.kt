@@ -11,4 +11,5 @@ data class EpsOrderRowState(
     val paymentMethod: String,
     val statusColor: Color,
     val cardState: EpsCardState,
+    val compact: Boolean = false,
 )

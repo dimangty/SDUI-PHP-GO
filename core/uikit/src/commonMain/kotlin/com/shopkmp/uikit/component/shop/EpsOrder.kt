@@ -3,6 +3,7 @@ package com.shopkmp.uikit.component.shop
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -23,20 +24,19 @@ fun EpsOrderRow(
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 EpsText(
                     state = EpsTextState("Заказ #${state.number}", fontWeight = FontWeight.SemiBold),
-                    modifier = Modifier.weight(1f),
-                )
-                EpsText(
-                    state = EpsTextState(state.status, color = state.statusColor),
                     modifier = Modifier.weight(1f),
                 )
                 EpsText(EpsTextState(state.total))
             }
             EpsSpacer(EpsSpacerState.height(8.dp))
-            EpsSecondaryText("Адрес: ${state.deliveryAddress}")
-            EpsSecondaryText("Оплата: ${state.paymentMethod}")
+            EpsText(EpsTextState("● ${state.status}", color = state.statusColor))
+            if (!state.compact) {
+                EpsSecondaryText("Адрес: ${state.deliveryAddress}")
+                EpsSecondaryText("Оплата: ${state.paymentMethod}")
+            }
         }
     }
 }

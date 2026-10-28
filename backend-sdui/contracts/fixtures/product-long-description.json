@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "screenId": "product",
-  "revision": "a40dec61aa61a8c737e9b71d9c6df122c483761acdc1b9d8ab26773c68ca5fd2",
+  "revision": "d3599a3978931105411b365ddc5a97ee60a15e592b01a672fa77eb1d28859990",
   "components": [
     {
       "id": "screen.content",
@@ -13,20 +13,28 @@
       },
       "children": [
         {
-          "id": "product.title",
-          "type": "Text",
-          "props": {
-            "text": "Real lamp",
-            "style": "ScreenTitle"
-          }
-        },
-        {
           "id": "product.image.741672fcf407afb396409810371c2fed",
           "type": "Image",
           "props": {
             "source": "/images/products/lamp.png",
             "description": "Real lamp",
             "aspect": "Product"
+          }
+        },
+        {
+          "id": "product.title",
+          "type": "Text",
+          "props": {
+            "text": "Real lamp",
+            "style": "Title"
+          }
+        },
+        {
+          "id": "product.rating",
+          "type": "Text",
+          "props": {
+            "text": "Рейтинг: 4.5 · Отзывов: 2",
+            "style": "Secondary"
           }
         },
         {
@@ -62,19 +70,19 @@
           }
         },
         {
-          "id": "product.rating",
-          "type": "Text",
-          "props": {
-            "text": "Рейтинг: 4.5 · Отзывов: 2",
-            "style": "Secondary"
-          }
-        },
-        {
           "id": "product.stock",
           "type": "Text",
           "props": {
             "text": "В наличии: 9",
             "style": "Secondary"
+          }
+        },
+        {
+          "id": "product.quantity.label",
+          "type": "Text",
+          "props": {
+            "text": "Количество",
+            "style": "SectionTitle"
           }
         },
         {
@@ -93,7 +101,7 @@
           "id": "product.buy",
           "type": "Button",
           "props": {
-            "label": "В корзину",
+            "label": "Добавить в корзину",
             "actionId": "product.add",
             "style": "Primary",
             "enabled": true
