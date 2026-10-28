@@ -2,7 +2,7 @@
 
 A persistent Android/iOS shop with Keycloak authentication, catalog/search,
 cart, checkout, payments, orders, profile and device credentials. The root
-runtime uses **PHP 8.3 / Yii2 for business logic** and an **independent Go 1.26
+runtime uses **PHP 8.3 / Yii2 for business logic** and an **independent Go 1.27.3
 HTTP-only SDUI BFF**. The shared commonMain client renders eight destinations
 with the existing UIKit and keeps authentication/security/checkout native.
 
@@ -30,19 +30,65 @@ archive have been removed after extracting these essentials; see
 
 ## Run locally
 
-Requires Docker Compose **2.24.4+**, Docker Engine and Python 3.9+. Go 1.26 is
-needed for host-side verification; Docker builds both services independently.
-On Linux OpenSearch requires `vm.max_map_count=262144`.
+Run the following commands from the repository root, where `Makefile` and
+`docker-compose.yml` are located.
+
+### 1. Start Docker and check the tools
+
+Requires Docker Engine with BuildKit, Docker Compose **2.24.4+**, Python **3.9+**
+and `make`. Docker builds PHP and Go inside containers; host PHP/Composer/Go
+installations are not required to start the stack. Host-side Go verification
+uses the module toolchains: BFF **1.27.3**, ops **1.26**.
+
+On **macOS with Docker Desktop**, launch the application and expose its bundled
+CLI tools and credential helper in the current terminal:
 
 ```sh
-cp .env.example .env
+open -a Docker
+export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
+command -v docker-credential-desktop
+docker version
+docker compose version
+```
+
+Wait until `docker version` shows a working **Server** section. The helper check
+should print `/Applications/Docker.app/Contents/Resources/bin/docker-credential-desktop`.
+To retain this PATH in new zsh terminals, add the same `export PATH=...` line to
+`~/.zshrc`, then open a new terminal or run `source ~/.zshrc`.
+
+Give Docker Desktop enough memory for Keycloak, OpenSearch and the image builds;
+**8 GiB** is a practical starting allocation for local development. Additional
+running stacks need additional resources.
+
+On **Linux**, start Docker Engine and ensure `docker version` and
+`docker compose version` succeed. OpenSearch needs `vm.max_map_count` of at least
+**262144**; check it with `sysctl vm.max_map_count` and, if lower, set it with
+`sudo sysctl -w vm.max_map_count=262144`.
+
+### 2. Prepare the local configuration and start the stack
+
+```sh
+if [ ! -f .env ]; then
+  cp .env.example .env
+fi
+python3 scripts/compose.py --env .env config --quiet
 make run
 ```
+
+This keeps an existing `.env` and its database/client credentials intact.
+The example configuration is for **local development**. For production TLS and
+secrets, follow [the deployment guide](docs/DEPLOYMENT.md).
 
 `make run` builds/starts the stack, waits for real probes, then explicitly runs
 the development seed and search reconciliation. The seed creates two sample
 products only when **both catalog tables are empty**; it never overwrites a
 populated catalog and is forbidden in production. `make up` starts without seeding.
+
+The first launch downloads images/dependencies and initializes the databases,
+Keycloak and search. Readiness can take several minutes; the default wait is
+**2100 seconds (35 minutes)**, in addition to image build time.
+
+### 3. Check the running services
 
 * API and SDUI: **http://127.0.0.1:8080**
 * Development Swagger: **http://127.0.0.1:8080/swagger/**; serves the unchanged
@@ -50,13 +96,51 @@ populated catalog and is forbidden in production. `make up` starts without seedi
 * No direct database, Keycloak, search, FPM or BFF host ports.
 
 ```sh
+python3 scripts/compose.py --env .env ps --all
 curl --fail http://127.0.0.1:8080/api/v1/screens/home
 make logs
 make down                    # retains persisted volumes
 ```
 
+Long-running services should become `healthy`. Initialization jobs `migrate`,
+`yii-migrate` and `reindex` finish with `Exited (0)`. `make logs` follows logs;
+press Ctrl+C to leave the log view while containers keep running. `make down`
+stops/removes the project's containers and networks while retaining its data
+volumes. Start it again with `make run`.
+
 Set `EDGE_PORT` in `.env` for another port. The isolated integration stack runs at
 **http://127.0.0.1:58095** under project **`shopkmp-migrated-e2e`**.
+
+### Troubleshooting: `docker-credential-desktop` is missing from PATH
+
+If the build stops with:
+
+```text
+error getting credentials - err: exec: "docker-credential-desktop": executable file not found in $PATH
+```
+
+Docker is trying to run the credential helper selected in its client
+configuration. A CLI installed separately, for example through Homebrew, can be
+available while Docker Desktop's helper directory is absent from PATH. This can
+surface at `# syntax=docker/dockerfile:1`, when BuildKit fetches its Dockerfile
+frontend; other parallel image steps may then show `CANCELED`.
+
+For the standard macOS Docker Desktop installation, retry from the same terminal:
+
+```sh
+export PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH"
+command -v docker-credential-desktop
+make run
+```
+
+Or apply the PATH just to this invocation:
+
+```sh
+PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH" make run
+```
+
+If the helper is also absent from `/Applications/Docker.app/Contents/Resources/bin`,
+check the Docker Desktop installation/location and repair it before retrying.
 
 ## Verification
 
@@ -138,8 +222,8 @@ python3 scripts/run_ios_installed_journey.py --udid <booted-iPhone-simulator-UDI
 | [CMP report](docs/CMP_IMPLEMENTATION_REPORT.md) | Shared renderer, native integration and platform evidence |
 
 Client stack: Kotlin 2.3.10, CMP 1.10.3, Ktor 3.5, Koin 4.2, Navigation3,
-SQLDelight and existing UIKit. Infrastructure: PostgreSQL 17, Keycloak 26.3.3,
-OpenSearch 2.19.3 and Nginx. Historical screenshots/draw.io and migration reports
+SQLDelight and existing UIKit. Infrastructure: PostgreSQL 17.11, Keycloak 26.8.1,
+OpenSearch 2.19.7 and Nginx 1.30.6. Historical screenshots/draw.io and migration reports
 describe earlier stacks; the root Compose files define the current runtime.
 Actual rollback uses an independently retained immutable release and verified
 business/identity database backups, as described in the deployment guide.
