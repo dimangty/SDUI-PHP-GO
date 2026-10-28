@@ -73,7 +73,8 @@ services:
       KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak?sslmode=verify-full&sslrootcert=/opt/keycloak/conf/ca.crt
       KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/conf/tls.crt
       KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/conf/tls.key
-      # 26.3.3 inherits HTTPS for management when the public listener uses TLS.
+      # 26.8 honors the development override; explicitly inherit public TLS.
+      KC_HTTP_MANAGEMENT_SCHEME: inherited
       HEALTHCHECK_URL: https://keycloak:9000/health/ready
       SSL_CERT_FILE: /opt/keycloak/conf/ca.crt
     volumes:

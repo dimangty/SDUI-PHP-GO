@@ -1109,3 +1109,90 @@ Screenshot: docs/evidence/ios/checkout-confirmation.png
 Screenshot: docs/evidence/ios/product.png
 PASS installed iOS full CARD journey
 ```
+
+### iOS full journey run — 2026-10-28T01:49:01.620573+00:00
+
+Started actual xcodebuild installed test. Resume: `python3 scripts/run_ios_installed_journey.py --udid 2E4889AB-D521-4B8C-A796-AD80A7536D00 --backend-url http://127.0.0.1:58196`. Result pending; do not infer PASS if interrupted.
+
+```text
+Started UTC: 2026-10-28T01:49:01.620573+00:00
+Device: 2E4889AB-D521-4B8C-A796-AD80A7536D00
+Evidence run: 20261028T014901619564Z
+Test isolation: reset only nonsecret backend_device_id; Keychain tokens preserved
+Build/test wall time: 315.906s
+XCTest test duration: 298.542s
+Milestone: public_product_discovered
+Milestone: registered_native_pin_visible
+Milestone: pin_home_identity_verified
+Milestone: six_digit_pin_login_verified
+Milestone: password_login_home_verified
+Milestone: native_editor_readonly_cancel_verified
+Milestone: catalog_product_cart_verified
+Milestone: confirmation_zero_orders_verified
+Milestone: native_checkout_canonical_verified
+Milestone: safari_captured_paid_verified
+Milestone: native_open_prompt_handled
+Milestone: paid_order_details_devices_verified
+Milestone: logout_ui_login_verified
+Milestone: logout_relaunch_login_verified
+Milestone: full_journey_pass
+XCUI field: signup.name nativeType=52
+XCUI field: signup.email nativeType=52
+XCUI field: signup.phone nativeType=52
+XCUI field: signup.password nativeType=52
+XCUI field: signup.passwordRepeat nativeType=52
+XCUI field: login.email nativeType=52
+XCUI field: login.password nativeType=52
+XCUI field: catalog.q nativeType=52
+XCUI field: checkout.city nativeType=52
+XCUI field: checkout.street nativeType=52
+XCUI field: checkout.house nativeType=52
+XCUI field: checkout.apartment nativeType=52
+E2E-FIELD: signup.name stage=after_type valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.email stage=after_type valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.phone stage=after_type valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.password stage=after_type valueMatches=false lengthMatches=true masked=true exists=true
+E2E-FIELD: signup.passwordRepeat stage=after_type valueMatches=false lengthMatches=true masked=true exists=true
+E2E-FIELD: signup.name stage=before_terms valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.email stage=before_terms valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.phone stage=before_terms valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.password stage=before_terms valueMatches=false lengthMatches=true masked=true exists=true
+E2E-FIELD: signup.passwordRepeat stage=before_terms valueMatches=false lengthMatches=true masked=true exists=true
+E2E-FIELD: signup.name stage=after_terms valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.email stage=after_terms valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.phone stage=after_terms valueMatches=true lengthMatches=true masked=false exists=true
+E2E-FIELD: signup.password stage=after_terms valueMatches=false lengthMatches=true masked=true exists=true
+E2E-FIELD: signup.passwordRepeat stage=after_terms valueMatches=false lengthMatches=true masked=true exists=true
+E2E-TERMS: stage=before exists=true selected=false valueChecked=false submitEnabled=false
+E2E-TERMS: stage=after exists=true selected=true valueChecked=false submitEnabled=true
+E2E-FRAME: signup.name stage=before_tap target=16.0,162.0,370.0,49.3 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.email stage=before_tap target=16.0,242.0,370.0,49.3 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.phone stage=before_tap target=16.0,322.0,370.0,49.3 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.password stage=before_tap target=16.0,228.0,370.0,49.3 viewport=0.0,126.0,402.0,166.0 centerInside=true frameInside=true hittable=true keyboard=true
+E2E-FRAME: signup.passwordRepeat stage=before_tap target=16.0,482.0,370.0,49.3 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.terms stage=before_terms target=16.0,542.0,48.0,48.0 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.terms stage=before_tap target=16.0,542.0,48.0,48.0 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.terms stage=after_terms target=16.0,542.0,48.0,48.0 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-FRAME: signup.submit stage=before_tap target=16.0,606.0,370.0,48.0 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
+E2E-PAYMENT-FRAME: target=3.0,109.0,51.0,10.0 viewport=0.0,0.0,402.0,874.0 centerInside=true frameInside=true hittable=true enabled=true
+E2E-VISUAL-BIOMETRIC: checked=false enabled=false
+E2E-SELECT: card_type=9 selected=true value_one=false
+E2E-ORDER: 880c3eb8-f482-4af0-9e55-ed0fdcd3777a product=6c35a708-047f-433a-951d-b306fda833b3 total=50.01 payment=CAPTURED order=PAID
+XCTest result: Passed; total=1; passed=1; failed=0
+xcodebuild exit: 0
+Screenshot: docs/evidence/ios/edit-profile.png
+Screenshot: docs/evidence/ios/profile-actions.png
+Screenshot: docs/evidence/ios/profile.png
+Screenshot: docs/evidence/ios/order-detail.png
+Screenshot: docs/evidence/ios/orders-paid.png
+Screenshot: docs/evidence/ios/checkout-confirmation.png
+Screenshot: docs/evidence/ios/cart-checkout.png
+Screenshot: docs/evidence/ios/product.png
+Screenshot: docs/evidence/ios/home.png
+Screenshot: docs/evidence/ios/pin-login-partial-3.png
+Screenshot: docs/evidence/ios/pin-create-partial-2.png
+Screenshot: docs/evidence/ios/registration.png
+Screenshot: docs/evidence/ios/login.png
+Named app screenshot exports: 13/13
+PASS installed iOS full CARD journey
+```

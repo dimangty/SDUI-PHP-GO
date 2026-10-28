@@ -1,13 +1,15 @@
-Started UTC: 2026-10-27T08:46:34.054937+00:00
+Started UTC: 2026-10-28T01:49:01.620573+00:00
 Device: 2E4889AB-D521-4B8C-A796-AD80A7536D00
-Evidence run: 20261027T084634054255Z
+Evidence run: 20261028T014901619564Z
 Test isolation: reset only nonsecret backend_device_id; Keychain tokens preserved
-Build/test wall time: 243.695s
-XCTest test duration: 236.514s
+Build/test wall time: 315.906s
+XCTest test duration: 298.542s
 Milestone: public_product_discovered
 Milestone: registered_native_pin_visible
 Milestone: pin_home_identity_verified
+Milestone: six_digit_pin_login_verified
 Milestone: password_login_home_verified
+Milestone: native_editor_readonly_cancel_verified
 Milestone: catalog_product_cart_verified
 Milestone: confirmation_zero_orders_verified
 Milestone: native_checkout_canonical_verified
@@ -56,12 +58,23 @@ E2E-FRAME: signup.terms stage=before_tap target=16.0,542.0,48.0,48.0 viewport=0.
 E2E-FRAME: signup.terms stage=after_terms target=16.0,542.0,48.0,48.0 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
 E2E-FRAME: signup.submit stage=before_tap target=16.0,606.0,370.0,48.0 viewport=0.0,126.0,402.0,714.0 centerInside=true frameInside=true hittable=true keyboard=false
 E2E-PAYMENT-FRAME: target=3.0,109.0,51.0,10.0 viewport=0.0,0.0,402.0,874.0 centerInside=true frameInside=true hittable=true enabled=true
+E2E-VISUAL-BIOMETRIC: checked=false enabled=false
 E2E-SELECT: card_type=9 selected=true value_one=false
-E2E-ORDER: a1acc888-eb33-4cfb-93d1-6bf8483fbe25 product=6c35a708-047f-433a-951d-b306fda833b3 total=50.01 payment=CAPTURED order=PAID
+E2E-ORDER: 880c3eb8-f482-4af0-9e55-ed0fdcd3777a product=6c35a708-047f-433a-951d-b306fda833b3 total=50.01 payment=CAPTURED order=PAID
 XCTest result: Passed; total=1; passed=1; failed=0
 xcodebuild exit: 0
+Screenshot: docs/evidence/ios/edit-profile.png
+Screenshot: docs/evidence/ios/profile-actions.png
+Screenshot: docs/evidence/ios/profile.png
 Screenshot: docs/evidence/ios/order-detail.png
 Screenshot: docs/evidence/ios/orders-paid.png
 Screenshot: docs/evidence/ios/checkout-confirmation.png
+Screenshot: docs/evidence/ios/cart-checkout.png
 Screenshot: docs/evidence/ios/product.png
+Screenshot: docs/evidence/ios/home.png
+Screenshot: docs/evidence/ios/pin-login-partial-3.png
+Screenshot: docs/evidence/ios/pin-create-partial-2.png
+Screenshot: docs/evidence/ios/registration.png
+Screenshot: docs/evidence/ios/login.png
+Named app screenshot exports: 13/13
 PASS installed iOS full CARD journey

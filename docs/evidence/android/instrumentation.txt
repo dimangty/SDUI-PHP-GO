@@ -1,12 +1,19 @@
-Started UTC: 2026-10-27T09:25:09.176362+00:00
+Started UTC: 2026-10-28T02:09:41.548565+00:00
 Device: emulator-5558
-Evidence run: 20261027T092509175355Z
-Instrumentation wall time: 37.903s
+Evidence run: 20261028T020941547858Z
+Instrumentation wall time: 55.476s
 E2E: UI registration reached native PIN setup
+E2E: PIN_VISUAL stage=before_wait baselineUniform=true currentUniform=false boundsMatch=true pixelsMatch=false
+E2E: PIN_VISUAL stage=after_wait baselineUniform=true currentUniform=true boundsMatch=true pixelsMatch=true
+E2E: Partial PIN capture has released keys and count-only evidence
 E2E: Authenticated Home SDUI and persisted PIN device verified
+E2E: PIN_VISUAL stage=before_wait baselineUniform=true currentUniform=false boundsMatch=true pixelsMatch=false
+E2E: PIN_VISUAL stage=after_wait baselineUniform=true currentUniform=true boundsMatch=true pixelsMatch=true
+E2E: Partial PIN capture has released keys and count-only evidence
+E2E: UI six-digit PIN login and actual Profile identity verified
 E2E: UI logout and real password login returned to authenticated Home
 E2E: Catalog search → Product → AddToCart → Cart; canonical quantity/total verified
-E2E: Native checkout confirmed: one CREATED CARD order, exact total, stock -1, empty cart; order=b9c03370-c289-4a49-89e7-078276b61466
+E2E: Native checkout confirmed: one CREATED CARD order, exact total, stock -1, empty cart; order=9d2a7daa-a440-4007-af1d-5933db7c53d0
 E2E: BROWSER_TAP bounds=8,410,141,25
 E2E: BROWSER stage=after_click chrome=true
 E2E: BROWSER_CONTROL stage=after_click code=complete exists=true enabled=true clickable=true bounds=8,410,141,25
@@ -31,10 +38,13 @@ E2E: BROWSER_CLICK stage=after_click resource=com.android.chrome:id/optional_too
 E2E: BROWSER_CLICK stage=after_click resource=com.android.chrome:id/tab_switcher_button enabled=true bounds=828,137,126,147
 E2E: BROWSER_CLICK stage=after_click resource=com.android.chrome:id/menu_button enabled=true bounds=954,137,126,147
 E2E: System browser Complete payment → canonical CAPTURED / PAID
+E2E: VISUAL_BIOMETRIC checked=false enabled=false
+E2E: Native editor readonly email, absent bottom nav and cancel without mutation verified
 E2E: App Orders/PAID → order detail → Profile → Devices verified
-E2E: Final logout stays at Login; order=b9c03370-c289-4a49-89e7-078276b61466 product=6c35a708-047f-433a-951d-b306fda833b3; payment=CAPTURED
+E2E: Final logout stays at Login; order=9d2a7daa-a440-4007-af1d-5933db7c53d0 product=6c35a708-047f-433a-951d-b306fda833b3; payment=CAPTURED
 E2E: PASS Android full installed CARD journey
-Time: 36.44
+Time: 54.192
 OK (1 test)
 adb instrumentation process exit: 0
+Named app screenshot exports: 13/13
 PASS installed Android full CARD journey

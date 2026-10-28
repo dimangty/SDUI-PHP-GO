@@ -51,3 +51,23 @@ Unfinished A1 runtime-image work in `backend-yii2/Dockerfile` and
 `scripts/test_php_runtime.py` is intentionally left outside this UI checkpoint.
 A1 still blocks the overall release and push. No production data or real monetary
 operation was used by these tests.
+
+## Continuation evidence — 2026-10-28
+
+The pending status above describes the committed checkpoint, not the later
+execution result. Expanded journeys have now completed serially:
+
+- iOS receipt `20261028T014901619564Z`: **1 passed / 0 failed / 0 skipped**,
+  runner/xcodebuild exit **0**, 298.542s test, **13/13 accepted app images**.
+- Final Android receipt `20261028T020941547858Z`: **1 passed / 0 failed /
+  0 skipped**, runner exit **0**, 54.192s test, **13/13 accepted app images**.
+
+Image review rejected two earlier Android PIN captures with transient key
+feedback. A test-only rendered-release privacy guard now prevents export until
+the actual key regions match their pre-entry released appearance; a failed-closed
+attempt and all intermediate results remain recorded. Production UI is unchanged.
+
+See [`INSTALLED_VISUAL_REPORT.md`](INSTALLED_VISUAL_REPORT.md) for exact commands,
+complete attempt counts, actual ten-state contact sheets, 26-image checksum/source
+manifest, privacy review and remaining capability/visual gaps. The continuation
+does not erase the prior failed attempts, authorize a release/push, or resolve A1.

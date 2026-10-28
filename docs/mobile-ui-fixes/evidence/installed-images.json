@@ -1,0 +1,347 @@
+{
+  "captured_date_utc" : "2026-10-28",
+  "format" : "ShopKMP actual installed visual evidence v1",
+  "pixel_perfect_match_claimed" : false,
+  "platforms" : [
+    {
+      "actual_exports" : 13,
+      "base_source_checkpoint" : "32675b249b861f1e19bfb1149fdbd44ea7734dd2",
+      "contact_sheet" : {
+        "bytes" : 460892,
+        "explicit_input_paths" : [
+          "docs/evidence/ios/login.png",
+          "docs/evidence/ios/registration.png",
+          "docs/evidence/ios/pin-create-partial-2.png",
+          "docs/evidence/ios/pin-login-partial-3.png",
+          "docs/evidence/ios/home.png",
+          "docs/evidence/ios/product.png",
+          "docs/evidence/ios/cart-checkout.png",
+          "docs/evidence/ios/orders-paid.png",
+          "docs/evidence/ios/profile.png",
+          "docs/evidence/ios/edit-profile.png"
+        ],
+        "height" : 1530,
+        "path" : "docs/mobile-ui-fixes/evidence/ios-after-contact-sheet.png",
+        "sha256" : "7f09de0c68fa26b485415a9b99ae669177724801fde439213228cd05434a1230",
+        "width" : 1540
+      },
+      "evidence_run_id" : "20261028T014901619564Z",
+      "failed" : 0,
+      "images" : [
+        {
+          "bytes" : 124883,
+          "height" : 2622,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/ios/login.png",
+          "reference_state" : 1,
+          "sha256" : "c2f959ad4fab7d520c79b5e471ab90997e4dedb21b85b54f0b88c3b66c2080dc",
+          "supplemental" : false,
+          "width" : 1206
+        },
+        {
+          "bytes" : 120843,
+          "height" : 2622,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/ios/registration.png",
+          "reference_state" : 2,
+          "sha256" : "a3d0cda4722c3374843de5a605fea4233d193338a269761a0abdf6b948cecda0",
+          "supplemental" : false,
+          "width" : 1206
+        },
+        {
+          "bytes" : 142728,
+          "height" : 2622,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/ios/pin-create-partial-2.png",
+          "reference_state" : 3,
+          "sha256" : "7cd134f6521f05fdff250b43c985e23d61a51e1488880174b217e82c6b62594e",
+          "supplemental" : false,
+          "width" : 1206
+        },
+        {
+          "bytes" : 141283,
+          "height" : 2622,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/ios/pin-login-partial-3.png",
+          "reference_state" : 4,
+          "sha256" : "5f57c5f8f691c2421dfcfda205d8e10c6012a2274b86f8ba8d6d7a485263efd0",
+          "supplemental" : false,
+          "width" : 1206
+        },
+        {
+          "bytes" : 261030,
+          "height" : 2622,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/ios/home.png",
+          "reference_state" : 5,
+          "sha256" : "3ae0513fbbe95c733fece64106f2c43a9b8d491a7aa6bdc26f2730f637c79068",
+          "supplemental" : false,
+          "width" : 1206
+        },
+        {
+          "bytes" : 328597,
+          "height" : 2622,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/ios/product.png",
+          "reference_state" : 6,
+          "sha256" : "d607358ff50baea2ff96e26591aef4fe15c9e4fa464c73f992e2c2cd7dde9a92",
+          "supplemental" : false,
+          "width" : 1206
+        },
+        {
+          "bytes" : 169532,
+          "height" : 2622,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/ios/cart-checkout.png",
+          "reference_state" : 7,
+          "sha256" : "2b92f431e34b635c523c32226d440da2c4e6456140e4e8320f1764eb0d754962",
+          "supplemental" : false,
+          "width" : 1206
+        },
+        {
+          "bytes" : 119907,
+          "height" : 2622,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/ios/orders-paid.png",
+          "reference_state" : 8,
+          "sha256" : "a57f0e2abd02f2ad4061884f5f543ea5e5ef7aa52338da043ecb6fcb690bdc40",
+          "supplemental" : false,
+          "width" : 1206
+        },
+        {
+          "bytes" : 197349,
+          "height" : 2622,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/ios/profile.png",
+          "reference_state" : 9,
+          "sha256" : "46e34b49714bb7ff08377e6a20064ff11373a9ee08ae2de4f851f554bcecb5b6",
+          "supplemental" : false,
+          "width" : 1206
+        },
+        {
+          "bytes" : 190622,
+          "height" : 2622,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/ios/edit-profile.png",
+          "reference_state" : 10,
+          "sha256" : "1fca57aed11b76c49cde19a0d6b2b7fa72fb43a6807a4c10d5afe2305fab5752",
+          "supplemental" : false,
+          "width" : 1206
+        },
+        {
+          "bytes" : 197349,
+          "height" : 2622,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/ios/profile-actions.png",
+          "reference_state" : null,
+          "sha256" : "46e34b49714bb7ff08377e6a20064ff11373a9ee08ae2de4f851f554bcecb5b6",
+          "supplemental" : true,
+          "width" : 1206
+        },
+        {
+          "bytes" : 179801,
+          "height" : 2622,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/ios/checkout-confirmation.png",
+          "reference_state" : null,
+          "sha256" : "5a804a997a7195485483300d310ea07a6f054b06b92e41dd21092cff66313db5",
+          "supplemental" : true,
+          "width" : 1206
+        },
+        {
+          "bytes" : 180645,
+          "height" : 2622,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/ios/order-detail.png",
+          "reference_state" : null,
+          "sha256" : "3c4006e8811c99155da57779b90d694ddefc1f04d344e2c88125ed9041676f05",
+          "supplemental" : true,
+          "width" : 1206
+        }
+      ],
+      "passed" : 1,
+      "platform" : "ios",
+      "required_exports" : 13,
+      "runner_exit" : 0,
+      "safe_receipt" : "docs/evidence/ios/xctest-summary.txt",
+      "skipped" : 0,
+      "test_seconds" : 298.54199999999997,
+      "test_source_path" : "iosApp/iosAppUITests/InstalledJourneyTests.swift",
+      "test_source_sha256" : "6e53a08f4d6e8674dd7b4a662689110efe5d78d8fd4d732e6c7b81d587d1668d",
+      "tests" : 1,
+      "wall_kind" : "build_and_test",
+      "wall_seconds" : 315.90600000000001
+    },
+    {
+      "actual_exports" : 13,
+      "base_source_checkpoint" : "32675b249b861f1e19bfb1149fdbd44ea7734dd2",
+      "contact_sheet" : {
+        "bytes" : 462740,
+        "explicit_input_paths" : [
+          "docs/evidence/android/login.png",
+          "docs/evidence/android/registration.png",
+          "docs/evidence/android/pin-create-partial-2.png",
+          "docs/evidence/android/pin-login-partial-3.png",
+          "docs/evidence/android/home.png",
+          "docs/evidence/android/product.png",
+          "docs/evidence/android/cart-checkout.png",
+          "docs/evidence/android/orders-paid.png",
+          "docs/evidence/android/profile.png",
+          "docs/evidence/android/edit-profile.png"
+        ],
+        "height" : 1530,
+        "path" : "docs/mobile-ui-fixes/evidence/android-after-contact-sheet.png",
+        "sha256" : "1d6fd3c0ae57fec43a7c4bbfd549c955489a7b8e9ff3effbf7c4bdf4a666bb54",
+        "width" : 1540
+      },
+      "evidence_run_id" : "20261028T020941547858Z",
+      "failed" : 0,
+      "images" : [
+        {
+          "bytes" : 65538,
+          "height" : 2424,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/android/login.png",
+          "reference_state" : 1,
+          "sha256" : "e37dbef94ebd488ee28432ebf23eda2c2fd9a2509fd3c366e8ca8c9d942be48c",
+          "supplemental" : false,
+          "width" : 1080
+        },
+        {
+          "bytes" : 63278,
+          "height" : 2424,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/android/registration.png",
+          "reference_state" : 2,
+          "sha256" : "6c523cc43f1e7fc2780747a7aa609938a629b8de1184ce558561f8a365b8bd7c",
+          "supplemental" : false,
+          "width" : 1080
+        },
+        {
+          "bytes" : 79011,
+          "height" : 2424,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/android/pin-create-partial-2.png",
+          "reference_state" : 3,
+          "sha256" : "c1a4401d6020c9f20823e3c98572e5c4a8a9e8df2a7cf411288e61c3e31bc3ab",
+          "supplemental" : false,
+          "width" : 1080
+        },
+        {
+          "bytes" : 76673,
+          "height" : 2424,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/android/pin-login-partial-3.png",
+          "reference_state" : 4,
+          "sha256" : "2f052f8a5e05e425f8d032f879b115e70ed643b01b487ec32efd3308e9d1387c",
+          "supplemental" : false,
+          "width" : 1080
+        },
+        {
+          "bytes" : 153050,
+          "height" : 2424,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/android/home.png",
+          "reference_state" : 5,
+          "sha256" : "dc4487e09d3b4f2ff12d1c4a02f20a357c67941bce3a59b2b3e87e3f93f7c4c4",
+          "supplemental" : false,
+          "width" : 1080
+        },
+        {
+          "bytes" : 159079,
+          "height" : 2424,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/android/product.png",
+          "reference_state" : 6,
+          "sha256" : "7f60de7e07383680dd5a517a53ee8f0a472e1bf63f23a281f95fd9d330b587d0",
+          "supplemental" : false,
+          "width" : 1080
+        },
+        {
+          "bytes" : 105837,
+          "height" : 2424,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/android/cart-checkout.png",
+          "reference_state" : 7,
+          "sha256" : "9e128d3be6acad67ccc8131657b82f46a314193e8548d7d569ab4d87aa7c30a2",
+          "supplemental" : false,
+          "width" : 1080
+        },
+        {
+          "bytes" : 60251,
+          "height" : 2424,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/android/orders-paid.png",
+          "reference_state" : 8,
+          "sha256" : "a920444b72afb3f65498c174b581db64c7a862a36dc470b0519a28551fd2f5a7",
+          "supplemental" : false,
+          "width" : 1080
+        },
+        {
+          "bytes" : 116505,
+          "height" : 2424,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/android/profile.png",
+          "reference_state" : 9,
+          "sha256" : "2c57b9af5dff68a0a0b1ab0d23b253f2b95f69fd7c906f598abeeaa14c52657a",
+          "supplemental" : false,
+          "width" : 1080
+        },
+        {
+          "bytes" : 113582,
+          "height" : 2424,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/android/edit-profile.png",
+          "reference_state" : 10,
+          "sha256" : "5586f7e58d7156d8e954550cf53ff13c54bd4b064cc7c2041177373b16523474",
+          "supplemental" : false,
+          "width" : 1080
+        },
+        {
+          "bytes" : 115793,
+          "height" : 2424,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/android/profile-actions.png",
+          "reference_state" : null,
+          "sha256" : "683cb0bab10dcbcbf9989e583e34619bc3d07bee28710afcb42533bf4019b571",
+          "supplemental" : true,
+          "width" : 1080
+        },
+        {
+          "bytes" : 109010,
+          "height" : 2424,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/android/checkout-confirmation.png",
+          "reference_state" : null,
+          "sha256" : "6fb43cf22c275b3aa4cefe9dc92cd6801ad01604a8fae5f4a487b3f3a5372b76",
+          "supplemental" : true,
+          "width" : 1080
+        },
+        {
+          "bytes" : 100659,
+          "height" : 2424,
+          "matches_private_receipt_image" : true,
+          "path" : "docs/evidence/android/order-detail.png",
+          "reference_state" : null,
+          "sha256" : "7727ffa6efc50392af2653017ba86a6d611ee95dd012d54ed9c0430f49328ffa",
+          "supplemental" : true,
+          "width" : 1080
+        }
+      ],
+      "passed" : 1,
+      "platform" : "android",
+      "required_exports" : 13,
+      "runner_exit" : 0,
+      "safe_receipt" : "docs/evidence/android/instrumentation.txt",
+      "skipped" : 0,
+      "test_seconds" : 54.192,
+      "test_source_path" : "composeApp/src/androidInstrumentedTest/kotlin/com/shopkmp/InstalledJourneyTest.kt",
+      "test_source_sha256" : "389511724679fb3127d6127bffcfc7719fc3675854fe49f097181e6bfd1d8f0a",
+      "tests" : 1,
+      "wall_kind" : "instrumentation",
+      "wall_seconds" : 55.475999999999999
+    }
+  ],
+  "production_ui_changed_during_capture" : false,
+  "ui_content_redrawn" : false
+}

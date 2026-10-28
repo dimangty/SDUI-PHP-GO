@@ -1,5 +1,11 @@
 # Backend security and trusted-CA TLS verification
 
+**October 28 continuation:** see [A1_RUNTIME_RESULTS.md](A1_RUNTIME_RESULTS.md)
+for new supported runtime images, fresh-DB counts and current live/TLS checks.
+The inventories and resource-qualified TLS run below describe the earlier
+artifacts. Local backend/mobile checkpoint commits now exist; push is still
+blocked by the unresolved Java runtime gate.
+
 **Final disposition, 2026-10-27: functional checks passed within the snapshot scopes recorded in `TEST_RESULTS.md`; overall task/release remains A1 BLOCKED by unresolved runtime-image security findings. No commit or push.**
 
 The two concrete ops Go dependency findings below are **superseded and resolved**: current `x/text v0.41.0` / `x/sync v0.22.0`, Go 1.26.10 source and rebuilt migration-binary scans exit **0**. Current BFF Go 1.27.3 source/binary scans and Composer audit also exit **0**. The rebuilt migration image retains only three UNKNOWN distro advisories, with no HIGH/CRITICAL findings. This does **not** clear PHP, Keycloak, nginx, PostgreSQL or OpenSearch image findings.

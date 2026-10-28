@@ -30,6 +30,12 @@ def main():
         assert services['migrate']['build']['dockerfile'].endswith('deploy/migrate.Dockerfile')
         assert services['yii2']['healthcheck']['test'][-1] == '/opt/probes/fpm-health.php'
         assert services['yii2']['depends_on']['reindex']['condition'] == 'service_completed_successfully'
+        management = services['keycloak']['environment']
+        # 26.8 honors this setting: the production overlay must override the
+        # development HTTP listener when its probe verifies management TLS.
+        assert management['KC_HTTP_MANAGEMENT_SCHEME'] == ('inherited' if prod else 'http')
+        assert management['HEALTHCHECK_URL'] == ('https://keycloak:9000/health/ready' if prod
+                                               else 'http://127.0.0.1:9000/health/ready')
         if prod:
             for name in ('yii2', 'yii-migrate', 'reindex', 'maintenance', 'reconcile', 'payment-recovery'):
                 e = services[name]['environment']

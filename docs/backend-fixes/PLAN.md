@@ -1,5 +1,13 @@
 # Backend hardening implementation plan
 
+**October 28 continuation:** the original backend-only scope below describes the
+B1–B7 plan. A subsequent explicit user request authorized the shared mobile UI
+work (checkpoint `32675b249`, expanded installed evidence). Backend checkpoint
+`b9def939` exists. The active runtime A1 remediation, actual current scans and
+root/TLS status are in [A1_RUNTIME_RESULTS.md](A1_RUNTIME_RESULTS.md). Publication
+remains blocked by Java vendor findings; historical checkpoint text below is not
+a current worktree/commit assertion.
+
 **Goal:** repair B1–B7 in the existing Yii2/PostgreSQL + Go SDUI backend.
 **Architecture:** PHP remains the business owner. PostgreSQL stores payment operation intents and session revocation state. Go only builds SDUI from HTTP business data. External payment calls occur after intent commit, never while holding SQL locks.
 **Scope/spec:** the B1–B7 requirements supplied with this task. No mobile changes, no framework replacement, no new broker. Existing migration files 001–011 remain immutable. Dependency changes require concrete audit evidence and reproducible locks.

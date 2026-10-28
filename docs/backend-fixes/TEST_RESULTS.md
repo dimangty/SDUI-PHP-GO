@@ -1,5 +1,13 @@
 # Backend fixes — verification summary
 
+**October 28 continuation:** [A1_RUNTIME_RESULTS.md](A1_RUNTIME_RESULTS.md)
+contains the current runtime upgrades, seven-image fresh-DB inventory and new
+root/TLS verification status. The tables below preserve the October 27 functional
+checkpoint. Subsequent user-authorized mobile changes and installed journeys are
+documented in [mobile results](../mobile-ui-fixes/RESULTS.md). Local checkpoints
+`b9def939` and `32675b249` exist; a further user-requested local working-variant
+commit records the runtime continuation. Push remains blocked by A1.
+
 **Verification checkpoint: 2026-10-27 UTC. Functional checks passed; release gate BLOCKED by unresolved runtime-image security findings (A1). A later explicit user request authorizes a local checkpoint commit; push remains blocked.**
 
 The detailed workstream reports preserve individual commands, failed attempts,

@@ -36,6 +36,8 @@ def safe_instrumentation_lines(output):
         r"E2E: UI registration reached native PIN setup",
         r"E2E: Authenticated Home SDUI and persisted PIN device verified",
         r"E2E: UI six-digit PIN login and actual Profile identity verified",
+        r"E2E: Partial PIN capture has released keys and count-only evidence",
+        rf"E2E: PIN_VISUAL stage=(?:before_wait|after_wait) baselineUniform={boolean} currentUniform={boolean} boundsMatch={boolean} pixelsMatch={boolean}",
         r"E2E: UI logout and real password login returned to authenticated Home",
         r"E2E: Native editor readonly email, absent bottom nav and cancel without mutation verified",
         rf"E2E: VISUAL_BIOMETRIC checked={boolean} enabled={boolean}",
@@ -65,6 +67,7 @@ def safe_instrumentation_lines(output):
         ("Actual partial PIN count is exposed without digits", "partial_pin_count"),
         ("Email has no native set-text action", "native_editor_readonly_email"),
         ("Editor has no host navigation", "native_editor_host_navigation"),
+        ("PIN key visuals match released baseline", "partial_pin_visual_release_timeout"),
     ):
         if marker in output:
             lines.append(f"Failure: {code}")

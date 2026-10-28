@@ -1,5 +1,13 @@
 # Backend fixes — final disposition
 
+**Current continuation, 2026-10-28:** the historical B1–B7 review below is followed
+by backend checkpoint `b9def939`, user-authorized mobile checkpoint `32675b249`
+and expanded installed journeys. Supported runtime updates and a separate
+read-only runtime review are recorded in [A1_RUNTIME_RESULTS.md](A1_RUNTIME_RESULTS.md).
+That review found no additional concrete source defect, but **A1 remains BLOCKED
+on Java vendor findings**. Current runtime/root/TLS status supersedes the older
+artifact counts and "no mobile changes" statements below. No push or CI run.
+
 **2026-10-27: B1–B7 application fixes implemented and functionally verified.
 Overall task/release remains BLOCKED by runtime-image security gate A1.
 A subsequent explicit user request authorizes a local checkpoint commit only;

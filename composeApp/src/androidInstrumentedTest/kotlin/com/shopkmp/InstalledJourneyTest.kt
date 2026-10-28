@@ -1,5 +1,6 @@
 package com.shopkmp
 
+import android.graphics.Rect
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityNodeInfo
@@ -232,9 +233,10 @@ class InstalledJourneyTest {
         val random = SecureRandom()
         val pin = generateSequence { List(6) { random.nextInt(10) } }
             .first { it.distinct().size == 6 && (it[1] - it[0] + 10) % 10 in 2..8 }
+        val releasedKeys = releasedPinKeyBaseline()
         pin.forEachIndexed { index, digit ->
             click("pin.digit.$digit")
-            if (index == 1) capturePartialPin(2, "pin-create-partial-2")
+            if (index == 1) capturePartialPin(2, "pin-create-partial-2", releasedKeys)
             if (index == 3) assertNoAutoFour()
         }
         await("six-digit setup PIN complete") { !node("pin.digit.0").isEnabled }
@@ -246,12 +248,66 @@ class InstalledJourneyTest {
         return pin
     }
 
-    private fun capturePartialPin(count: Int, name: String) {
+    private class PinKeyVisual(val bounds: Rect, val pixels: IntArray)
+
+    private fun pinKeyVisuals(): List<PinKeyVisual> {
+        assertEquals("Inspect only the actual app PIN screen", context.packageName, device.currentPackageName)
+        val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot())
+        return try {
+            (0..9).map { digit ->
+                val bounds = Rect(node("pin.digit.$digit").visibleBounds)
+                val pixels = IntArray(bounds.width() * bounds.height())
+                bitmap.getPixels(pixels, 0, bounds.width(), bounds.left, bounds.top, bounds.width(), bounds.height())
+                PinKeyVisual(bounds, pixels)
+            }
+        } finally {
+            bitmap.recycle()
+        }
+    }
+
+    private fun releasedPinKeyBaseline(): List<PinKeyVisual> {
+        node("pin.header").click()
+        device.waitForIdle()
+        return pinKeyVisuals()
+    }
+
+    private fun pinKeySurfacesUniform(keys: List<PinKeyVisual>): Boolean {
+        val samples = keys.map { key ->
+            val x = key.bounds.width() / 2
+            val y = key.bounds.height() * 15 / 100
+            key.pixels[y * key.bounds.width() + x]
+        }
+        return samples.distinct().size == 1
+    }
+
+    private fun pinVisualDiagnostic(stage: String, baseline: List<PinKeyVisual>) {
+        val current = pinKeyVisuals()
+        milestone("PIN_VISUAL stage=$stage baselineUniform=${pinKeySurfacesUniform(baseline)} currentUniform=${pinKeySurfacesUniform(current)} boundsMatch=${current.zip(baseline).all { (a, b) -> a.bounds == b.bounds }} pixelsMatch=${current.zip(baseline).all { (a, b) -> a.pixels.contentEquals(b.pixels) }}")
+    }
+
+    private fun capturePartialPin(count: Int, name: String, releasedKeys: List<PinKeyVisual>) {
         assertFalse("Partial PIN does not expose submit", device.hasObject(By.res("pin.submit")))
         assertFalse("Partial PIN does not navigate", device.hasObject(By.res("home.title")))
         (0..9).forEach { assertTrue("Partial PIN keeps all keys enabled", node("pin.digit.$it").isEnabled) }
+        // Do not export transient pressed-key layers that reveal input history.
+        // A neutral tap and UI-idle boundary leave the actual masked state intact.
+        node("pin.header").click()
+        device.waitForIdle()
+        // Compare rendered key regions with their real pre-entry state. This is
+        // an in-memory release check, never a replacement/mask for exported pixels.
+        pinVisualDiagnostic("before_wait", releasedKeys)
+        try {
+            await("PIN key visuals match released baseline") {
+                pinKeyVisuals().zip(releasedKeys).all { (current, released) ->
+                    current.bounds == released.bounds && current.pixels.contentEquals(released.pixels)
+                }
+            }
+        } finally {
+            pinVisualDiagnostic("after_wait", releasedKeys)
+        }
         val dots = findNativeNode { it.contentDescription?.toString() == "PIN-код" }
         assertTrue("Actual partial PIN count is exposed without digits", dots?.stateDescription?.toString() == "Введено цифр: $count")
+        milestone("Partial PIN capture has released keys and count-only evidence")
         screenshot(name)
     }
 
@@ -264,9 +320,10 @@ class InstalledJourneyTest {
     private fun loginWithPin(pin: List<Int>, buyer: String, email: String) {
         click("login.pin")
         node("pin.header")
+        val releasedKeys = releasedPinKeyBaseline()
         pin.forEachIndexed { index, digit ->
             click("pin.digit.$digit")
-            if (index == 2) capturePartialPin(3, "pin-login-partial-3")
+            if (index == 2) capturePartialPin(3, "pin-login-partial-3", releasedKeys)
             if (index == 3) assertNoAutoFour()
         }
         await("six-digit login PIN complete") { !node("pin.digit.0").isEnabled }

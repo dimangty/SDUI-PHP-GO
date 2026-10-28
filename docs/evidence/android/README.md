@@ -30,6 +30,10 @@ receipts/images also remain under the preapproved temporary root.
 - PIN pictures show only actual two/three entered-dot counts and public keypad
   keys. The generated six-digit PIN stays local; both setup and login retain the
   four-digit no-auto-submit guard and explicit six-digit `pin.submit`.
+  Before export, an in-memory rendered-release guard requires all ten digit-key
+  regions to match their actual pre-entry appearance, preventing transient
+  pressed-key shading from exposing entry history. The native count is checked
+  separately; exported images remain fresh, unmodified full app screenshots.
 - Profile/editor show only the UI-created synthetic account and real returned
   address. The email identifier and random password use independent randomness;
   exported account identifiers cannot derive credentials.

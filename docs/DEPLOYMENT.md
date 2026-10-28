@@ -158,7 +158,13 @@ is preserved. The unchanged realm/client secret placeholder is expanded by
 Keycloak import; import ignores an existing realm, so changing the environment
 secret does **not** rotate an existing realm client. Rotate it through private
 Keycloak administration and update PHP together. Admin management remains private.
-Keycloak26.3.3 inherits HTTPS for port9000; its Docker probe uses HTTPS and CA trust.
+Keycloak26.8.1 requires the production management scheme override `inherited`
+(development explicitly uses `http`); its port9000 probe uses HTTPS and CA trust.
+`https` is not a valid scheme-option value. Minor upgrades require all old nodes
+stopped and a rehearsed identity-DB backup/restore; do not start 26.3 against a
+26.8-migrated schema. See [runtime upgrade/security evidence](backend-fixes/A1_RUNTIME_RESULTS.md)
+and [identity/search upgrade constraints](backend-fixes/JAVA_RUNTIME_REMEDIATION.md).
+The current runtime release/push gate remains blocked on vendor Java findings.
 
 The edge reconstructs headers; only its fixed address can set client IP at Yii
 HTTP. Go accepts original-client context only from the exact edge, and PHP

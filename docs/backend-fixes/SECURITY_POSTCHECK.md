@@ -1,5 +1,12 @@
 # Final backend security postcheck — 2026-10-27
 
+**Superseded runtime snapshot:** [A1_RUNTIME_RESULTS.md](A1_RUNTIME_RESULTS.md)
+records the October 28 supported runtime remediation and fresh seven-image
+inventory. PHP/nginx now have zero findings and PostgreSQL has zero High/Critical;
+Java vendor blockers remain. This document preserves the October 27 commands,
+artifacts and then-current git/TLS state; its "no commit/no upgrade" statements
+are historical, not the current state.
+
 **Functional checks: PASS within the full-root/affected-suite scopes in [TEST_RESULTS.md](TEST_RESULTS.md). Overall task/release: A1 BLOCKED by unresolved runtime-image security findings. No commit or push.**
 
 This final pass changes documentation only. It closes the superseded ops dependency finding, checks the latest existing artifacts, and scans final intended backend/docs source. No service versions/dependencies/application source are changed in this pass. The coordinator-stopped TLS project remains stopped; TLS is not rerun against the final source. [SECURITY_TLS_RESULTS.md](SECURITY_TLS_RESULTS.md) preserves the dated 2026-10-26 TLS and original seven-image evidence.
