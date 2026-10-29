@@ -237,7 +237,9 @@ Debug startup prints `[HTTP] Backend HTTP logging enabled (Debug)`. No additiona
 Info.plist key is required; an existing Boolean `NetworkDebugLogging=false`
 explicitly disables diagnostics. Release binaries do not enable these logs.
 HTTP/SDUI diagnostics use the iOS system logger (`NSLog`) to reach Xcode's
-console. Android uses the same diagnostics through Logcat's HTTP/SDUI tags.
+console. Long iOS messages are split into numbered UTF-8 chunks to avoid
+system-log truncation. Android uses the same diagnostics through Logcat's
+HTTP/SDUI tags.
 
 Example screen-loading log shape:
 

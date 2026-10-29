@@ -10,6 +10,9 @@ import kotlinx.cinterop.cstr
 import kotlinx.cinterop.memScoped
 import platform.Foundation.NSLog
 
+// Leave room for the tag and part number within iOS's per-entry log limit.
+private const val IOS_LOG_CHUNK_BYTES = 800
+
 internal actual fun configureLogging() {
     if (NetworkSettings().isDebugLoggingEnabled) {
         Napier.base(IosNetworkAntilog())
@@ -24,9 +27,19 @@ private class IosNetworkAntilog : Antilog() {
 
     override fun performLog(priority: LogLevel, tag: String?, throwable: Throwable?, message: String?) {
         if (tag == "HTTP" || tag == "SDUI") {
-            // C varargs require a UTF-8 char pointer, not an Objective-C object.
-            // A constant format also keeps percent signs in JSON literal.
-            memScoped { NSLog("%s", "[$tag] ${message.orEmpty()}".cstr.ptr) }
+            val bytes = message.orEmpty().encodeToByteArray()
+            var start = 0
+            var part = 1
+            do {
+                var end = minOf(start + IOS_LOG_CHUNK_BYTES, bytes.size)
+                // Keep multi-byte UTF-8 characters intact at chunk boundaries.
+                while (end < bytes.size && bytes[end].toInt() and 0xC0 == 0x80) end--
+                val chunk = bytes.decodeToString(start, end)
+                val prefix = if (bytes.size > IOS_LOG_CHUNK_BYTES) "[$tag] [part ${part++}]" else "[$tag]"
+                // C varargs require a UTF-8 pointer; a constant format keeps percent signs literal.
+                memScoped { NSLog("%s", "$prefix $chunk".cstr.ptr) }
+                start = end
+            } while (start < bytes.size)
         } else {
             fallback.log(priority, tag, throwable, message)
         }
