@@ -1,4 +1,4 @@
-package bff
+package application
 
 import (
 	"crypto/sha256"

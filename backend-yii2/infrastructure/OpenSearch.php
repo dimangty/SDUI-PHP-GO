@@ -3,7 +3,7 @@ declare(strict_types=1);
 namespace Shop\infrastructure;
 
 use Shop\domain\{ApiError,Money,Rules};
-use Shop\repositories\ShopRepository;
+use Shop\repositories\{CatalogReadRepository,ShopRepository};
 
 final class OpenSearch
 {
@@ -40,7 +40,7 @@ final class OpenSearch
     {
         $this->ensure();$p=$this->repo->product($id,true);
         if(!$p['is_active']){$r=$this->call('DELETE','/shopkmp-products/_doc/'.rawurlencode($id).'?refresh=wait_for');if(!in_array($r['status'],[200,404],true)){throw new \RuntimeException('Cannot remove indexed product');}return;}
-        $dto=$this->repo->productDto($p);$path=[];$category=$p['category_id'];
+        $dto=(new CatalogReadRepository($this->db,$this->repo))->loadDtos([$p])[0];$path=[];$category=$p['category_id'];
         while($category!==null && !in_array($category,$path,true)){$path[]=$category;$row=$this->db->one('SELECT parent_id FROM categories WHERE id=?',[$category]);$category=$row['parent_id']??null;}
         $dto+=['salePriceCents'=>Money::parse($p['discount_price']??$p['price']),'categoryPath'=>$path,'createdAt'=>\Shop\domain\Ids::timestamp($p['created_at'])];
         $r=$this->call('PUT','/shopkmp-products/_doc/'.rawurlencode($id).'?refresh=wait_for',$dto);
@@ -56,7 +56,7 @@ final class OpenSearch
         }while(count($rows)===100);
         return $count;
     }
-    public function search(string $query,string $category,string $sort,array $prices,int $page,int $size): array
+    public function search(string $query,string $category,string $sort,array $prices,int $page,int $size,bool $card=false): array
     {
         if($page>intdiv(10000,$size) || $page*$size+$size>10000){throw new ApiError('PAGE_OUT_OF_RANGE','requested page exceeds the search result window');}
         try{
@@ -70,12 +70,9 @@ final class OpenSearch
             $body=['from'=>$page*$size,'size'=>$size,'track_total_hits'=>true,'query'=>['bool'=>['must'=>$must,'filter'=>$filters]],'sort'=>$sorts];
             $r=$this->call('POST','/shopkmp-products/_search',$body);$v=json_decode($r['body'],true,64,JSON_THROW_ON_ERROR);
             if($r['status']!==200 || !is_array($v['hits']['hits']??null) || !is_int($v['hits']['total']['value']??null)){throw new \RuntimeException('Invalid search response');}
-            $items=[];
-            foreach($v['hits']['hits'] as $hit){
-                // Rehydrate current stock/rating and never expose inactive products from a stale index.
-                try{$items[]=$this->repo->productDto($this->repo->product($hit['_id']));}catch(ApiError $e){if($e->errorCode!=='PRODUCT_NOT_FOUND'){throw $e;}}
-            }
-            return Rules::pageDto($items,$page,$size,$v['hits']['total']['value']);
+            // Rehydrate current values in rank order and exclude stale inactive products.
+            $items=(new CatalogReadRepository($this->db,$this->repo))->byIds(array_column($v['hits']['hits'],'_id'),$card);
+            return Rules::pageDto($items,$page,$size,$v['hits']['total']['value'])+($card?['projection'=>'sdui-card-v1']:[]);
         }catch(\Throwable $e){error_log('Product search failed: '.$e->getMessage());throw new ApiError('SEARCH_UNAVAILABLE','product search is temporarily unavailable');}
     }
 }

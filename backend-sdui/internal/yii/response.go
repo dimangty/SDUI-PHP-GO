@@ -63,6 +63,18 @@ func (c *Client) decodeResponse(res *http.Response, success successContract, out
 		if err := json.Unmarshal(body, out); err != nil {
 			return false, &TransportError{Kind: "protocol", Cause: err, Status: res.StatusCode}
 		}
+		// These opt-in wire envelopes have semantic requirements beyond JSON
+		// shape. Check them before call() finalizes its span and observer event.
+		switch cards := out.(type) {
+		case *cardPageWire:
+			if !validCards(cards.Projection, cards.Items) {
+				return false, &TransportError{Kind: "protocol", Status: res.StatusCode}
+			}
+		case *popularWire:
+			if !validCards(cards.Projection, cards.Items) {
+				return false, &TransportError{Kind: "protocol", Status: res.StatusCode}
+			}
+		}
 		return false, nil
 	}
 }
@@ -99,7 +111,7 @@ func validResponseShape(raw []byte, typ reflect.Type, biometric bool) bool {
 				}
 			}
 			value, present := fields[name]
-			optional := typ == reflect.TypeFor[Device]() && field.Name == "KeyAlgorithm" && !biometric || typ == reflect.TypeOf(Session{}.Device) && field.Name == "BiometricCredentialID"
+			optional := typ == reflect.TypeFor[deviceWire]() && field.Name == "KeyAlgorithm" && !biometric || typ == reflect.TypeOf(sessionWire{}.Device) && field.Name == "BiometricCredentialID"
 			if !present && optional {
 				continue
 			}

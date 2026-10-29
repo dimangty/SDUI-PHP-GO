@@ -5,7 +5,7 @@ set -eu
 : "${GOTOOLCHAIN:=go1.27.3}"
 export GOTOOLCHAIN
 go version
-go mod tidy
+go mod tidy -diff
 go mod verify
 unformatted=$(gofmt -l .)
 if [ -n "$unformatted" ]; then

@@ -27,9 +27,13 @@ jobs:
           cache-dependency-path: ${{ matrix.module }}/go.sum
       - run: test -z "$(gofmt -l .)"
       - run: go mod tidy -diff
+      - run: go mod verify
       - run: go vet ./...
       - run: go test -race -count=1 ./...
       - run: go build ./...
+      - name: Run pinned SDUI linters
+        if: matrix.module == 'backend-sdui'
+        run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run --config .golangci.yml
 
   php:
     runs-on: ubuntu-latest

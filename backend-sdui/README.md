@@ -1,7 +1,7 @@
 # ShopKMP independent Go SDUI BFF
 
-Working HTTP-only BFF over the Yii2 business API. Go **1.27.3**; runtime uses only
-the standard library. No database driver, database configuration, SQL access,
+Working HTTP-only BFF over the Yii2 business API. Go **1.27.3**; optional tracing
+uses OpenTelemetry **1.47.0** (minimum Go 1.26). No database driver, database configuration, SQL access,
 identity-provider credentials or business-data mock fallback.
 
 ## Layout
@@ -9,9 +9,9 @@ identity-provider credentials or business-data mock fallback.
 * `internal/yii`: bounded typed HTTP client and canonical commerce DTOs.
 * `internal/domain`: independent money, identifier and query wire contracts.
 * `internal/sdui`: sealed component props, finite actions, validation/revisions.
-* `internal/bff`: HTTP adapter, constructor-injected application, eight screen
-  builders and six reauthenticated commands.
-* `internal/observe`: JSON slog correlation and bounded in-process metrics.
+* `internal/application`: consumer-owned ports/models, screen builders and commands.
+* `internal/bff`: HTTP adapter and constructor-injected application facade.
+* `internal/observe`: JSON slog correlation, bounded in-process metrics and optional OTel tracing.
 * `internal/runtime`, `cmd/server`: configuration, HTTP lifecycle and healthcheck.
 * `contracts`: three Draft 2020-12 schemas and 13 deterministic shared fixtures.
 * `tests/evidence`: actual live HTTP screen/business payloads and step manifest.
@@ -71,8 +71,17 @@ Environment is read directly; no `.env` autoload. Defaults:
 | `WRITE_TIMEOUT` | `12s` | HTTP response write |
 | `IDLE_TIMEOUT` | `30s` | HTTP client keepalive idle |
 | `SHUTDOWN_TIMEOUT` | `10s` | Graceful drain deadline |
+| `SDUI_TRACE_ENABLED` | `false` | Enable constructor-injected OTel SDK and OTLP/HTTP exporter |
+| `SDUI_TRACE_ENDPOINT` | empty | Required when enabled: full operator-fixed HTTP(S) collector URL, e.g. `http://collector:4318/v1/traces`; no userinfo/query/fragment |
+| `SDUI_TRACE_SAMPLE_RATIO` | `0.1` | Locally chosen root sampling ratio, finite 0..1 |
+| `SDUI_TRACE_QUEUE_SIZE` | `256` | Nonblocking completed-span queue, 1..8192; overflow drops spans |
+| `SDUI_TRACE_BATCH_SIZE` | `64` | Spans/export batch, 1..512 and no larger than queue |
+| `SDUI_TRACE_BATCH_TIMEOUT` | `1s` | Maximum batch formation delay |
+| `SDUI_TRACE_EXPORT_TIMEOUT` | `1s` | Deadline per export; no exporter retry |
+| `SDUI_TRACE_FLUSH_TIMEOUT` | `1s` | Explicit best-effort force-flush deadline |
+| `SDUI_TRACE_SHUTDOWN_TIMEOUT` | `2s` | Tracer shutdown cap, also bounded by remaining runtime shutdown deadline |
 
-Durations must be positive, at most 2 minutes. Configuration requires
+Tracing durations must be positive and at most 30s; other durations at most 2 minutes. Configuration requires
 upstream < request < write and read-header ≤ read. Fixed non-configurable wire
 limits: document 1 MiB, 500 nodes/actions, depth 16, text 8192 Unicode characters;
 command body 32 KiB. Unknown query/body members do not configure the client.
@@ -98,7 +107,7 @@ Complete backend-local checks (formatting fails on any unformatted Go file):
 
 ```sh
 sh scripts/check.sh
-go test ./internal/bff -run '^$' -fuzz '^FuzzStrictCommandJSON$' -fuzztime=10s -parallel=4
+go test ./internal/application -run '^$' -fuzz '^FuzzStrictCommandJSON$' -fuzztime=10s -parallel=4
 go test ./internal/bff -run '^$' -fuzz '^FuzzScreenQuery$' -fuzztime=10s -parallel=4
 go test ./internal/bff ./internal/yii -run '^$' -bench 'Benchmark(HomeHTTP|HomeHTTPObserved|ClientRead)$' -benchmem -benchtime=2s -count=3
 ```
@@ -111,8 +120,9 @@ See [audit](docs/refactoring/01-AUDIT.md),
 [benchmarks](docs/refactoring/09-BENCHMARK.md) and
 [rollback](docs/refactoring/11-ROLLBACK.md).
 
-The independent schema validator is imported only by `_test.go` files. It and
-its transitive module dependency are not linked into the server. Tests exercise
+The independent schema validator is imported only by `_test.go` files and is not
+linked into the server. The tracing exporter brings its own protobuf/gRPC
+configuration dependencies, including `x/text`, into the production graph. Tests exercise
 real BFF/client implementations over HTTP test servers, cancellation and
 security boundaries. Shared fixtures are checked for exact builder drift and
 independently validated. To deliberately regenerate after a reviewed wire change:
@@ -189,7 +199,8 @@ status, durations and safe error kinds. Request/trace correlation is logged only
 as process-keyed HMAC fingerprints (`request_id_hash`, `trace_id_hash`): even a
 syntactically valid client ID might contain a credential or personal identifier.
 No token, personal data, body, raw URL or query logging. Wire request IDs and
-validated W3C v00 traceparent remain unchanged; correlation never grants authority.
+validated W3C v00 traceparent retain their legacy forwarding when tracing is
+disabled; correlation never grants authority.
 
 Private `GET /metrics` is available on ADMIN_ADDR (9090), alongside health.
 Prometheus-text counters/histograms cover HTTP, Yii operations, SDUI validation/
@@ -197,5 +208,47 @@ revision/serialization, errors, timeouts, retries, connection reuse and last pro
 status. Labels use finite allowlists; no per-account/token/request-ID metric labels.
 Metrics reset at restart. No collector or infrastructure stack is required.
 Keep the admin listener private; public metrics/health remain 404.
+
+### Optional distributed tracing
+
+Set `SDUI_TRACE_ENABLED=true` and a trusted `SDUI_TRACE_ENDPOINT` to export actual
+OTLP/HTTP protobuf traces. The endpoint is used as a complete URL (no automatic
+`/v1/traces` suffix). Runtime owns a private provider and injects the same tracing
+object into BFF/Yii constructors; no global provider or transport wrapper is used.
+Screen requests create a new-root server span → screen-build span → logical
+outbound HTTP spans, including context carried into concurrent application work.
+Commands create a server span with child logical outbound spans. A logical Yii
+span covers the existing bounded read attempts/backoff, rather than multiplying
+spans per connection acquisition. Client spans propagate their real W3C context.
+
+Public `traceparent`, `tracestate` and baggage are untrusted: enabled tracing
+starts a fresh local root, does not link/capture those values and does not let a
+remote sampled flag override the operator's sampling ratio. Only finite operation,
+route-template, method, status and error-kind attributes are accepted. No resource
+IDs, correlation IDs, host, raw URL/query, headers, bodies, personal fields, error
+messages, exception events or panic payloads are exported. The resource contains
+only static `service.name=backend-sdui`.
+
+Enabled tracing rejects nonempty ambient `OTEL_*` settings before SDK construction:
+the upstream SDK/exporter parses those settings before explicit options and can
+log malformed values to stderr. Use only the dedicated `SDUI_TRACE_*` settings;
+disabled tracing creates no SDK/exporter and ignores ambient OTel configuration.
+The exporter has its own bounded HTTP client with TLS verification, no proxy-env
+lookup, redirects or cookies. Raw collector errors/partial-success messages are
+discarded at the exporter boundary and counted by `Tracing.ExportFailures()`;
+they never reach the default OTel error logger. Explicit flush is best effort and
+does not report collector response errors as application errors.
+
+Span completion never waits for the collector: the bounded batch queue drops on
+overflow. Collector loss can lose traces but cannot fail business operations or
+add a collector wait to their critical path. SDK bookkeeping/serialization still
+costs CPU and allocations; this is not a zero-overhead guarantee. After request
+drain, shutdown exports within the remaining runtime budget and cancels outstanding
+export I/O on expiry. Business request cancellation, the max-two read connection
+quota, pooled reads and mutation single-attempt/no-replay policy remain enforced.
+
+Native tests, privacy/OTLP receipts, exact dependency/license delta and same-fixture
+disabled/enabled benchmarks are in
+[`OBSERVABILITY_IMPLEMENTATION.md`](../docs/backend-fixes/round-3/OBSERVABILITY_IMPLEMENTATION.md).
 See [client policy](docs/refactoring/05-HTTP_CLIENT.md) and
 [security boundaries](docs/refactoring/07-SECURITY.md).

@@ -7,12 +7,13 @@ import (
 	"mime"
 	"net/http"
 
-	"shopkmp/backend-sdui/internal/yii"
+	"shopkmp/backend-sdui/internal/application"
+	"shopkmp/backend-sdui/internal/application/model"
 )
 
 const MaxActionBody = 32 << 10
 
-func (s *Service) handleAction(w http.ResponseWriter, r *http.Request, id yii.Identity) {
+func (s *Service) handleAction(w http.ResponseWriter, r *http.Request, id model.Identity) {
 	fail := func(err error) { s.fail(w, id.RequestID, err) }
 	if id.Bearer == "" {
 		fail(&Error{401, "BFF_UNAUTHORIZED", "Sign in to perform this command"})
@@ -38,12 +39,12 @@ func (s *Service) handleAction(w http.ResponseWriter, r *http.Request, id yii.Id
 		return
 	}
 	var command CommandRequest
-	if err := strictJSON(raw, &command); err != nil {
+	if err := application.StrictJSON(raw, &command); err != nil {
 		fail(err)
 		return
 	}
 	key := r.Header.Get("Idempotency-Key")
-	if len(r.Header.Values("Idempotency-Key")) > 1 || !yii.ValidKey(key) {
+	if len(r.Header.Values("Idempotency-Key")) > 1 || !model.ValidKey(key) {
 		fail(bad("Invalid Idempotency-Key"))
 		return
 	}

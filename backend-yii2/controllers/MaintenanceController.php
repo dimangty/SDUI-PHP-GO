@@ -4,10 +4,23 @@ namespace Shop\controllers;
 
 use Shop\infrastructure\{Database,Env,OpenSearch,Keycloak,HttpClient};
 use Shop\repositories\ShopRepository;
-use Shop\application\{MaintenanceService,CommerceService,PaymentOperations,RecoveryService};
+use Shop\application\{MaintenanceService,CommerceService,PaymentOperations,RecoveryService,CredentialService,SessionService};
 
 final class MaintenanceController extends \yii\console\Controller
 {
+    private function credentials(): CredentialService
+    {
+        $db=new Database(Env::get('DATABASE_URL'));$repo=new ShopRepository($db);return new CredentialService($db,$repo,new SessionService($db,$repo));
+    }
+    public function actionLegacyDevices(): int
+    {
+        $this->stdout(json_encode($this->credentials()->legacyDeviceCounts(),JSON_THROW_ON_ERROR)."\n");return 0;
+    }
+    public function actionLegacyDeviceApply(string $user,string $kind,string $device,string $evidence): int
+    {
+        $this->credentials()->remediateLegacyDevice($user,$kind,$device,$evidence);
+        $this->stdout("Legacy credential revoked; operator ticket recorded.\n");return 0;
+    }
     public function actionRun(): int
     {
         $db=new Database(Env::get('DATABASE_URL'));$repo=new ShopRepository($db);

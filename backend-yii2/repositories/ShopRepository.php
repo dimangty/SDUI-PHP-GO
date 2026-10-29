@@ -17,9 +17,11 @@ final class ShopRepository
     {
         return $this->db->required('SELECT p.*, (SELECT count(*) FROM reviews r WHERE r.product_id=p.id) AS reviews_count FROM products p WHERE p.id=?'.($includeInactive?'':' AND p.is_active').($lock?' FOR UPDATE OF p':''),[$id],'PRODUCT_NOT_FOUND','product not found');
     }
-    public function productDto(array $p): array
+    /** Pure mapping; images are preloaded URL strings in sort_order,id order. */
+    public function productDto(array $p,array $images,bool $card=false): array
     {
-        return ['id'=>$p['id'],'categoryId'=>$p['category_id'],'name'=>$p['name'],'description'=>$p['description'],'price'=>Money::format(Money::parse($p['price'])),'discountPrice'=>$p['discount_price']===null?null:Money::format(Money::parse($p['discount_price'])),'stock'=>$p['stock'],'rating'=>$p['rating']===null?null:(float)$p['rating'],'imageUrls'=>array_column($this->db->all('SELECT url FROM product_images WHERE product_id=? ORDER BY sort_order,id',[$p['id']]),'url'),'isActive'=>$p['is_active'],'reviewsCount'=>$p['reviews_count']];
+        $dto=['id'=>$p['id'],'categoryId'=>$p['category_id'],'name'=>$p['name'],'price'=>Money::format(Money::parse($p['price'])),'discountPrice'=>$p['discount_price']===null?null:Money::format(Money::parse($p['discount_price'])),'stock'=>$p['stock'],'rating'=>$p['rating']===null?null:(float)$p['rating'],'isActive'=>$p['is_active'],'reviewsCount'=>$p['reviews_count']];
+        return $dto+($card?['imageUrl'=>$images[0]??null,'descriptionSnippet'=>mb_substr($p['description'],0,257,'UTF-8'),'descriptionComplete'=>$p['description_complete']??mb_strlen($p['description'],'UTF-8')<=257]:['description'=>$p['description'],'imageUrls'=>$images]);
     }
     public function lockCart(string $user): void
     {
@@ -45,9 +47,12 @@ final class ShopRepository
     }
     public function order(string $id,?string $user=null): array
     {
-        $args=[$id];$where='id=?';if($user!==null){$where.=' AND user_id=?';$args[]=$user;}
-        $r=$this->db->required('SELECT * FROM orders WHERE '.$where,$args,'ORDER_NOT_FOUND','order not found');
-        $items=array_map(fn($i)=>['productId'=>$i['product_id'],'productName'=>$i['product_name'],'quantity'=>$i['quantity'],'priceSnapshot'=>Money::format(Money::parse($i['price_snapshot']))],$this->db->all('SELECT * FROM order_items WHERE order_id=? ORDER BY id',[$id]));
+        return (new OrderReadRepository($this->db,$this))->order($id,$user);
+    }
+    /** Pure snapshot mapping; preloaded item rows retain their original id order. */
+    public function orderDto(array $r,array $preloadedItems): array
+    {
+        $items=array_map(fn($i)=>['productId'=>$i['product_id'],'productName'=>$i['product_name'],'quantity'=>$i['quantity'],'priceSnapshot'=>Money::format(Money::parse($i['price_snapshot']))],$preloadedItems);
         return ['id'=>$r['id'],'number'=>$r['number'],'userId'=>$r['user_id'],'status'=>$r['status'],'items'=>$items,'totalAmount'=>Money::format(Money::parse($r['total_amount'])),'deliveryAddressId'=>$r['delivery_address_id'],'deliveryAddress'=>$r['delivery_address'],'paymentId'=>$r['payment_id'],'paymentMethod'=>$r['payment_method'],'createdAt'=>Ids::timestamp($r['created_at']),'comment'=>$r['comment']];
     }
     public function payment(string $id,?string $user=null): array

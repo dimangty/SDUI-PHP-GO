@@ -1,12 +1,12 @@
-package bff
+package application
 
 import (
 	"fmt"
 	"strconv"
 
+	"shopkmp/backend-sdui/internal/application/model"
 	"shopkmp/backend-sdui/internal/domain"
 	"shopkmp/backend-sdui/internal/sdui"
-	"shopkmp/backend-sdui/internal/yii"
 )
 
 func action(d *sdui.Screen, a sdui.Action) string { d.Actions = append(d.Actions, a); return a.ID }
@@ -39,7 +39,7 @@ func field(d *sdui.Screen, id, label, value, input string, required bool, limit 
 	}
 	return sdui.N(id, kind, props)
 }
-func categories(d *sdui.Screen, items []yii.Category, query yii.CatalogQuery, collection sdui.CollectionQuery) sdui.Node {
+func categories(d *sdui.Screen, items []model.Category, query model.CatalogQuery, collection sdui.CollectionQuery) sdui.Node {
 	props := sdui.CategoriesProps{Items: []sdui.CategoryOption{}}
 	for _, c := range items {
 		q := query
@@ -50,7 +50,7 @@ func categories(d *sdui.Screen, items []yii.Category, query yii.CatalogQuery, co
 	}
 	return sdui.N("catalog.categories", "CategoryList", props)
 }
-func productCard(d *sdui.Screen, p yii.Product) sdui.Node {
+func productCard(d *sdui.Screen, p model.Product) sdui.Node {
 	ref := action(d, sdui.Action{ID: "product." + p.ID + ".open", Type: "OpenProduct", ProductID: p.ID})
 	var image *string
 	if len(p.ImageURLs) > 0 {
@@ -59,7 +59,7 @@ func productCard(d *sdui.Screen, p yii.Product) sdui.Node {
 	preview, truncated := descriptionPreview(p.Description)
 	return sdui.N("product."+p.ID, "ProductCard", sdui.ProductProps{ProductID: p.ID, Name: p.Name, Description: preview, DescriptionTruncated: truncated, Price: p.Price, DiscountPrice: p.DiscountPrice, Image: image, Stock: p.Stock, Rating: p.Rating, ReviewsCount: p.ReviewsCount, OpenAction: ref})
 }
-func productGrid(d *sdui.Screen, products []yii.Product) sdui.Node {
+func productGrid(d *sdui.Screen, products []model.Product) sdui.Node {
 	nodes := []sdui.Node{}
 	for _, p := range products {
 		nodes = append(nodes, productCard(d, p))
@@ -75,7 +75,7 @@ func partial(d *sdui.Screen, section string, dest sdui.Destination) sdui.Node {
 	ref := action(d, sdui.Action{ID: section + ".retry", Type: "Retry", Destination: &dest})
 	return sdui.N(section+".error", "Error", sdui.StatusProps{Title: "Раздел недоступен", Message: "Попробуйте обновить экран", RetryAction: ref})
 }
-func orderCard(d *sdui.Screen, o yii.Order) sdui.Node {
+func orderCard(d *sdui.Screen, o model.Order) sdui.Node {
 	ref := action(d, sdui.Action{ID: "order." + o.ID + ".open", Type: "OpenOrder", OrderID: o.ID})
 	return sdui.N("order."+o.ID, "OrderCard", sdui.OrderProps{OrderID: o.ID, Number: o.Number, Status: o.Status, Total: o.TotalAmount, DeliveryAddress: o.DeliveryAddress, PaymentMethod: o.PaymentMethod, CreatedAt: o.CreatedAt, OpenAction: ref})
 }
@@ -88,10 +88,10 @@ func orderStatusLabel(status string) string {
 func paymentLabel(method string) string {
 	return map[string]string{"CARD": "Карта", "SBP": "СБП", "ON_DELIVERY": "При получении"}[method]
 }
-func price(id string, m yii.Money) sdui.Node {
+func price(id string, m model.Money) sdui.Node {
 	return sdui.N(id, "Price", sdui.PriceProps{Amount: m, Currency: "RUB"})
 }
-func pagination[T any](d *sdui.Screen, p yii.Page[T], dest sdui.Destination) []sdui.Node {
+func pagination[T any](d *sdui.Screen, p model.Page[T], dest sdui.Destination) []sdui.Node {
 	d.State.Pagination = &sdui.Pagination{Page: p.Page, Size: p.Size, TotalPages: p.TotalPages, TotalItems: p.TotalItems}
 	nodes := []sdui.Node{}
 	for _, v := range []struct {
@@ -120,8 +120,8 @@ func pagination[T any](d *sdui.Screen, p yii.Page[T], dest sdui.Destination) []s
 	}
 	return nodes
 }
-func checkoutForm(d *sdui.Screen, addresses []yii.Address, def *string) sdui.Node {
-	chosen := yii.Address{}
+func checkoutForm(d *sdui.Screen, addresses []model.Address, def *string) sdui.Node {
+	chosen := model.Address{}
 	if len(addresses) > 0 {
 		chosen = addresses[0]
 	}
@@ -141,17 +141,19 @@ func checkoutForm(d *sdui.Screen, addresses []yii.Address, def *string) sdui.Nod
 	}
 	return sdui.N("checkout.form", "Form", sdui.FormProps{FormID: "checkout", Title: "Доставка и оплата", SubmitAction: ref}, children...)
 }
-func profileForm(d *sdui.Screen, u yii.User) sdui.Node {
-	ref := action(d, sdui.Action{ID: "profile.submit", Type: "SubmitForm", FormID: "profile"})
-	return sdui.N("profile.form", "Form", sdui.FormProps{FormID: "profile", Title: "Изменить профиль", SubmitAction: ref}, field(d, "profile.fullName", "Имя", u.FullName, "Text", true, 255, nil), field(d, "profile.phone", "Телефон", u.Phone, "Phone", true, 16, nil), button("profile.save", "Сохранить", ref, true))
-}
 func quantityField(q int) string { return strconv.Itoa(q) }
-func deviceNodes(d *sdui.Screen, kind string, devices []yii.Device, compact bool) []sdui.Node {
+func deviceNodes(d *sdui.Screen, kind string, devices []model.Device, compact bool) []sdui.Node {
 	nodes := []sdui.Node{}
 	for _, v := range devices {
 		id := "device." + kind + "." + v.DeviceID
 		// Device IDs can be 255 bytes; use a stable short hash for view identity.
 		id = shortID(id)
+		if v.DeviceID == "." || v.DeviceID == ".." {
+			// These historical values cannot be expressed by CMP's RevokeDevice
+			// contract. Preserve the record and explain the supported remedy.
+			nodes = append(nodes, text(id+".info", fmt.Sprintf("%s\n%s\n%s · %s\nУстройство использует устаревший идентификатор; требуется отзыв или исправление через аккаунт, API или оператора.", v.DeviceName, v.DeviceID, kind, v.LastUsedAt), "Body"))
+			continue
+		}
 		ref := action(d, sdui.Action{ID: id + ".revoke", Type: "RevokeDevice", DeviceID: v.DeviceID, DeviceKind: kind, Confirmation: &sdui.Confirmation{Title: "Отозвать устройство?", Message: v.DeviceName, ConfirmLabel: "Отозвать"}})
 		if compact {
 			// Flat siblings remain independently reachable in CMP's LazyColumn.

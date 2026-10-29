@@ -4,7 +4,7 @@ namespace Shop\application;
 
 use Shop\domain\{ApiError,Ids,Money,Rules};
 use Shop\infrastructure\Database;
-use Shop\repositories\ShopRepository;
+use Shop\repositories\{OrderReadRepository,ShopRepository};
 
 final class CommerceService
 {
@@ -85,9 +85,7 @@ final class CommerceService
     public function orders(string $user,array $query): array
     {
         [$page,$size]=Rules::page($query);$status=$query['status']??'';
-        $n=$this->db->one('SELECT count(*) AS n FROM orders WHERE user_id=? AND (?=\'\' OR status=?)',[$user,$status,$status])['n'];
-        $ids=$this->db->all('SELECT id FROM orders WHERE user_id=? AND (?=\'\' OR status=?) ORDER BY created_at DESC,id LIMIT ? OFFSET ?',[$user,$status,$status,$size,$page*$size]);
-        return Rules::pageDto(array_map(fn($r)=>$this->repo->order($r['id'],$user),$ids),$page,$size,$n);
+        return (new OrderReadRepository($this->db,$this->repo))->page($user,$status,$page,$size);
     }
     public function order(string $user,string $id): array {return $this->repo->order($id,$user);}
     public function transition(string $id,array $input): array

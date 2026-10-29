@@ -1,15 +1,15 @@
-package bff
+package application
 
 import (
 	"fmt"
 	"strings"
 
+	"shopkmp/backend-sdui/internal/application/model"
 	"shopkmp/backend-sdui/internal/domain"
 	"shopkmp/backend-sdui/internal/sdui"
-	"shopkmp/backend-sdui/internal/yii"
 )
 
-func defaultAddressSummary(addresses []yii.Address, def *string) string {
+func defaultAddressSummary(addresses []model.Address, def *string) string {
 	if len(addresses) == 0 {
 		return "Адрес не указан"
 	}
@@ -23,7 +23,7 @@ func defaultAddressSummary(addresses []yii.Address, def *string) string {
 	return fmt.Sprintf("%s, %s, %s, %s", chosen.City, chosen.Street, chosen.House, chosen.Apartment)
 }
 
-func addressNodes(addresses []yii.Address) ([]sdui.Node, error) {
+func addressNodes(addresses []model.Address) ([]sdui.Node, error) {
 	// Keep address IDs/order and the conservative legacy thirteen-node reserve.
 	compact := len(addresses) > sdui.MaxNodes-13
 	nodes := []sdui.Node{}
@@ -43,7 +43,7 @@ func addressNodes(addresses []yii.Address) ([]sdui.Node, error) {
 		// Whole lines, bounded in UTF-8 bytes (stricter than the code-point cap).
 		// Encode still checks the complete document, including JSON escaping.
 		if len(line) > sdui.MaxText {
-			return nil, &Error{502, "BFF_INVALID_DOCUMENT", "Upstream data cannot form a safe screen"}
+			return nil, &Error{InvalidDocument, "BFF_INVALID_DOCUMENT", "Upstream data cannot form a safe screen"}
 		}
 		if block.Len()+1+len(line) > sdui.MaxText {
 			flush()

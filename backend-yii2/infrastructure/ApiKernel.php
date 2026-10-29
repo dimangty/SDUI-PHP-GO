@@ -3,7 +3,7 @@ declare(strict_types=1);
 namespace Shop\infrastructure;
 
 use Shop\application\{AuthService,AvatarService,CatalogService,CommerceService,CredentialService,PaymentService,ProfileService,SessionService};
-use Shop\domain\{ApiError,Ids};
+use Shop\domain\{ApiError,Ids,Rules};
 use Shop\repositories\ShopRepository;
 
 /** HTTP boundary. Routing/auth/DTO validation only; business mutations live in application services. */
@@ -81,7 +81,10 @@ final class ApiKernel
             $input=[];
             if($route[4]!==null && !($relative==='/auth/logout' && $body==='')){$input=JsonInput::decode($body,$headers['content-type']??'',$route[4],$limit);}
             // IDs from routes and JSON are never interpolated into SQL. Invalid UUIDs fail at the boundary.
-            foreach($params as $key=>$value){if($key!=='deviceID' && !Ids::valid($value)){throw new ApiError('BAD_REQUEST','invalid resource identifier');}}
+            foreach($params as $key=>$value){
+                if($key==='deviceID'){Rules::device($value);}
+                elseif(!Ids::valid($value)){throw new ApiError('BAD_REQUEST','invalid resource identifier');}
+            }
             foreach(['productId','categoryId','deliveryAddressId','paymentId'] as $key){if(isset($input[$key]) && !Ids::valid($input[$key])){throw new ApiError('BAD_REQUEST','invalid resource identifier');}}
             if(isset($query['categoryId']) && $query['categoryId']!=='' && !Ids::valid($query['categoryId'])){throw new ApiError('BAD_REQUEST','invalid category identifier');}
             $value=$this->dispatch($route,$params,$query,$input,$headers,$body,$user);
@@ -195,7 +198,7 @@ final class ApiKernel
             (new Keycloak())->verifier()->ready();$components['keycloak']='up';
             if(Env::get('OPENSEARCH_URL')!==''){(new OpenSearch($this->db,new ShopRepository($this->db)))->ready();$components['opensearch']='up';}
             if(Env::production() && (Env::get('PAYMENT_GATEWAY_URL')==='' || Env::get('PAYMENT_GATEWAY_API_KEY')==='' || Env::get('PAYMENT_WEBHOOK_SECRET')==='' || Env::get('PAYMENT_WEBHOOK_ALLOWED_CIDRS')==='')){throw new \RuntimeException('Production payment configuration missing');}
-            return $this->result(200,['status'=>'ok','components'=>$components],$headers);
+            return $this->result(200,['status'=>'ok','components'=>$components,'capabilities'=>['catalog-cards-v1']],$headers);
         }catch(\Throwable $e){error_log('Readiness: '.$e->getMessage());$components['dependency']='down';return $this->result(503,['status'=>'unavailable','components'=>$components],$headers);}
     }
     private function media(string $path,array $headers): array

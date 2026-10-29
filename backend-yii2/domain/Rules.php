@@ -5,6 +5,12 @@ namespace Shop\domain;
 final class Rules
 {
     public static function device(string $id): void
+    {
+        self::deviceAddress($id);
+        if($id==='.' || $id==='..'){throw new ApiError('INVALID_DEVICE_ID','deviceId must not be a dot path segment');}
+    }
+    /** Existing identifiers may only be addressed through owner-scoped query revocation. */
+    public static function deviceAddress(string $id): void
     { if (!preg_match('/^[A-Za-z0-9._-]{1,255}$/D', $id)) { throw new ApiError('INVALID_DEVICE_ID', 'deviceId must be URL-safe and contain 1 to 255 characters'); } }
     public static function deviceName(string $name): string
     {

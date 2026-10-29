@@ -5,8 +5,8 @@ pcntl_async_signals(true);
 $command=$argv[1]??'';
 if(!in_array($command,['maintenance/run','maintenance/reindex','maintenance/recover'],true)){exit(64);}
 function event(string $kind): void {
-    global $command;
-    file_put_contents('/scheduler-fixture/events.jsonl',json_encode(['event'=>$kind,'command'=>$command,'pid'=>getmypid(),'at'=>microtime(true)])."\n",FILE_APPEND|LOCK_EX);
+    global $command,$mode;
+    file_put_contents('/scheduler-fixture/events.jsonl',json_encode(['event'=>$kind,'command'=>$command,'mode'=>$mode,'pid'=>getmypid(),'at'=>microtime(true)])."\n",FILE_APPEND|LOCK_EX);
 }
 function mode(): string {
     $file=fopen('/scheduler-fixture/mode','rb');
@@ -17,9 +17,9 @@ function mode(): string {
     return $value;
 }
 $mode=mode();
-event('started');
 pcntl_signal(SIGTERM,function(){event('term');exit(0);});
 if($mode==='hold-ignore'){pcntl_signal(SIGTERM,SIG_IGN);}
+event('started'); // Acknowledges the chosen mode and installed signal handler.
 while(str_starts_with($mode,'hold')){usleep(50000);$mode=mode();}
 if($mode==='fail'){event('failed');exit(7);}
 event('succeeded');exit(0);

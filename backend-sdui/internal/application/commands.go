@@ -1,4 +1,4 @@
-package bff
+package application
 
 import (
 	"bytes"
@@ -12,9 +12,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"shopkmp/backend-sdui/internal/application/model"
 	"shopkmp/backend-sdui/internal/domain"
 	"shopkmp/backend-sdui/internal/sdui"
-	"shopkmp/backend-sdui/internal/yii"
 )
 
 type CommandRequest struct {
@@ -87,7 +87,7 @@ func checkJSON(d *json.Decoder, depth int) error {
 	_, err = d.Token()
 	return err
 }
-func strictJSON(raw []byte, out any) error {
+func StrictJSON(raw []byte, out any) error {
 	if !utf8.Valid(raw) || len(bytes.TrimSpace(raw)) == 0 || bytes.TrimSpace(raw)[0] != '{' {
 		return bad("Expected a JSON object")
 	}
@@ -126,7 +126,7 @@ func strictJSON(raw []byte, out any) error {
 
 var phonePattern = regexp.MustCompile(`^\+[1-9][0-9]{7,14}$`)
 
-func validProfile(p yii.ProfileInput) bool {
+func validProfile(p model.ProfileInput) bool {
 	n := strings.TrimSpace(p.FullName)
 	if n == "" || utf8.RuneCountInString(n) > 255 || !phonePattern.MatchString(p.Phone) {
 		return false
@@ -144,40 +144,40 @@ type commandInput struct {
 	product ProductCommand
 	cancel  CancelCommand
 	revoke  RevokeCommand
-	profile yii.ProfileInput
+	profile model.ProfileInput
 }
 
 func prepareCommand(command CommandRequest, key string) (commandInput, error) {
 	var in commandInput
-	if !yii.ValidKey(key) {
+	if !model.ValidKey(key) {
 		return in, bad("Invalid Idempotency-Key")
 	}
 	var err error
 	cart, product, cancel, revoke, profile := &in.cart, &in.product, &in.cancel, &in.revoke, &in.profile
 	switch command.Command {
 	case "AddToCart", "UpdateQuantity":
-		err = strictJSON(command.Input, cart)
-		if err == nil && (!yii.ValidID(cart.ProductID) || cart.Quantity == nil || *cart.Quantity < 0 || *cart.Quantity > 1000000 || (command.Command == "AddToCart" && (*cart.Quantity == 0 || key == ""))) {
+		err = StrictJSON(command.Input, cart)
+		if err == nil && (!model.ValidID(cart.ProductID) || cart.Quantity == nil || *cart.Quantity < 0 || *cart.Quantity > 1000000 || (command.Command == "AddToCart" && (*cart.Quantity == 0 || key == ""))) {
 			err = bad("Valid productId, quantity and AddToCart idempotency key are required")
 		}
 	case "RemoveFromCart":
-		err = strictJSON(command.Input, product)
-		if err == nil && !yii.ValidID(product.ProductID) {
+		err = StrictJSON(command.Input, product)
+		if err == nil && !model.ValidID(product.ProductID) {
 			err = bad("Invalid productId")
 		}
 	case "CancelOrder":
-		err = strictJSON(command.Input, cancel)
-		if err == nil && (!yii.ValidID(cancel.OrderID) || !cancel.Confirmed) {
+		err = StrictJSON(command.Input, cancel)
+		if err == nil && (!model.ValidID(cancel.OrderID) || !cancel.Confirmed) {
 			err = bad("Cancellation requires orderId and explicit confirmation")
 		}
 	case "UpdateProfile":
-		err = strictJSON(command.Input, profile)
+		err = StrictJSON(command.Input, profile)
 		if err == nil && !validProfile(*profile) {
 			err = bad("Valid fullName and phone are required")
 		}
 	case "RevokeDevice":
-		err = strictJSON(command.Input, revoke)
-		if err == nil && (!yii.ValidDevice(revoke.DeviceID) || (revoke.DeviceKind != "pin" && revoke.DeviceKind != "biometric") || !revoke.Confirmed) {
+		err = StrictJSON(command.Input, revoke)
+		if err == nil && (!model.ValidDevice(revoke.DeviceID) || (revoke.DeviceKind != "pin" && revoke.DeviceKind != "biometric") || !revoke.Confirmed) {
 			err = bad("Valid device and explicit confirmation are required")
 		}
 	default:
@@ -186,9 +186,9 @@ func prepareCommand(command CommandRequest, key string) (commandInput, error) {
 	return in, err
 }
 
-func (s *Application) Execute(ctx context.Context, id yii.Identity, command CommandRequest, key string) (CommandResponse, error) {
+func (s *Application) Execute(ctx context.Context, id model.Identity, command CommandRequest, key string) (CommandResponse, error) {
 	if id.Bearer == "" {
-		return CommandResponse{}, &Error{401, "BFF_UNAUTHORIZED", "Sign in to perform this command"}
+		return CommandResponse{}, &Error{Unauthorized, "BFF_UNAUTHORIZED", "Sign in to perform this command"}
 	}
 	in, err := prepareCommand(command, key)
 	if err != nil {
@@ -204,46 +204,46 @@ func (s *Application) Execute(ctx context.Context, id yii.Identity, command Comm
 	dest := sdui.Destination{Screen: "cart"}
 	switch command.Command {
 	case "AddToCart":
-		var result yii.Cart
-		result, err = s.up.AddCart(ctx, id, yii.AddCartInput{ProductID: cart.ProductID, Quantity: *cart.Quantity}, key)
+		var result model.Cart
+		result, err = s.cartCommands.AddCart(ctx, id, model.AddCartInput{ProductID: cart.ProductID, Quantity: *cart.Quantity}, key)
 		if err == nil {
 			err = ownership(domain.EqualID(result.UserID, user.ID))
 		}
 	case "UpdateQuantity":
-		var result yii.Cart
-		result, err = s.up.UpdateCart(ctx, id, cart.ProductID, *cart.Quantity)
+		var result model.Cart
+		result, err = s.cartCommands.UpdateCart(ctx, id, cart.ProductID, *cart.Quantity)
 		if err == nil {
 			err = ownership(domain.EqualID(result.UserID, user.ID))
 		}
 	case "RemoveFromCart":
-		var result yii.Cart
-		result, err = s.up.RemoveCart(ctx, id, product.ProductID)
+		var result model.Cart
+		result, err = s.cartCommands.RemoveCart(ctx, id, product.ProductID)
 		if err == nil {
 			err = ownership(domain.EqualID(result.UserID, user.ID))
 		}
 	case "CancelOrder":
-		var existing yii.Order
-		existing, err = s.up.Order(ctx, id, cancel.OrderID)
+		var existing model.Order
+		existing, err = s.accountReads.Order(ctx, id, cancel.OrderID)
 		if err == nil {
 			err = ownership(domain.EqualID(existing.UserID, user.ID) && domain.EqualID(existing.ID, cancel.OrderID))
 		}
 		if err == nil {
-			var result yii.Order
-			result, err = s.up.CancelOrder(ctx, id, cancel.OrderID)
+			var result model.Order
+			result, err = s.accountCommands.CancelOrder(ctx, id, cancel.OrderID)
 			if err == nil {
 				err = ownership(domain.EqualID(result.UserID, user.ID) && domain.EqualID(result.ID, cancel.OrderID))
 			}
 		}
 		dest = sdui.Destination{Screen: "order", ID: cancel.OrderID}
 	case "UpdateProfile":
-		var result yii.User
-		result, err = s.up.UpdateProfile(ctx, id, profile)
+		var result model.User
+		result, err = s.accountCommands.UpdateProfile(ctx, id, profile)
 		if err == nil {
 			err = ownership(domain.EqualID(result.ID, user.ID))
 		}
 		dest = sdui.Destination{Screen: "profile"}
 	case "RevokeDevice":
-		err = s.up.RevokeDevice(ctx, id, revoke.DeviceKind, revoke.DeviceID)
+		err = s.accountCommands.RevokeDevice(ctx, id, revoke.DeviceKind, revoke.DeviceID)
 		dest = sdui.Destination{Screen: "devices"}
 	}
 	if err != nil {

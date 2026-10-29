@@ -1,15 +1,15 @@
-package bff
+package application
 
 import (
 	"fmt"
 	"strings"
 	"unicode/utf8"
 
+	"shopkmp/backend-sdui/internal/application/model"
 	"shopkmp/backend-sdui/internal/sdui"
-	"shopkmp/backend-sdui/internal/yii"
 )
 
-func orderItemNodes(items []yii.OrderItem) ([]sdui.Node, error) {
+func orderItemNodes(items []model.OrderItem) ([]sdui.Node, error) {
 	// Eight non-item nodes cover a CREATED/PAID order with a comment. Keep
 	// existing rows for small orders, including their published fixture IDs.
 	compact := len(items) > (sdui.MaxNodes-8)/3
@@ -22,8 +22,8 @@ func orderItemNodes(items []yii.OrderItem) ([]sdui.Node, error) {
 		}
 	}
 	for _, item := range items {
-		if !yii.ValidID(item.ProductID) || !yii.ValidMoney(string(item.PriceSnapshot)) || item.Quantity < 1 || !utf8.ValidString(item.ProductName) {
-			return nil, &yii.TransportError{Kind: "invalid_json"}
+		if !model.ValidID(item.ProductID) || !model.ValidMoney(string(item.PriceSnapshot)) || item.Quantity < 1 || !utf8.ValidString(item.ProductName) {
+			return nil, &model.Failure{Kind: "invalid_json"}
 		}
 		base := "order.item." + item.ProductID
 		label := fmt.Sprintf("%s × %d", item.ProductName, item.Quantity)
@@ -35,7 +35,7 @@ func orderItemNodes(items []yii.OrderItem) ([]sdui.Node, error) {
 		// Preserve complete lines and decimal strings; never compute money here.
 		line := fmt.Sprintf("%s · %s RUB", label, item.PriceSnapshot)
 		if len(line) > sdui.MaxText {
-			return nil, &Error{502, "BFF_INVALID_DOCUMENT", "Upstream data cannot form a safe screen"}
+			return nil, &Error{InvalidDocument, "BFF_INVALID_DOCUMENT", "Upstream data cannot form a safe screen"}
 		}
 		if block.Len()+1+len(line) > sdui.MaxText {
 			flush()

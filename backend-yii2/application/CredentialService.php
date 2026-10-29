@@ -70,14 +70,27 @@ final class CredentialService
     }
     public function deletePin(string $user,string $device): void {$this->deleteDevice($user,$device,false);}
     public function deleteBiometric(string $user,string $device): void {$this->deleteDevice($user,$device,true);}
-    private function deleteDevice(string $user,string $device,bool $biometric): void
+    public function legacyDeviceCounts(): array
     {
-        Rules::device($device);$table=$biometric?'device_biometrics':'device_pins';
-        $this->db->transaction(function()use($user,$device,$biometric,$table){
+        $counts=[];foreach(['pin'=>'device_pins','biometric'=>'device_biometrics'] as $kind=>$table){$counts[$kind]=$this->db->one('SELECT count(*) AS n FROM '.$table.' WHERE device_id IN (\'.\',\'..\')')['n'];}return $counts;
+    }
+    /** Explicit operator-addressed remediation, never a bulk delete or rename. */
+    public function remediateLegacyDevice(string $user,string $kind,string $device,string $evidence): void
+    {
+        if(!Ids::valid($user) || !in_array($kind,['pin','biometric'],true) || !in_array($device,['.','..'],true) || !preg_match('/^[A-Z][A-Z0-9_]{1,31}-[1-9][0-9]{0,11}$/D',$evidence)){
+            throw new ApiError('BAD_REQUEST','explicit user, credential kind, legacy device and operator ticket are required');
+        }
+        $this->deleteDevice($user,$device,$kind==='biometric',$evidence);
+    }
+    private function deleteDevice(string $user,string $device,bool $biometric,?string $evidence=null): void
+    {
+        Rules::deviceAddress($device);$table=$biometric?'device_biometrics':'device_pins';
+        $this->db->transaction(function()use($user,$device,$biometric,$table,$evidence){
             $this->sessions->lockUser($user);
             $r=$this->db->required('SELECT id FROM '.$table.' WHERE user_id=? AND device_id=? FOR UPDATE',[$user,$device],$biometric?'BIOMETRIC_NOT_SET':'PIN_NOT_SET',$biometric?'biometric login is not enabled for this device':'PIN not set');
             $this->sessions->revokeCredential($user,$biometric?'biometric':'pin',$r['id']);
             $this->db->execute('DELETE FROM '.$table.' WHERE id=?',[$r['id']]);
+            if($evidence!==null){$this->db->execute('INSERT INTO credential_remediation_audit(id,user_id,credential_kind,credential_id,device_id,operator_evidence_ref) VALUES(?,?,?,?,?,?)',[Ids::uuid(),$user,$biometric?'biometric':'pin',$r['id'],$device,$evidence]);}
         });
     }
     public function pinDevices(string $user): array {return $this->devices($user,false);}

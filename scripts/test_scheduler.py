@@ -88,6 +88,16 @@ class Worker:
         return [json.loads(line) for line in path.read_text().splitlines()
                 if json.loads(line)['event'] == kind] if path.exists() else []
 
+    def wait_started(self, mode, after, message, timeout=15):
+        def active():
+            events = self.events('started')[after:]
+            pid = self.snapshot()['runningPid']
+            return any(e.get('mode') == mode and e['pid'] == pid for e in events)
+        try:
+            return wait_for(active, message, timeout)
+        except AssertionError as error:
+            raise AssertionError(f'{error}; state={self.snapshot()}; events={self.events("started")}') from error
+
     def state(self):
         return json.loads(docker('inspect', self.name).stdout)[0]['State']
 
@@ -154,19 +164,24 @@ def worker_tests(service, image):
             wait_for(lambda: w.status() == 'healthy', 'No initial success')
             count = len(w.events('started'))
             w.set_mode('hold-ignore')
-            wait_for(lambda: len(w.events('started')) > count, 'No long-running child')
+            w.wait_started('hold-ignore', count, 'No long-running child')
             time.sleep(1.2)
             self.assertEqual('healthy', w.status(), 'Legitimate in-budget job lost health after a prior success')
-            wait_for(lambda: w.status() == 'unhealthy', 'Overdue/stuck child stayed healthy', timeout=8)
+            try:
+                wait_for(lambda: w.status() == 'unhealthy', 'Overdue/stuck child stayed healthy', timeout=8)
+            except AssertionError as error:
+                raise AssertionError(f'{error}; state={w.snapshot()}; events={w.events("started")}') from error
             self.assertEqual(0, w.probe('live').returncode)
             count = len(w.events('started'))
-            wait_for(lambda: len(w.events('started')) > count, 'TERM-ignoring timed-out child was not killed/retried', timeout=10)
+            w.wait_started('hold-ignore', count, 'TERM-ignoring timed-out child was not killed/retried', timeout=10)
             self.assertEqual('unhealthy', w.status())
             w.set_mode('success')
             wait_for(lambda: w.status() == 'healthy', 'Worker did not recover after timeout')
             count = len(w.events('started'))
             w.set_mode('hold')
-            wait_for(lambda: len(w.events('started')) > count, 'No active child for graceful stop')
+            # A child can start/finish between count and set_mode. Its stale
+            # "started" event is not proof that a TERM-aware hold child is ready.
+            w.wait_started('hold', count, 'No TERM-aware hold child for graceful stop')
             docker('stop', '--time', str(8 * TIME_SCALE), w.name)
             self.assertTrue(w.events('term'), 'Parent did not forward SIGTERM to its child')
             self.assertEqual(0, w.state()['ExitCode'])

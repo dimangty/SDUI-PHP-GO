@@ -9,28 +9,34 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
+	"shopkmp/backend-sdui/internal/application"
+	"shopkmp/backend-sdui/internal/application/model"
+	"shopkmp/backend-sdui/internal/domain"
 	"shopkmp/backend-sdui/internal/observe"
-	"shopkmp/backend-sdui/internal/sdui"
-	"shopkmp/backend-sdui/internal/yii"
 )
 
 type Config struct {
 	RequestTimeout time.Duration
 	Observer       *observe.Recorder
+	Tracing        *observe.Tracing
 	TrustedEdgeIPs []netip.Addr
 }
 type Service struct {
 	app          *Application
 	timeout      time.Duration
 	observer     *observe.Recorder
+	tracing      *observe.Tracing
 	trustedEdges map[netip.Addr]bool
 }
 
 func New(up Backend, cfg Config) *Service {
+	return NewHandler(NewApplication(up), cfg)
+}
+
+func NewHandler(app *application.Application, cfg Config) *Service {
 	if cfg.RequestTimeout <= 0 {
 		cfg.RequestTimeout = 8 * time.Second
 	}
@@ -40,7 +46,7 @@ func New(up Backend, cfg Config) *Service {
 			peers[peer.Unmap()] = true
 		}
 	}
-	return &Service{app: NewApplication(up), timeout: cfg.RequestTimeout, observer: cfg.Observer, trustedEdges: peers}
+	return &Service{app: app, timeout: cfg.RequestTimeout, observer: cfg.Observer, tracing: cfg.Tracing, trustedEdges: peers}
 }
 
 type Error struct {
@@ -53,18 +59,17 @@ func (e *Error) Error() string { return e.Code }
 func bad(message string) error {
 	return &Error{Status: 400, Code: "BFF_INVALID_REQUEST", Message: message}
 }
-func ownership(ok bool) error {
-	if !ok {
-		return &Error{Status: 502, Code: "BFF_UPSTREAM_ACCOUNT_MISMATCH", Message: "Upstream account result is inconsistent"}
-	}
-	return nil
-}
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	trace := yii.RequestID(r.Header.Get("X-Request-Id"))
+	trace := domain.RequestID(r.Header.Get("X-Request-Id"))
 	r = r.WithContext(observe.WithCorrelation(r.Context(), trace, r.Header.Get("Traceparent")))
-	if s.observer != nil {
+	ctx, cancel := context.WithTimeout(r.Context(), s.timeout)
+	defer cancel()
+	ctx, serverSpan := s.tracing.Server(ctx, r.Method, routeLabel(r.URL.Path))
+	r = r.WithContext(ctx)
+	var recorded *statusWriter
+	if s.observer != nil || s.tracing != nil {
 		start := time.Now()
-		recorded := &statusWriter{ResponseWriter: w, status: 200}
+		recorded = &statusWriter{ResponseWriter: w, status: 200}
 		w = recorded
 		defer func() {
 			kind := ""
@@ -72,16 +77,14 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				kind = "http"
 			}
 			s.observer.Record(r.Context(), observe.Event{Kind: "http", Operation: routeLabel(r.URL.Path), Status: recorded.status, Duration: time.Since(start), Error: kind})
+			serverSpan.End(recorded.status, traceErrorKind(ctx, kind))
 		}()
 	}
 	w.Header().Set("X-Request-Id", trace)
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Cache-Control", "no-store")
-	ctx, cancel := context.WithTimeout(r.Context(), s.timeout)
-	defer cancel()
-	r = r.WithContext(ctx)
-	id := yii.Identity{RequestID: trace}
+	id := model.Identity{RequestID: trace}
 	clientIP, err := s.originalClient(r)
 	if err != nil {
 		s.fail(w, trace, err)
@@ -94,7 +97,7 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(headers) == 1 {
-		if !strings.HasPrefix(headers[0], "Bearer ") || !yii.ValidBearer(strings.TrimPrefix(headers[0], "Bearer ")) {
+		if !strings.HasPrefix(headers[0], "Bearer ") || !domain.ValidBearer(strings.TrimPrefix(headers[0], "Bearer ")) {
 			s.fail(w, trace, &Error{401, "BFF_UNAUTHORIZED", "A valid Bearer header is required"})
 			return
 		}
@@ -128,7 +131,18 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, trace, err)
 		return
 	}
-	doc, err := s.app.Screen(ctx, id, screen, resource, q)
+	buildCtx, buildSpan := s.tracing.Build(ctx, screen)
+	defer func() {
+		status, kind := 200, ""
+		if recorded != nil {
+			status = recorded.status
+		}
+		if err != nil {
+			kind = "business"
+		}
+		buildSpan.End(status, traceErrorKind(buildCtx, kind))
+	}()
+	doc, err := s.app.Screen(buildCtx, id, screen, resource, q)
 	if err != nil {
 		s.fail(w, trace, err)
 		return
@@ -153,6 +167,16 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 	_, _ = w.Write(body)
 }
+
+func traceErrorKind(ctx context.Context, fallback string) string {
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return "timeout"
+	}
+	if errors.Is(ctx.Err(), context.Canceled) {
+		return "canceled"
+	}
+	return fallback
+}
 func screenRoute(path string) (string, string, error) {
 	const prefix = "/api/v1/screens/"
 	if !strings.HasPrefix(path, prefix) {
@@ -166,7 +190,7 @@ func screenRoute(path string) (string, string, error) {
 		}
 	}
 	if len(parts) == 2 && (parts[0] == "product" || parts[0] == "order") {
-		if !yii.ValidID(parts[1]) {
+		if !domain.ValidID(parts[1]) {
 			return "", "", bad("Invalid resource ID")
 		}
 		return parts[0], parts[1], nil
@@ -212,47 +236,8 @@ func validateKeys(screen string, q url.Values) error {
 	}
 	return nil
 }
-func pageValues(q url.Values) (int, int, error) {
-	page, size := 0, 20
-	var err error
-	if q.Has("page") {
-		page, err = strconv.Atoi(q.Get("page"))
-		if err != nil {
-			return 0, 0, bad("Invalid page")
-		}
-	}
-	if q.Has("size") {
-		size, err = strconv.Atoi(q.Get("size"))
-		if err != nil {
-			return 0, 0, bad("Invalid size")
-		}
-	}
-	return page, size, nil
-}
-func catalogQuery(q url.Values) (yii.CatalogQuery, error) {
-	page, size, err := pageValues(q)
-	if err != nil {
-		return yii.CatalogQuery{}, err
-	}
-	v := yii.CatalogQuery{Query: q.Get("q"), CategoryID: q.Get("categoryId"), Sort: q.Get("sort"), PriceMin: q.Get("priceMin"), PriceMax: q.Get("priceMax"), Page: page, Size: size}
-	if err := v.Validate(); err != nil {
-		return v, bad(err.Error())
-	}
-	return v, nil
-}
-func orderQuery(q url.Values) (yii.OrderQuery, error) {
-	page, size, err := pageValues(q)
-	if err != nil {
-		return yii.OrderQuery{}, err
-	}
-	v := yii.OrderQuery{Status: q.Get("status"), Page: page, Size: size}
-	if err := v.Validate(); err != nil {
-		return v, bad(err.Error())
-	}
-	return v, nil
-}
 func (s *Service) fail(w http.ResponseWriter, trace string, err error) {
-	var up *yii.UpstreamError
+	var up *model.RemoteError
 	if errors.As(err, &up) {
 		if (up.Status == 429 || up.Status == 503) && up.RetryAfter != "" {
 			w.Header().Set("Retry-After", up.RetryAfter)
@@ -263,10 +248,20 @@ func (s *Service) fail(w http.ResponseWriter, trace string, err error) {
 	}
 	status, code, message := 502, "BFF_UPSTREAM_TRANSPORT", "Business service is unavailable"
 	var e *Error
-	if securityError(err) {
-		status, code, message = yii.HTTPStatus(err), "BFF_UPSTREAM_SECURITY", "Business service rejected authorization"
+	var appError *application.Error
+	if model.SecurityError(err) {
+		status, code, message = model.HTTPStatus(err), "BFF_UPSTREAM_SECURITY", "Business service rejected authorization"
 	} else if errors.As(err, &e) {
 		status, code, message = e.Status, e.Code, e.Message
+	} else if errors.As(err, &appError) {
+		status = 502
+		switch appError.Kind {
+		case application.InvalidRequest:
+			status = 400
+		case application.Unauthorized:
+			status = 401
+		}
+		code, message = appError.Code, appError.Message
 	} else if errors.Is(err, context.DeadlineExceeded) {
 		status, code, message = 504, "BFF_UPSTREAM_TIMEOUT", "Business service deadline exceeded"
 	} else if errors.Is(err, context.Canceled) {
@@ -284,13 +279,4 @@ func (s *Service) fail(w http.ResponseWriter, trace string, err error) {
 		Message string `json:"message"`
 		TraceID string `json:"traceId"`
 	}{code, message, trace}})
-}
-
-func screenBase(name, title string, user *yii.User) sdui.Screen {
-	d := sdui.Screen{SchemaVersion: 1, ScreenID: name, Components: []sdui.Node{}, Actions: []sdui.Action{}, State: sdui.State{Fields: map[string]string{}}, Metadata: sdui.Metadata{Title: title, Locale: "ru-RU"}}
-	if user != nil {
-		d.State.Authenticated = true
-		d.Metadata.AccountID = user.ID
-	}
-	return d
 }

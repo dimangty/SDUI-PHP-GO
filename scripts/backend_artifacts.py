@@ -23,7 +23,7 @@ def source_snapshot():
             if not p.startswith('deploy/evidence/') and (ROOT / p).is_file()}
 
 
-def inventory(compose, platform=None, deadline=None):
+def inventory(compose, platform=None, deadline=None, observed=None):
     def output(argv):
         remaining = 30 if deadline is None else min(30, deadline-time.monotonic())
         if remaining <= 0:
@@ -42,19 +42,26 @@ def inventory(compose, platform=None, deadline=None):
         containers = output(compose + ['ps', '-a', '-q', service]).split()
         if not containers:
             raise ValueError(service + ' required container is absent')
+        states = []
         for container in containers:
             # Never inspect/persist a container's environment.
             used = json.loads(output(['docker', 'inspect', '--format', '{"image":{{json .Image}},"state":{{json .State}}}', container]))
             if used['image'] != image['Id']:
                 raise ValueError(service + ' container differs from the current immutable image')
-            state = used['state']
+            states.append(used['state'])
+        row = {'imageId': image['Id'], 'repoDigests': image.get('RepoDigests', []),
+            'descriptor': image.get('Descriptor'), 'platform': actual, 'tagAtInspection': tag}
+        # Preserve scan evidence for verified image/container bindings even when
+        # health fails. Observations never constitute a build/test acceptance.
+        if observed is not None:
+            observed[service] = row
+        for state in states:
             if service in INIT_SERVICES:
                 if state['Status'] != 'exited' or state['ExitCode'] != 0:
                     raise ValueError(service + ' initialization did not complete successfully')
             elif not state['Running'] or state.get('Health', {}).get('Status', 'healthy') != 'healthy':
                 raise ValueError(service + ' runtime is not running and healthy')
-        artifacts[service] = {'imageId': image['Id'], 'repoDigests': image.get('RepoDigests', []),
-            'descriptor': image.get('Descriptor'), 'platform': actual, 'tagAtInspection': tag}
+        artifacts[service] = row
     return artifacts
 
 

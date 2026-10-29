@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 POLICY = Path(__file__).with_name('backend_security_policy.py')
 from backend_security import go_policy
@@ -123,6 +124,30 @@ class SecurityPolicyTests(unittest.TestCase):
         self.assertEqual(1, scan.finish('linux/amd64'))
         self.assertEqual(124, json.loads((self.root / 'hung-scanner.command.json').read_text())['exitCode'])
         self.assertEqual('FAILED', json.loads((self.root / 'gate.json').read_text())['status'])
+
+    def test_unhealthy_artifact_retains_verified_image_evidence_without_passing_gate(self):
+        from backend_artifacts import inventory
+        from backend_security import Scanner
+        outputs = [json.dumps({'services': {'yii2': {'image': 'fixture'}}}),
+                   json.dumps([{'Id': 'sha256:fixture', 'Os': 'linux', 'Architecture': 'arm64'}]),
+                   'container', json.dumps({'image': 'sha256:fixture', 'state':
+                       {'Running': True, 'Health': {'Status': 'unhealthy'}}})]
+        observed = {}
+        scan = Scanner(self.root)
+        with patch('backend_artifacts.REQUIRED_SERVICES', ('yii2',)), patch(
+                'backend_artifacts.subprocess.check_output', side_effect=outputs):
+            scan.attempt('artifact-inventory', lambda: inventory(['compose'], observed=observed))
+        self.assertEqual('sha256:fixture', observed['yii2']['imageId'])
+        self.assertEqual(1, scan.finish('linux/arm64'))
+        self.assertEqual('FAILED', json.loads((self.root / 'gate.json').read_text())['status'])
+
+        outputs[-1] = json.dumps({'image': 'sha256:wrong', 'state': {'Running': True}})
+        observed = {}
+        with patch('backend_artifacts.REQUIRED_SERVICES', ('yii2',)), patch(
+                'backend_artifacts.subprocess.check_output', side_effect=outputs):
+            with self.assertRaises(ValueError):
+                inventory(['compose'], observed=observed)
+        self.assertEqual({}, observed)
 
     def test_report_wrong_architecture_is_rejected(self):
         report = copy.deepcopy(self.report)

@@ -1,9 +1,9 @@
 {
-  "executedAt": "2026-10-20T13:21:29Z",
-  "origin": "http://127.0.0.1:58095",
-  "userId": "c7e6943b-befa-40c1-90ea-4cb470d16bb8",
-  "productId": "0e283d4d-50d3-4d7e-8db9-83609d176461",
-  "paidOrderId": "eb721610-b6b9-4e5f-97b0-1d38e9295a3c",
+  "executedAt": "2026-10-29T21:42:21Z",
+  "origin": "http://127.0.0.1:58221",
+  "userId": "57559b76-4369-476d-8c16-c3e52ea185ef",
+  "productId": "c46efdc1-0b9a-4dc8-8996-fdb3a4af26bf",
+  "paidOrderId": "57a95a30-ca4b-4dcb-8999-816968b18a80",
   "canonicalUnauthenticatedPolicies": 39,
   "adminPolicies": 7,
   "concurrentSameKey": "identical snapshot, one order",
@@ -14,13 +14,13 @@
       "method": "POST",
       "path": "/api/v1/auth/register",
       "status": 201,
-      "bytes": 2230
+      "bytes": 2294
     },
     {
       "method": "POST",
       "path": "/api/v1/auth/login",
       "status": 200,
-      "bytes": 2230
+      "bytes": 2294
     },
     {
       "method": "POST",
@@ -38,25 +38,31 @@
       "method": "GET",
       "path": "/api/v1/screens/home",
       "status": 200,
-      "bytes": 27100
+      "bytes": 3932
     },
     {
       "method": "GET",
       "path": "/api/v1/screens/catalog",
       "status": 200,
-      "bytes": 36593
+      "bytes": 5438
     },
     {
       "method": "GET",
       "path": "/api/v1/products",
       "status": 200,
-      "bytes": 24777
+      "bytes": 746
     },
     {
       "method": "GET",
-      "path": "/api/v1/screens/product/0e283d4d-50d3-4d7e-8db9-83609d176461",
+      "path": "/api/v1/screens/product/c46efdc1-0b9a-4dc8-8996-fdb3a4af26bf",
       "status": 200,
-      "bytes": 1478
+      "bytes": 1926
+    },
+    {
+      "method": "GET",
+      "path": "/images/products/lamp.png",
+      "status": 200,
+      "bytes": 1963
     },
     {
       "method": "GET",
@@ -80,13 +86,13 @@
       "method": "GET",
       "path": "/api/v1/cart",
       "status": 200,
-      "bytes": 336
+      "bytes": 377
     },
     {
       "method": "GET",
       "path": "/api/v1/screens/cart",
       "status": 200,
-      "bytes": 3885
+      "bytes": 3926
     },
     {
       "method": "POST",
@@ -98,25 +104,25 @@
       "method": "POST",
       "path": "/api/v1/orders",
       "status": 201,
-      "bytes": 529
+      "bytes": 544
     },
     {
       "method": "POST",
       "path": "/api/v1/orders",
       "status": 201,
-      "bytes": 529
+      "bytes": 544
     },
     {
       "method": "GET",
       "path": "/api/v1/orders",
       "status": 200,
-      "bytes": 590
+      "bytes": 605
     },
     {
       "method": "GET",
-      "path": "/api/v1/products/0e283d4d-50d3-4d7e-8db9-83609d176461",
+      "path": "/api/v1/products/c46efdc1-0b9a-4dc8-8996-fdb3a4af26bf",
       "status": 200,
-      "bytes": 245
+      "bytes": 339
     },
     {
       "method": "GET",
@@ -132,51 +138,51 @@
     },
     {
       "method": "POST",
-      "path": "/api/v1/payments/ac7178ef-6afc-445d-b2f0-2f585159f986/confirm",
+      "path": "/api/v1/payments/5489eed9-820c-47fb-9caf-10996dddd286/confirm",
       "status": 200,
       "bytes": 212
     },
     {
       "method": "GET",
-      "path": "/demo/payments/ac7178ef-6afc-445d-b2f0-2f585159f986",
+      "path": "/demo/payments/5489eed9-820c-47fb-9caf-10996dddd286",
       "status": 200,
       "bytes": 205
     },
     {
       "method": "POST",
-      "path": "/demo/payments/ac7178ef-6afc-445d-b2f0-2f585159f986",
+      "path": "/demo/payments/5489eed9-820c-47fb-9caf-10996dddd286",
       "status": 200,
       "bytes": 160
     },
     {
       "method": "GET",
-      "path": "/api/v1/payments/ac7178ef-6afc-445d-b2f0-2f585159f986",
+      "path": "/api/v1/payments/5489eed9-820c-47fb-9caf-10996dddd286",
       "status": 200,
-      "bytes": 206
+      "bytes": 208
     },
     {
       "method": "GET",
-      "path": "/api/v1/orders/eb721610-b6b9-4e5f-97b0-1d38e9295a3c",
+      "path": "/api/v1/orders/57a95a30-ca4b-4dcb-8999-816968b18a80",
       "status": 200,
-      "bytes": 526
+      "bytes": 541
     },
     {
       "method": "GET",
       "path": "/api/v1/screens/orders",
       "status": 200,
-      "bytes": 2128
+      "bytes": 2179
     },
     {
       "method": "GET",
-      "path": "/api/v1/screens/order/eb721610-b6b9-4e5f-97b0-1d38e9295a3c",
+      "path": "/api/v1/screens/order/57a95a30-ca4b-4dcb-8999-816968b18a80",
       "status": 200,
-      "bytes": 2308
+      "bytes": 2329
     },
     {
       "method": "GET",
       "path": "/api/v1/screens/profile",
       "status": 200,
-      "bytes": 3138
+      "bytes": 2270
     },
     {
       "method": "GET",
@@ -194,25 +200,25 @@
       "method": "GET",
       "path": "/api/v1/orders",
       "status": 200,
-      "bytes": 1117
+      "bytes": 1147
     },
     {
       "method": "GET",
-      "path": "/api/v1/products/0e283d4d-50d3-4d7e-8db9-83609d176461",
+      "path": "/api/v1/products/c46efdc1-0b9a-4dc8-8996-fdb3a4af26bf",
       "status": 200,
-      "bytes": 245
+      "bytes": 339
     },
     {
       "method": "POST",
-      "path": "/api/v1/orders/32dfc86b-73d1-41d5-8ee1-d708d6d1522e/cancel",
+      "path": "/api/v1/orders/760f90ac-67cb-4a38-bd2e-1d6796fd8431/cancel",
       "status": 200,
-      "bytes": 531
+      "bytes": 546
     },
     {
       "method": "GET",
-      "path": "/api/v1/products/0e283d4d-50d3-4d7e-8db9-83609d176461",
+      "path": "/api/v1/products/c46efdc1-0b9a-4dc8-8996-fdb3a4af26bf",
       "status": 200,
-      "bytes": 245
+      "bytes": 339
     },
     {
       "method": "GET",
@@ -252,7 +258,7 @@
     },
     {
       "method": "DELETE",
-      "path": "/api/v1/auth/pin/devices/12dc08a1-4938-43fc-89e8-521f20f62fd1",
+      "path": "/api/v1/auth/pin/devices/26e1f4a8-88ea-4719-9c35-f4029a5e272f",
       "status": 401,
       "bytes": 129
     },
@@ -276,7 +282,7 @@
     },
     {
       "method": "DELETE",
-      "path": "/api/v1/auth/biometric/devices/cb30a838-fd0a-4b16-9268-60ae141ceb48",
+      "path": "/api/v1/auth/biometric/devices/299dd493-31fe-4a51-8d7e-fc8aca46e10a",
       "status": 401,
       "bytes": 129
     },
@@ -318,13 +324,13 @@
     },
     {
       "method": "PATCH",
-      "path": "/api/v1/cart/items/a6296843-7356-462d-9afc-310e962d11fd",
+      "path": "/api/v1/cart/items/385b838d-c78b-4125-8e0e-4307db951a72",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "DELETE",
-      "path": "/api/v1/cart/items/ee03ab31-eecb-4b81-a0dc-ac97f20e9c4c",
+      "path": "/api/v1/cart/items/a1960b2e-a9a4-491a-be81-831238869b35",
       "status": 401,
       "bytes": 129
     },
@@ -348,13 +354,13 @@
     },
     {
       "method": "PUT",
-      "path": "/api/v1/addresses/1f9ba681-8d2f-405a-983a-4c4a70a877c9",
+      "path": "/api/v1/addresses/40e5f6fa-063d-48ac-91b8-27f3a4b1d92a",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "DELETE",
-      "path": "/api/v1/addresses/c8b04079-e314-49a4-8f73-a4d7e5496166",
+      "path": "/api/v1/addresses/6824fd41-5ad7-436a-8fdb-cb143d2d5205",
       "status": 401,
       "bytes": 129
     },
@@ -372,85 +378,85 @@
     },
     {
       "method": "GET",
-      "path": "/api/v1/orders/eac048e2-37cd-4090-9f0c-8d86d3983762",
+      "path": "/api/v1/orders/2398b7fa-2bd5-4292-bc36-d37d6fe2de84",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "POST",
-      "path": "/api/v1/orders/d3856f1b-db93-4b8c-905b-fbfa9e04a621/cancel",
+      "path": "/api/v1/orders/501f72f9-9cc8-4bb7-b43a-4b7fdc83793d/cancel",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "GET",
-      "path": "/api/v1/payments/51fd5223-ae92-4cf4-8119-8bf78c5915ad",
+      "path": "/api/v1/payments/36d6a40c-6544-493d-92c9-11abebfbdf6e",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "POST",
-      "path": "/api/v1/payments/f4d0e89f-c14f-47b8-8c88-1261d7ba8948/confirm",
+      "path": "/api/v1/payments/ed5320b3-750b-49de-bb0c-3eb025ee3e7b/confirm",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "POST",
-      "path": "/api/v1/products/5cb481bc-06f5-413f-a367-3787756f9c61/reviews",
+      "path": "/api/v1/products/4431bd45-1d0a-4138-9126-32cee202d7e8/reviews",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "DELETE",
-      "path": "/api/v1/reviews/2ff247b5-ffde-4a60-a323-293e3ed6105c",
+      "path": "/api/v1/reviews/fd84c19f-211f-402d-bb03-b7be82d808b9",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "POST",
-      "path": "/api/v1/orders/f0205a7f-c267-4431-a0f2-706a853cb7c7/status",
+      "path": "/api/v1/orders/3ed04274-010e-4768-805e-2f99556ca3c7/status",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "POST",
-      "path": "/api/v1/orders/f0205a7f-c267-4431-a0f2-706a853cb7c7/status",
+      "path": "/api/v1/orders/3ed04274-010e-4768-805e-2f99556ca3c7/status",
       "status": 403,
       "bytes": 112
     },
     {
       "method": "POST",
-      "path": "/api/v1/payments/38da0600-ea14-4c33-a702-8d09d5923985/refund",
+      "path": "/api/v1/payments/0f2c3ee6-4c77-4b03-a863-0f98d3d6b015/refund",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "POST",
-      "path": "/api/v1/payments/38da0600-ea14-4c33-a702-8d09d5923985/refund",
+      "path": "/api/v1/payments/0f2c3ee6-4c77-4b03-a863-0f98d3d6b015/refund",
       "status": 403,
       "bytes": 112
     },
     {
       "method": "POST",
-      "path": "/api/v1/payments/e7515061-1b4f-4abc-8cb8-bf5b3ed06d48/void",
+      "path": "/api/v1/payments/b67025e3-63bb-4745-adc3-78df103291d5/void",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "POST",
-      "path": "/api/v1/payments/e7515061-1b4f-4abc-8cb8-bf5b3ed06d48/void",
+      "path": "/api/v1/payments/b67025e3-63bb-4745-adc3-78df103291d5/void",
       "status": 403,
       "bytes": 112
     },
     {
       "method": "PATCH",
-      "path": "/api/v1/products/b632a317-cf80-4797-a4eb-18d42eae7788/stock",
+      "path": "/api/v1/products/1efd7e7e-0aec-408d-b794-256acddd5111/stock",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "PATCH",
-      "path": "/api/v1/products/b632a317-cf80-4797-a4eb-18d42eae7788/stock",
+      "path": "/api/v1/products/1efd7e7e-0aec-408d-b794-256acddd5111/stock",
       "status": 403,
       "bytes": 112
     },
@@ -468,25 +474,25 @@
     },
     {
       "method": "PUT",
-      "path": "/api/v1/admin/products/9702cdf5-4725-4364-a6ef-aa1246bd83ee",
+      "path": "/api/v1/admin/products/6fd3940d-a40c-40cc-a0ce-ecbc51617f6b",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "PUT",
-      "path": "/api/v1/admin/products/9702cdf5-4725-4364-a6ef-aa1246bd83ee",
+      "path": "/api/v1/admin/products/6fd3940d-a40c-40cc-a0ce-ecbc51617f6b",
       "status": 403,
       "bytes": 112
     },
     {
       "method": "DELETE",
-      "path": "/api/v1/admin/products/66f9694a-aa16-44cc-9173-063d53e765c9",
+      "path": "/api/v1/admin/products/5bb05ef8-5d91-4340-9916-5eae6d1fca15",
       "status": 401,
       "bytes": 129
     },
     {
       "method": "DELETE",
-      "path": "/api/v1/admin/products/66f9694a-aa16-44cc-9173-063d53e765c9",
+      "path": "/api/v1/admin/products/5bb05ef8-5d91-4340-9916-5eae6d1fca15",
       "status": 403,
       "bytes": 112
     },
@@ -548,13 +554,13 @@
       "method": "GET",
       "path": "/swagger/openapi.yaml",
       "status": 200,
-      "bytes": 43872
+      "bytes": 45069
     },
     {
       "method": "GET",
       "path": "/swagger/openapi.yaml",
       "status": 200,
-      "bytes": 43872
+      "bytes": 45069
     },
     {
       "method": "POST",

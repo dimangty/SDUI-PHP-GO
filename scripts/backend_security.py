@@ -159,12 +159,14 @@ def main():
         'lockfiles': {p: sha(ROOT / p) for p in ('backend-yii2/composer.lock', 'backend-sdui/go.mod', 'backend-sdui/go.sum', 'tools/ops/go.mod', 'tools/ops/go.sum')}})
 
     def artifact_inventory():
-        artifacts.update(inventory(compose, args.platform, scan.deadline))
+        artifacts.update(inventory(compose, args.platform, scan.deadline, observed=artifacts))
         receipt = json.loads((args.receipt or ROOT / 'deploy/evidence' / (args.project + '-artifacts.json')).read_text())
         verify_receipt(receipt, source_snapshot(), artifacts)
         scan.write('build-test-receipt.json', receipt)
         scan.write('artifacts.json', artifacts)
     scan.attempt('artifact-inventory', artifact_inventory)
+    scan.write('artifact-observations.json', {'acceptance': 'FAILED' if scan.failures else 'PASSED',
+        'images': artifacts})
 
     def databases():
         scan.trivy('trivy-version', 'version', '--format', 'json')

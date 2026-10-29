@@ -4,7 +4,7 @@ namespace Shop\application;
 
 use Shop\domain\{ApiError,Ids,Money,Rules};
 use Shop\infrastructure\{Database,Env,OpenSearch};
-use Shop\repositories\ShopRepository;
+use Shop\repositories\{CatalogReadRepository,ShopRepository};
 
 final class CatalogService
 {
@@ -14,30 +14,23 @@ final class CatalogService
     public function category(string $id): array
     {return $this->repo->categoryDto($this->db->required('SELECT * FROM categories WHERE id=?',[$id],'CATEGORY_NOT_FOUND','category not found'));}
     public function children(string $id): array {$this->category($id);return $this->categories($id);}
-    public function product(string $id): array {return $this->repo->productDto($this->repo->product($id));}
+    private function reads(): CatalogReadRepository {return new CatalogReadRepository($this->db,$this->repo);}
+    public function product(string $id): array {return $this->reads()->loadDtos([$this->repo->product($id)])[0];}
     public function products(array $q,bool $search=false): array
     {
-        [$page,$size]=Rules::page($q);$query=$search?($q['q']??''):'';$sort=$q['sort']??'';$category=$q['categoryId']??'';
+        $card=CatalogReadRepository::projected($q);[$page,$size]=Rules::page($q);$query=$search?($q['q']??''):'';$sort=$q['sort']??'';$category=$q['categoryId']??'';
         if(strlen($query)>200){throw new ApiError('INVALID_SEARCH_QUERY','q must not exceed 200 bytes');}
         if(!in_array($sort,['','price_asc','price_desc','rating','new'],true)){throw new ApiError('INVALID_SORT','unsupported product sort');}
         $prices=[];
         foreach(['priceMin','priceMax'] as $key){$raw=$q[$key]??'';$prices[$key]=null;if($raw!==''){try{$value=Money::parse($raw);}catch(ApiError){throw new ApiError('INVALID_PRICE_FILTER',"$key must be a non-negative money value");}if($value<0){throw new ApiError('INVALID_PRICE_FILTER',"$key must be a non-negative money value");}$prices[$key]=$value;}}
         if($prices['priceMin']!==null && $prices['priceMax']!==null && $prices['priceMin']>$prices['priceMax']){throw new ApiError('INVALID_PRICE_FILTER','priceMin cannot exceed priceMax');}
-        if($query!=='' && Env::get('OPENSEARCH_URL')!==''){return (new OpenSearch($this->db,$this->repo))->search($query,$category,$sort,$prices,$page,$size);}
-        $filter='p.is_active';$args=[];
-        if($category!==''){$filter.=' AND p.category_id IN (WITH RECURSIVE tree AS (SELECT id FROM categories WHERE id=? UNION SELECT c.id FROM categories c JOIN tree t ON c.parent_id=t.id) SELECT id FROM tree)';$args[]=$category;}
-        if($query!==''){$filter.=' AND (p.name ILIKE ? OR p.description ILIKE ?)';$args[]='%'.trim($query).'%';$args[]='%'.trim($query).'%';}
-        foreach(['priceMin'=>'>=','priceMax'=>'<='] as $key=>$op){if($prices[$key]!==null){$filter.=' AND COALESCE(p.discount_price,p.price)'.$op.'?::numeric';$args[]=Money::format($prices[$key]);}}
-        $order=match($sort){'price_asc'=>'COALESCE(p.discount_price,p.price),p.id','price_desc'=>'COALESCE(p.discount_price,p.price) DESC,p.id','rating'=>'p.rating DESC NULLS LAST,p.id',default=>'p.created_at DESC,p.id'};
-        $total=$this->db->one('SELECT count(*) AS n FROM products p WHERE '.$filter,$args)['n'];
-        $rows=$this->db->all('SELECT p.*,(SELECT count(*) FROM reviews r WHERE r.product_id=p.id) AS reviews_count FROM products p WHERE '.$filter.' ORDER BY '.$order.' LIMIT ? OFFSET ?',[...$args,$size,$page*$size]);
-        return Rules::pageDto(array_map($this->repo->productDto(...),$rows),$page,$size,$total);
+        if($query!=='' && Env::get('OPENSEARCH_URL')!==''){return (new OpenSearch($this->db,$this->repo))->search($query,$category,$sort,$prices,$page,$size,$card);}
+        return $this->reads()->page($query,$category,$sort,$prices,$page,$size,$card);
     }
     public function popular(array $query): array
     {
-        $limit=min(100,Rules::queryInt($query,'limit',10));if($limit<1){$limit=10;}
-        $rows=$this->db->all('SELECT oi.product_id FROM order_items oi JOIN payments p ON p.order_id=oi.order_id JOIN products product ON product.id=oi.product_id WHERE p.status=\'CAPTURED\' AND p.updated_at>=now()-interval \'30 days\' AND product.is_active GROUP BY oi.product_id ORDER BY sum(oi.quantity) DESC,oi.product_id LIMIT ?',[$limit]);
-        return array_map(fn($r)=>$this->product($r['product_id']),$rows);
+        $card=CatalogReadRepository::projected($query);$limit=min(100,Rules::queryInt($query,'limit',10));if($limit<1){$limit=10;}
+        return $this->reads()->popular($limit,$card);
     }
     private function validateProduct(array $input,int $reserved=0): array
     {
@@ -52,14 +45,14 @@ final class CatalogService
     public function createProduct(array $input): array
     {
         $input=$this->validateProduct($input);$id=Ids::uuid();
-        $dto=$this->db->transaction(function()use($input,$id){$this->writeProduct($id,$input,true);return $this->repo->productDto($this->repo->product($id,true));});
+        $dto=$this->db->transaction(function()use($input,$id){$this->writeProduct($id,$input,true);return $this->reads()->loadDtos([$this->repo->product($id,true)])[0];});
         $this->sync($id);return $dto;
     }
     public function updateProduct(string $id,array $changes): array
     {
         $dto=$this->db->transaction(function()use($id,$changes){
-            $p=$this->repo->productDto($this->repo->product($id,true,true));$next=array_replace($p,$changes);
-            $reserved=$this->reserved($id);$next=$this->validateProduct($next,$reserved);$this->writeProduct($id,$next,false);return $this->repo->productDto($this->repo->product($id,true));
+            $p=$this->reads()->loadDtos([$this->repo->product($id,true,true)])[0];$next=array_replace($p,$changes);
+            $reserved=$this->reserved($id);$next=$this->validateProduct($next,$reserved);$this->writeProduct($id,$next,false);return $this->reads()->loadDtos([$this->repo->product($id,true)])[0];
         });$this->sync($id);return $dto;
     }
     private function writeProduct(string $id,array $p,bool $new): void
@@ -77,7 +70,7 @@ final class CatalogService
             $p=$this->repo->product($id,true,true);$delta=$input['delta']??0;
             if($delta<-$p['stock']){throw new ApiError('INSUFFICIENT_STOCK','stock cannot become negative');}
             if($delta>1000000000-$p['stock']-$this->reserved($id)){throw new ApiError('INVALID_STOCK','stock exceeds the supported limit');}
-            $this->db->execute('UPDATE products SET stock=stock+? WHERE id=?',[$delta,$id]);return $this->repo->productDto($this->repo->product($id,true));
+            $this->db->execute('UPDATE products SET stock=stock+? WHERE id=?',[$delta,$id]);return $this->reads()->loadDtos([$this->repo->product($id,true)])[0];
         });$this->sync($id);return $dto;
     }
     public function deleteProduct(string $id): void

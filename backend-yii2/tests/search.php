@@ -14,6 +14,10 @@ test('real OpenSearch indexes SQL products and applies name boost descendants an
     $all=$catalog->products(['q'=>" \t ",'categoryId'=>$root,'sort'=>'price_asc','priceMin'=>'0.10','priceMax'=>'0.20'],true);
     same(2,$all['totalItems']);same([$p1,$p2],array_column($all['items'],'id'));
     $result=$catalog->products(['q'=>$word,'categoryId'=>$root,'priceMin'=>'0.20','sort'=>'price_desc'],true);same(1,$result['totalItems']);same($p2,$result['items'][0]['id']);same('0.20',$result['items'][0]['price']);
+    $card=$catalog->products(['q'=>$word,'categoryId'=>$root,'priceMin'=>'0.20','sort'=>'price_desc','projection'=>'sdui-card-v1'],true);
+    same('sdui-card-v1',$card['projection']);same(1,$card['totalItems']);same($p2,$card['items'][0]['id']);same($word,$card['items'][0]['descriptionSnippet']);same(true,$card['items'][0]['descriptionComplete']);same(null,$card['items'][0]['imageUrl']);
+    same($word,$catalog->product($p2)['description']);
+    $empty=$catalog->products(['q'=>'absent'.str_replace('-','',Ids::uuid()),'projection'=>'sdui-card-v1'],true);same('sdui-card-v1',$empty['projection']);same([],$empty['items']);same(0,$empty['totalItems']);
     errorCode('PAGE_OUT_OF_RANGE',fn()=>$catalog->products(['q'=>$word,'page'=>'500','size'=>'100'],true));
     $catalog->deleteProduct($p2);same(1,$catalog->products(['q'=>$word],true)['totalItems']);
 });

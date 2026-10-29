@@ -1,4 +1,4 @@
-package bff
+package application
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 	"sort"
 	"sync"
 
+	"shopkmp/backend-sdui/internal/application/model"
 	"shopkmp/backend-sdui/internal/domain"
 	"shopkmp/backend-sdui/internal/sdui"
-	"shopkmp/backend-sdui/internal/yii"
 )
 
 func shortID(value string) string {
@@ -19,10 +19,10 @@ func shortID(value string) string {
 	return "device." + hex.EncodeToString(h[:12])
 }
 func securityError(err error) bool {
-	status := yii.HTTPStatus(err)
+	status := model.HTTPStatus(err)
 	return status == 401 || status == 403
 }
-func (s *Application) build(ctx context.Context, id yii.Identity, user *yii.User, name, resource string, q url.Values) (sdui.Screen, error) {
+func (s *Application) build(ctx context.Context, id model.Identity, user *model.User, name, resource string, q url.Values) (sdui.Screen, error) {
 	switch name {
 	case "home":
 		return s.home(ctx, id, user, q)
@@ -44,15 +44,15 @@ func (s *Application) build(ctx context.Context, id yii.Identity, user *yii.User
 	return sdui.Screen{}, bad("Unknown screen")
 }
 
-func (s *Application) home(ctx context.Context, id yii.Identity, u *yii.User, q url.Values) (sdui.Screen, error) {
+func (s *Application) home(ctx context.Context, id model.Identity, u *model.User, q url.Values) (sdui.Screen, error) {
 	d := screenBase("home", "ShopKMP", u)
-	categoryQuery, err := collectionQuery(q, "categoryPage", "categorySize", sdui.MaxCategoryPageSize)
+	categoryQuery, err := ParseCollectionQuery(q, "categoryPage", "categorySize", sdui.MaxCategoryPageSize)
 	if err != nil {
 		return d, err
 	}
 	dest := sdui.Destination{Screen: "home", Categories: &categoryQuery}
 	refresh(&d, dest)
-	if u != nil && !yii.ValidDevice(q.Get("deviceId")) {
+	if u != nil && !model.ValidDevice(q.Get("deviceId")) {
 		return d, bad("Personalized home requires stable deviceId")
 	}
 	aggregateCtx, cancelAggregate := context.WithCancel(ctx)
@@ -62,19 +62,19 @@ func (s *Application) home(ctx context.Context, id yii.Identity, u *yii.User, q 
 			cancelAggregate()
 		}
 	}
-	var cats []yii.Category
-	var popular []yii.Product
-	var session yii.Session
+	var cats []model.Category
+	var popular []model.Product
+	var session model.Session
 	var ce, pe, se error
 	var wg sync.WaitGroup
 	wg.Add(2)
-	go func() { defer wg.Done(); cats, ce = s.up.Categories(aggregateCtx, id); cancelOnSecurity(ce) }()
-	go func() { defer wg.Done(); popular, pe = s.up.Popular(aggregateCtx, id); cancelOnSecurity(pe) }()
+	go func() { defer wg.Done(); cats, ce = s.catalogReads.Categories(aggregateCtx, id); cancelOnSecurity(ce) }()
+	go func() { defer wg.Done(); popular, pe = s.catalogReads.Popular(aggregateCtx, id); cancelOnSecurity(pe) }()
 	if u != nil {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			session, se = s.up.Session(aggregateCtx, id, q.Get("deviceId"))
+			session, se = s.accountReads.Session(aggregateCtx, id, q.Get("deviceId"))
 			cancelOnSecurity(se)
 		}()
 	}
@@ -120,7 +120,7 @@ func (s *Application) home(ctx context.Context, id yii.Identity, u *yii.User, q 
 		if err := collectionBudget(popularCount, 1, len(visible)); err != nil {
 			return d, err
 		}
-		nodes = append(nodes, text("home.categories.title", "Категории", "SectionTitle"), categories(&d, visible, yii.CatalogQuery{Size: 20}, categoryQuery))
+		nodes = append(nodes, text("home.categories.title", "Категории", "SectionTitle"), categories(&d, visible, model.CatalogQuery{Size: 20}, categoryQuery))
 		nodes = append(nodes, collectionControls(&d, "categories", meta, dest)...)
 	}
 	if pe != nil {
@@ -144,21 +144,21 @@ func mediaPointer(s *string) *string {
 	return sdui.Media(*s)
 }
 
-func (s *Application) catalog(ctx context.Context, id yii.Identity, u *yii.User, q url.Values) (sdui.Screen, error) {
+func (s *Application) catalog(ctx context.Context, id model.Identity, u *model.User, q url.Values) (sdui.Screen, error) {
 	d := screenBase("catalog", "Каталог", u)
-	query, err := catalogQuery(q)
+	query, err := ParseCatalogQuery(q)
 	if err != nil {
 		return d, err
 	}
-	categoryQuery, err := collectionQuery(q, "categoryPage", "categorySize", sdui.MaxCategoryPageSize)
+	categoryQuery, err := ParseCollectionQuery(q, "categoryPage", "categorySize", sdui.MaxCategoryPageSize)
 	if err != nil {
 		return d, err
 	}
-	products, err := s.up.Products(ctx, id, query)
+	products, err := s.catalogReads.Products(ctx, id, query)
 	if err != nil {
 		return d, err
 	}
-	cats, err := s.up.Categories(ctx, id)
+	cats, err := s.catalogReads.Categories(ctx, id)
 	if err != nil {
 		return d, err
 	}
@@ -189,14 +189,14 @@ func (s *Application) catalog(ctx context.Context, id yii.Identity, u *yii.User,
 	root(&d, nodes...)
 	return d, nil
 }
-func (s *Application) product(ctx context.Context, id yii.Identity, u *yii.User, pid string) (sdui.Screen, error) {
+func (s *Application) product(ctx context.Context, id model.Identity, u *model.User, pid string) (sdui.Screen, error) {
 	d := screenBase("product", "Товар", u)
-	p, err := s.up.Product(ctx, id, pid)
+	p, err := s.catalogReads.Product(ctx, id, pid)
 	if err != nil {
 		return d, err
 	}
 	if !domain.EqualID(p.ID, pid) {
-		return d, &yii.TransportError{Kind: "resource_mismatch"}
+		return d, &model.Failure{Kind: "resource_mismatch"}
 	}
 	refresh(&d, sdui.Destination{Screen: "product", ID: pid})
 	nodes := []sdui.Node{}
@@ -235,13 +235,13 @@ func (s *Application) product(ctx context.Context, id yii.Identity, u *yii.User,
 	root(&d, nodes...)
 	return d, nil
 }
-func (s *Application) cart(ctx context.Context, id yii.Identity, u *yii.User, q url.Values) (sdui.Screen, error) {
+func (s *Application) cart(ctx context.Context, id model.Identity, u *model.User, q url.Values) (sdui.Screen, error) {
 	d := screenBase("cart", "Корзина", u)
-	query, err := collectionQuery(q, "page", "size", sdui.MaxCartPageSize)
+	query, err := ParseCollectionQuery(q, "page", "size", sdui.MaxCartPageSize)
 	if err != nil {
 		return d, err
 	}
-	cart, err := s.up.Cart(ctx, id)
+	cart, err := s.accountReads.Cart(ctx, id)
 	if err != nil {
 		return d, err
 	}
@@ -261,7 +261,7 @@ func (s *Application) cart(ctx context.Context, id yii.Identity, u *yii.User, q 
 		// Check before adding, including rows outside the visible window. Never
 		// overflow Go int or publish a count CMP's Kotlin Int cannot represent.
 		if item.Quantity < 0 || item.Quantity > sdui.MaxClientInt-d.State.CartItemsCount {
-			return d, &Error{502, "BFF_INVALID_DOCUMENT", "Upstream data cannot form a safe screen"}
+			return d, &Error{InvalidDocument, "BFF_INVALID_DOCUMENT", "Upstream data cannot form a safe screen"}
 		}
 		d.State.CartItemsCount += item.Quantity
 	}
@@ -276,7 +276,7 @@ func (s *Application) cart(ctx context.Context, id yii.Identity, u *yii.User, q 
 	if len(cart.Items) == 0 {
 		nodes = append(nodes, empty("cart.empty", "Корзина пуста", "Добавьте товары из каталога"), nav(&d, "cart.catalog", "В каталог", "catalog"))
 	} else {
-		addresses, err := s.up.Addresses(ctx, id)
+		addresses, err := s.accountReads.Addresses(ctx, id)
 		if err != nil {
 			return d, err
 		}
@@ -290,13 +290,13 @@ func (s *Application) cart(ctx context.Context, id yii.Identity, u *yii.User, q 
 	root(&d, nodes...)
 	return d, nil
 }
-func (s *Application) orders(ctx context.Context, id yii.Identity, u *yii.User, q url.Values) (sdui.Screen, error) {
+func (s *Application) orders(ctx context.Context, id model.Identity, u *model.User, q url.Values) (sdui.Screen, error) {
 	d := screenBase("orders", "Заказы", u)
 	query, err := orderQuery(q)
 	if err != nil {
 		return d, err
 	}
-	page, err := s.up.Orders(ctx, id, query)
+	page, err := s.accountReads.Orders(ctx, id, query)
 	if err != nil {
 		return d, err
 	}
@@ -323,9 +323,9 @@ func (s *Application) orders(ctx context.Context, id yii.Identity, u *yii.User, 
 	root(&d, nodes...)
 	return d, nil
 }
-func (s *Application) order(ctx context.Context, id yii.Identity, u *yii.User, oid string) (sdui.Screen, error) {
+func (s *Application) order(ctx context.Context, id model.Identity, u *model.User, oid string) (sdui.Screen, error) {
 	d := screenBase("order", "Заказ", u)
-	o, err := s.up.Order(ctx, id, oid)
+	o, err := s.accountReads.Order(ctx, id, oid)
 	if err != nil {
 		return d, err
 	}
@@ -333,7 +333,7 @@ func (s *Application) order(ctx context.Context, id yii.Identity, u *yii.User, o
 		return d, err
 	}
 	if !domain.EqualID(o.ID, oid) {
-		return d, &yii.TransportError{Kind: "resource_mismatch"}
+		return d, &model.Failure{Kind: "resource_mismatch"}
 	}
 	refresh(&d, sdui.Destination{Screen: "order", ID: oid})
 	nodes := []sdui.Node{text("order.title", fmt.Sprintf("Заказ №%d", o.Number), "ScreenTitle"), orderCard(&d, o), text("order.address", o.DeliveryAddress, "Body"), text("order.payment", paymentLabel(o.PaymentMethod), "Secondary")}
@@ -353,9 +353,9 @@ func (s *Application) order(ctx context.Context, id yii.Identity, u *yii.User, o
 	root(&d, nodes...)
 	return d, nil
 }
-func (s *Application) profile(ctx context.Context, id yii.Identity, u *yii.User) (sdui.Screen, error) {
+func (s *Application) profile(ctx context.Context, id model.Identity, u *model.User) (sdui.Screen, error) {
 	d := screenBase("profile", "Профиль", u)
-	addresses, err := s.up.Addresses(ctx, id)
+	addresses, err := s.accountReads.Addresses(ctx, id)
 	if err != nil {
 		return d, err
 	}
@@ -380,13 +380,13 @@ func (s *Application) profile(ctx context.Context, id yii.Identity, u *yii.User)
 	root(&d, nodes...)
 	return d, nil
 }
-func (s *Application) devices(ctx context.Context, id yii.Identity, u *yii.User) (sdui.Screen, error) {
+func (s *Application) devices(ctx context.Context, id model.Identity, u *model.User) (sdui.Screen, error) {
 	d := screenBase("devices", "Устройства", u)
-	pins, err := s.up.Devices(ctx, id, "pin")
+	pins, err := s.accountReads.Devices(ctx, id, "pin")
 	if err != nil {
 		return d, err
 	}
-	bio, err := s.up.Devices(ctx, id, "biometric")
+	bio, err := s.accountReads.Devices(ctx, id, "biometric")
 	if err != nil {
 		return d, err
 	}

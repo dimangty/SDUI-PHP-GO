@@ -26,6 +26,10 @@ const cartJSON = `{"id":"` + aid + `","userId":"` + uid + `","items":[{"productI
 const addressJSON = `[{"id":"` + aid + `","userId":"` + uid + `","city":"Moscow","street":"Light","house":"1","apartment":"2","comment":null}]`
 
 func fixtureUpstream(w http.ResponseWriter, r *http.Request) {
+	projectedFixture(fullFixtureUpstream)(w, r)
+}
+
+func fullFixtureUpstream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	switch r.URL.Path {
 	case "/api/v1/users/me":
@@ -56,7 +60,7 @@ func fixtureUpstream(w http.ResponseWriter, r *http.Request) {
 }
 func newTestHandler(t *testing.T, fn http.HandlerFunc) http.Handler {
 	t.Helper()
-	s := httptest.NewServer(fn)
+	s := httptest.NewServer(projectedFixture(fn))
 	t.Cleanup(s.Close)
 	c, err := yii.New(yii.Config{Origin: s.URL, Timeout: 2 * time.Second, Backoff: time.Millisecond})
 	if err != nil {

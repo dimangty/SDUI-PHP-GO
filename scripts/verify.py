@@ -44,6 +44,9 @@ def main():
         {'YII_INTEGRATION_ORIGIN': args.url, 'BFF_INTEGRATION_ORIGIN': args.url,
          'SDUI_EVIDENCE_DIR': str(evidence / 'bff')}, ROOT / 'backend-sdui')
     run('bff-vet', ['go', 'vet', './...'], cwd=ROOT / 'backend-sdui')
+    run('round3-edge', ['go', 'test', './internal/bff', '-run', '^TestRound3LiveEdge$', '-count=1', '-v'],
+        {'ROUND3_DISPOSABLE': args.project, 'ROUND3_LIVE_ORIGIN': args.url,
+         'ROUND3_EDGE_EVIDENCE': str(evidence / 'round3-edge')}, ROOT / 'backend-sdui')
     run('ops-tests', ['go', 'test', './...', '-count=1'], cwd=ROOT / 'tools/ops')
     run('ops-vet', ['go', 'vet', './...'], cwd=ROOT / 'tools/ops')
     sql_workers = ['maintenance', 'payment-recovery']

@@ -1,13 +1,13 @@
-package bff
+package application
 
 import (
 	"fmt"
 	"net/url"
 	"strconv"
 
+	"shopkmp/backend-sdui/internal/application/model"
 	"shopkmp/backend-sdui/internal/domain"
 	"shopkmp/backend-sdui/internal/sdui"
-	"shopkmp/backend-sdui/internal/yii"
 )
 
 // Disjoint collection caps reserve complete screen chrome, both pagers and
@@ -16,7 +16,7 @@ import (
 // 256-code-point previews also fit 1MiB; Encode validates the complete result.
 const defaultCollectionSize = 50
 
-func collectionQuery(q url.Values, pageKey, sizeKey string, maxSize int) (sdui.CollectionQuery, error) {
+func ParseCollectionQuery(q url.Values, pageKey, sizeKey string, maxSize int) (sdui.CollectionQuery, error) {
 	out := sdui.CollectionQuery{Size: defaultCollectionSize}
 	var err error
 	if q.Has(pageKey) {
@@ -85,11 +85,11 @@ func collectionControls(d *sdui.Screen, key string, p sdui.Pagination, dest sdui
 func collectionBudget(primary, perItem, categoryCount int) error {
 	const chromeActions = 16
 	if primary*perItem+categoryCount+chromeActions > sdui.MaxActions {
-		return &Error{502, "BFF_INVALID_DOCUMENT", "Upstream collection exceeds the presentation budget"}
+		return &Error{InvalidDocument, "BFF_INVALID_DOCUMENT", "Upstream collection exceeds the presentation budget"}
 	}
 	return nil
 }
-func categoryOptions(all, visible []yii.Category, selected string) []sdui.Option {
+func categoryOptions(all, visible []model.Category, selected string) []sdui.Option {
 	options := []sdui.Option{{Value: "", Label: "Все категории"}}
 	present := selected == ""
 	for _, c := range visible {

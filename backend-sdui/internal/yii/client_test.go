@@ -187,7 +187,7 @@ func TestProductQueryUsesCanonicalSearchAndFilters(t *testing.T) {
 		if r.URL.Path != "/api/v1/products/search" || r.URL.Query().Get("q") != "лампа & свет" || r.URL.Query().Get("categoryId") != productID || r.URL.Query().Get("priceMin") != "50.01" || r.URL.Query().Get("page") != "2" {
 			t.Errorf("query lost: %s", r.URL)
 		}
-		json.NewEncoder(w).Encode(map[string]any{"items": []any{}, "page": 2, "size": 10, "totalPages": 3, "totalItems": 21})
+		json.NewEncoder(w).Encode(map[string]any{"projection": "sdui-card-v1", "items": []any{}, "page": 2, "size": 10, "totalPages": 3, "totalItems": 21})
 	}, 4096)
 	_, err := c.Products(context.Background(), Identity{}, CatalogQuery{Query: "лампа & свет", CategoryID: productID, PriceMin: "50.01", Page: 2, Size: 10})
 	if err != nil {

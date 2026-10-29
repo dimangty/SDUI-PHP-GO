@@ -27,7 +27,7 @@ func TestConfigRejectsUnsafeTimeoutsAndConflictingListeners(t *testing.T) {
 
 func TestMetricsAvailableOnlyOnOperationalHandler(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{"status":"ok"}`)
+		fmt.Fprint(w, `{"status":"ok","capabilities":["catalog-cards-v1"]}`)
 	}))
 	defer s.Close()
 	c, err := yii.New(yii.Config{Origin: s.URL, Timeout: time.Second})
@@ -52,7 +52,7 @@ func TestHealthHasSeparateHandlerAndReadinessReflectsYii(t *testing.T) {
 		if r.URL.Path != "/health/ready" {
 			t.Errorf("wrong readiness probe %s", r.URL)
 		}
-		fmt.Fprint(w, `{"status":"ok"}`)
+		fmt.Fprint(w, `{"status":"ok","capabilities":["catalog-cards-v1"]}`)
 	}))
 	client, err := yii.New(yii.Config{Origin: up.URL, Timeout: 100 * time.Millisecond, Backoff: time.Millisecond})
 	if err != nil {

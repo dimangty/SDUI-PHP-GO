@@ -3,20 +3,16 @@ package yii
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
-	"net/netip"
 	"net/url"
-	"regexp"
 	"strings"
 	"time"
 
+	"shopkmp/backend-sdui/internal/application/model"
 	"shopkmp/backend-sdui/internal/domain"
 	"shopkmp/backend-sdui/internal/observe"
 )
@@ -27,6 +23,7 @@ type Config struct {
 	MaxBody  int64
 	Backoff  time.Duration
 	Observer *observe.Recorder
+	Tracing  *observe.Tracing
 }
 type Client struct {
 	origin    string
@@ -36,73 +33,23 @@ type Client struct {
 	maxBody   int64
 	backoff   time.Duration
 	observer  *observe.Recorder
+	tracing   *observe.Tracing
 }
 
-// Identity carries request-scoped credentials and transport-derived rate context,
-// never an asserted user/role. Only the bearer can authenticate the caller.
-type Identity struct {
-	Bearer    string
-	RequestID string
-	// Transport-derived rate context only. Never authenticates a user or role.
-	ClientIP netip.Addr
-}
-type UpstreamError struct {
-	Status int
-	Body   json.RawMessage
-	Code   string
-	// Only a validated, single Retry-After value from a 429/503 response.
-	RetryAfter string
-}
+type Identity = model.Identity
+type UpstreamError = model.RemoteError
+type TransportError = model.Failure
 
-func (e *UpstreamError) Error() string   { return fmt.Sprintf("Yii HTTP %d (%s)", e.Status, e.Code) }
-func (e *UpstreamError) HTTPStatus() int { return e.Status }
-
-type TransportError struct {
-	Kind  string
-	Cause error
-	// Status is retained as soon as response headers arrive, independently of
-	// body size, decoding or read failures. A known 401/403 must fail closed.
-	Status int
-}
-
-func (e *TransportError) Error() string   { return "Yii " + e.Kind }
-func (e *TransportError) Unwrap() error   { return e.Cause }
-func (e *TransportError) HTTPStatus() int { return e.Status }
-
-func HTTPStatus(err error) int {
-	var response interface{ HTTPStatus() int }
-	if errors.As(err, &response) {
-		return response.HTTPStatus()
-	}
-	return 0
-}
-
-var tracePattern = regexp.MustCompile(`^[A-Za-z0-9._-]{1,128}$`)
-var bearerPattern = regexp.MustCompile(`^[A-Za-z0-9._~+/-]+=*$`)
+func HTTPStatus(err error) int { return model.HTTPStatus(err) }
 
 func ValidID(s string) bool     { return domain.ValidID(s) }
 func ValidDevice(s string) bool { return domain.ValidDevice(s) }
-func ValidBearer(s string) bool { return len(s) > 0 && len(s) <= 8192 && bearerPattern.MatchString(s) }
+func ValidBearer(s string) bool { return domain.ValidBearer(s) }
 func RequestID(s string) string {
-	if tracePattern.MatchString(s) {
-		return s
-	}
-	var b [16]byte
-	if _, err := rand.Read(b[:]); err != nil {
-		panic(err)
-	}
-	return hex.EncodeToString(b[:])
+	return domain.RequestID(s)
 }
 func ValidKey(s string) bool {
-	if len(s) > 255 {
-		return false
-	}
-	for _, c := range s {
-		if c < 33 || c > 126 {
-			return false
-		}
-	}
-	return true
+	return model.ValidKey(s)
 }
 
 func New(cfg Config) (*Client, error) {
@@ -127,7 +74,7 @@ func New(cfg Config) (*Client, error) {
 	}
 	// Reads reuse bounded connections. Mutations deliberately do not: even an
 	// empty POST or an Idempotency-Key must never trigger a transparent replay.
-	return &Client{origin: strings.TrimSuffix(cfg.Origin, "/"), http: newHTTPClient(cfg.Timeout, true), mutations: newHTTPClient(cfg.Timeout, false), timeout: cfg.Timeout, maxBody: cfg.MaxBody, backoff: cfg.Backoff, observer: cfg.Observer}, nil
+	return &Client{origin: strings.TrimSuffix(cfg.Origin, "/"), http: newHTTPClient(cfg.Timeout, true), mutations: newHTTPClient(cfg.Timeout, false), timeout: cfg.Timeout, maxBody: cfg.MaxBody, backoff: cfg.Backoff, observer: cfg.Observer, tracing: cfg.Tracing}, nil
 }
 
 // call is deliberately private. Public methods fix every path and method.
@@ -154,6 +101,8 @@ func (c *Client) call(ctx context.Context, id Identity, method, path string, q u
 	// status, or zero if that attempt received no response. Cancellation while
 	// waiting to retry retains the last received status (no new attempt began).
 	status := 0
+	ctx, clientSpan := c.tracing.Client(ctx, method, operation(method, path))
+	defer func() { clientSpan.End(status, errorKind(err)) }()
 	if c.observer != nil {
 		start := time.Now()
 		defer func() {
@@ -180,7 +129,7 @@ func (c *Client) call(ctx context.Context, id Identity, method, path string, q u
 		req.GetBody = nil // explicitly prohibit transport replays of mutation bodies
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("X-Request-Id", id.RequestID)
-		if parent := observe.TraceParent(ctx); parent != "" {
+		if parent := c.tracing.TraceParent(ctx); parent != "" {
 			req.Header.Set("Traceparent", parent)
 		}
 		if id.Bearer != "" {
@@ -245,37 +194,59 @@ func get[T any](c *Client, ctx context.Context, id Identity, path string, q url.
 	return out, err
 }
 func (c *Client) User(ctx context.Context, id Identity) (User, error) {
-	return get[User](c, ctx, id, "/api/v1/users/me", nil)
+	w, err := get[userWire](c, ctx, id, "/api/v1/users/me", nil)
+	return convertUser(w), err
 }
 func (c *Client) Categories(ctx context.Context, id Identity) ([]Category, error) {
-	return get[[]Category](c, ctx, id, "/api/v1/categories", nil)
-}
-func (c *Client) Popular(ctx context.Context, id Identity) ([]Product, error) {
-	return get[[]Product](c, ctx, id, "/api/v1/products/popular", url.Values{"limit": {"10"}})
+	w, err := get[[]categoryWire](c, ctx, id, "/api/v1/categories", nil)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Category, 0, len(w))
+	for _, v := range w {
+		out = append(out, Category{ID: v.ID, Name: v.Name, ParentID: v.ParentID, IconURL: v.IconURL, SortOrder: v.SortOrder})
+	}
+	return out, nil
 }
 func (c *Client) Product(ctx context.Context, id Identity, pid string) (Product, error) {
 	if !ValidID(pid) {
 		return Product{}, errors.New("invalid product ID")
 	}
-	return get[Product](c, ctx, id, "/api/v1/products/"+pid, nil)
+	w, err := get[productWire](c, ctx, id, "/api/v1/products/"+pid, nil)
+	return convertProduct(w), err
 }
 func (c *Client) Cart(ctx context.Context, id Identity) (Cart, error) {
-	return get[Cart](c, ctx, id, "/api/v1/cart", nil)
+	w, err := get[cartWire](c, ctx, id, "/api/v1/cart", nil)
+	return convertCart(w), err
 }
 func (c *Client) Addresses(ctx context.Context, id Identity) ([]Address, error) {
-	return get[[]Address](c, ctx, id, "/api/v1/addresses", nil)
+	w, err := get[[]addressWire](c, ctx, id, "/api/v1/addresses", nil)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Address, 0, len(w))
+	for _, v := range w {
+		out = append(out, Address{ID: v.ID, UserID: v.UserID, City: v.City, Street: v.Street, House: v.House, Apartment: v.Apartment, Comment: v.Comment})
+	}
+	return out, nil
 }
 func (c *Client) Session(ctx context.Context, id Identity, device string) (Session, error) {
 	if !ValidDevice(device) {
 		return Session{}, errors.New("invalid device ID")
 	}
-	return get[Session](c, ctx, id, "/api/v1/auth/session", url.Values{"deviceId": {device}})
+	w, err := get[sessionWire](c, ctx, id, "/api/v1/auth/session", url.Values{"deviceId": {device}})
+	out := Session{User: convertUser(w.User), CartItemsCount: w.CartItemsCount}
+	out.Device.PinEnabled = w.Device.PinEnabled
+	out.Device.BiometricEnabled = w.Device.BiometricEnabled
+	out.Device.BiometricCredentialID = w.Device.BiometricCredentialID
+	return out, err
 }
 func (c *Client) Order(ctx context.Context, id Identity, oid string) (Order, error) {
 	if !ValidID(oid) {
 		return Order{}, errors.New("invalid order ID")
 	}
-	return get[Order](c, ctx, id, "/api/v1/orders/"+oid, nil)
+	w, err := get[orderWire](c, ctx, id, "/api/v1/orders/"+oid, nil)
+	return convertOrder(w), err
 }
 func (c *Client) Devices(ctx context.Context, id Identity, kind string) ([]Device, error) {
 	if kind != "pin" && kind != "biometric" {
@@ -285,13 +256,21 @@ func (c *Client) Devices(ctx context.Context, id Identity, kind string) ([]Devic
 	if kind == "biometric" {
 		contract = biometric200
 	}
-	var out []Device
+	var out []deviceWire
 	err := c.call(ctx, id, http.MethodGet, "/api/v1/auth/"+kind+"/devices", nil, nil, "", contract, &out)
-	return out, err
+	if err != nil {
+		return nil, err
+	}
+	devices := make([]Device, 0, len(out))
+	for _, v := range out {
+		devices = append(devices, Device{DeviceID: v.DeviceID, DeviceName: v.DeviceName, KeyAlgorithm: v.KeyAlgorithm, CreatedAt: v.CreatedAt, LastUsedAt: v.LastUsedAt, LockedUntil: v.LockedUntil})
+	}
+	return devices, nil
 }
 func (c *Client) Ready(ctx context.Context) error {
 	var out struct {
-		Status string `json:"status"`
+		Status       string   `json:"status"`
+		Capabilities []string `json:"capabilities"`
 	}
 	if err := c.call(ctx, Identity{}, "GET", "/health/ready", nil, nil, "", json200, &out); err != nil {
 		return err
@@ -299,46 +278,51 @@ func (c *Client) Ready(ctx context.Context) error {
 	if out.Status != "ok" {
 		return errors.New("yii not ready")
 	}
-	return nil
+	for _, capability := range out.Capabilities {
+		if capability == "catalog-cards-v1" {
+			return nil
+		}
+	}
+	return errors.New("yii catalog-cards-v1 capability required")
 }
 func (c *Client) AddCart(ctx context.Context, id Identity, in AddCartInput, key string) (Cart, error) {
-	var out Cart
+	var out cartWire
 	if !ValidID(in.ProductID) || in.Quantity < 1 || in.Quantity > 1000000 {
-		return out, errors.New("invalid cart input")
+		return Cart{}, errors.New("invalid cart input")
 	}
-	err := c.call(ctx, id, "POST", "/api/v1/cart/items", nil, in, key, json200, &out)
-	return out, err
+	err := c.call(ctx, id, "POST", "/api/v1/cart/items", nil, addCartWire{ProductID: in.ProductID, Quantity: in.Quantity}, key, json200, &out)
+	return convertCart(out), err
 }
 func (c *Client) UpdateCart(ctx context.Context, id Identity, pid string, quantity int) (Cart, error) {
-	var out Cart
+	var out cartWire
 	if !ValidID(pid) || quantity < 0 || quantity > 1000000 {
-		return out, errors.New("invalid cart input")
+		return Cart{}, errors.New("invalid cart input")
 	}
 	err := c.call(ctx, id, "PATCH", "/api/v1/cart/items/"+pid, nil, struct {
 		Quantity int `json:"quantity"`
 	}{quantity}, "", json200, &out)
-	return out, err
+	return convertCart(out), err
 }
 func (c *Client) RemoveCart(ctx context.Context, id Identity, pid string) (Cart, error) {
-	var out Cart
+	var out cartWire
 	if !ValidID(pid) {
-		return out, errors.New("invalid product ID")
+		return Cart{}, errors.New("invalid product ID")
 	}
 	err := c.call(ctx, id, "DELETE", "/api/v1/cart/items/"+pid, nil, nil, "", json200, &out)
-	return out, err
+	return convertCart(out), err
 }
 func (c *Client) CancelOrder(ctx context.Context, id Identity, oid string) (Order, error) {
-	var out Order
+	var out orderWire
 	if !ValidID(oid) {
-		return out, errors.New("invalid order ID")
+		return Order{}, errors.New("invalid order ID")
 	}
 	err := c.call(ctx, id, "POST", "/api/v1/orders/"+oid+"/cancel", nil, nil, "", json200, &out)
-	return out, err
+	return convertOrder(out), err
 }
 func (c *Client) UpdateProfile(ctx context.Context, id Identity, in ProfileInput) (User, error) {
-	var out User
-	err := c.call(ctx, id, "PUT", "/api/v1/users/me", nil, in, "", json200, &out)
-	return out, err
+	var out userWire
+	err := c.call(ctx, id, "PUT", "/api/v1/users/me", nil, profileWire{FullName: in.FullName, Phone: in.Phone}, "", json200, &out)
+	return convertUser(out), err
 }
 func (c *Client) RevokeDevice(ctx context.Context, id Identity, kind, device string) error {
 	if (kind != "pin" && kind != "biometric") || !ValidDevice(device) {

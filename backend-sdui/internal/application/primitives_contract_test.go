@@ -1,4 +1,4 @@
-package bff
+package application
 
 import (
 	"bytes"

@@ -1,0 +1,6 @@
+# Keep the portable, indexed archive in Git; raw local evidence remains available.
+*
+!.gitignore
+!README.md
+!INDEX.json
+!round3-evidence.zip

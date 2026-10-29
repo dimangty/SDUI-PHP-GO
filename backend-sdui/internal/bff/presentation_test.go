@@ -40,7 +40,7 @@ func TestPresentationHomeShoppingPrecedesAncillaryNavigation(t *testing.T) {
 	if presentationNode(t, nodes, "home.title").Props["text"] != "ShopKMP" {
 		t.Error("missing brand heading")
 	}
-	if !(positions["catalog.q"] < positions["catalog.categories"] && positions["catalog.categories"] < positions["catalog.products"] && positions["catalog.products"] < positions["home.catalog"]) {
+	if positions["catalog.q"] >= positions["catalog.categories"] || positions["catalog.categories"] >= positions["catalog.products"] || positions["catalog.products"] >= positions["home.catalog"] {
 		t.Error("shopping hierarchy interrupted by ancillary links")
 	}
 	if d.State.CartItemsCount != 2 {

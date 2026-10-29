@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"shopkmp/backend-sdui/internal/observe"
 	"shopkmp/backend-sdui/internal/yii"
 )
 
@@ -23,14 +24,15 @@ type Config struct {
 	IdleTimeout       time.Duration
 	ShutdownTimeout   time.Duration
 	TrustedEdgeIPs    []netip.Addr
+	Tracing           observe.TraceConfig
 }
 
 func Defaults() Config {
-	return Config{ListenAddr: ":8080", AdminAddr: ":9090", Yii: yii.Config{Origin: "http://yii2-http:8080", Timeout: 3 * time.Second, MaxBody: 2 << 20, Backoff: 50 * time.Millisecond}, RequestTimeout: 8 * time.Second, ReadHeaderTimeout: 3 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 12 * time.Second, IdleTimeout: 30 * time.Second, ShutdownTimeout: 10 * time.Second}
+	return Config{ListenAddr: ":8080", AdminAddr: ":9090", Yii: yii.Config{Origin: "http://yii2-http:8080", Timeout: 3 * time.Second, MaxBody: 2 << 20, Backoff: 50 * time.Millisecond}, RequestTimeout: 8 * time.Second, ReadHeaderTimeout: 3 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 12 * time.Second, IdleTimeout: 30 * time.Second, ShutdownTimeout: 10 * time.Second, Tracing: observe.TraceDefaults()}
 }
 func Load() (Config, error) {
 	c := Defaults()
-	envStrings := map[string]*string{"LISTEN_ADDR": &c.ListenAddr, "ADMIN_ADDR": &c.AdminAddr, "YII_ORIGIN": &c.Yii.Origin}
+	envStrings := map[string]*string{"LISTEN_ADDR": &c.ListenAddr, "ADMIN_ADDR": &c.AdminAddr, "YII_ORIGIN": &c.Yii.Origin, "SDUI_TRACE_ENDPOINT": &c.Tracing.Endpoint}
 	for key, dest := range envStrings {
 		if v, ok := os.LookupEnv(key); ok {
 			*dest = v
@@ -61,6 +63,41 @@ func Load() (Config, error) {
 			return c, fmt.Errorf("invalid MAX_UPSTREAM_BODY")
 		}
 		c.Yii.MaxBody = n
+	}
+	if v, ok := os.LookupEnv("SDUI_TRACE_ENABLED"); ok {
+		parsed, err := strconv.ParseBool(v)
+		if err != nil {
+			return c, fmt.Errorf("invalid SDUI_TRACE_ENABLED")
+		}
+		c.Tracing.Enabled = parsed
+	}
+	if v, ok := os.LookupEnv("SDUI_TRACE_SAMPLE_RATIO"); ok {
+		parsed, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return c, fmt.Errorf("invalid SDUI_TRACE_SAMPLE_RATIO")
+		}
+		c.Tracing.SampleRatio = parsed
+	}
+	for key, dest := range map[string]*int{"SDUI_TRACE_QUEUE_SIZE": &c.Tracing.QueueSize, "SDUI_TRACE_BATCH_SIZE": &c.Tracing.BatchSize} {
+		if v, ok := os.LookupEnv(key); ok {
+			parsed, err := strconv.Atoi(v)
+			if err != nil {
+				return c, fmt.Errorf("invalid %s", key)
+			}
+			*dest = parsed
+		}
+	}
+	for key, dest := range map[string]*time.Duration{"SDUI_TRACE_BATCH_TIMEOUT": &c.Tracing.BatchTimeout, "SDUI_TRACE_EXPORT_TIMEOUT": &c.Tracing.ExportTimeout, "SDUI_TRACE_FLUSH_TIMEOUT": &c.Tracing.FlushTimeout, "SDUI_TRACE_SHUTDOWN_TIMEOUT": &c.Tracing.ShutdownTimeout} {
+		if v, ok := os.LookupEnv(key); ok {
+			parsed, err := time.ParseDuration(v)
+			if err != nil {
+				return c, fmt.Errorf("invalid %s", key)
+			}
+			*dest = parsed
+		}
+	}
+	if err := c.Tracing.Validate(); err != nil {
+		return c, err
 	}
 	_, p1, e1 := net.SplitHostPort(c.ListenAddr)
 	_, p2, e2 := net.SplitHostPort(c.AdminAddr)

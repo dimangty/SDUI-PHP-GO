@@ -7,11 +7,35 @@ use Shop\domain\Ids;
 use Shop\infrastructure\{Database,Env,HttpClient,Keycloak};
 use Shop\repositories\ShopRepository;
 
+function schedulingDiagnosticText(string $text): string {
+    foreach(['DATABASE_URL','KEYCLOAK_CLIENT_SECRET','KEYCLOAK_ADMIN_TOKEN','PAYMENT_GATEWAY_API_KEY','PAYMENT_WEBHOOK_SECRET'] as $key){
+        $value=getenv($key);if($value!==false && $value!==''){$text=str_replace($value,'[redacted]',$text);}
+    }
+    return $text;
+}
+function schedulingPdoObservation(PDOException $error): array {
+    return ['sqlState'=>$error->getCode(),'driverCode'=>$error->errorInfo[1]??null,
+        'primary'=>schedulingDiagnosticText(explode("\n",$error->getMessage())[0])];
+}
+class SchedulingStatement extends PDOStatement {
+    public function execute(?array $params=null): bool {
+        try{return parent::execute($params);}
+        catch(PDOException $error){
+            print 'Scheduling SQL failure: '.json_encode(schedulingPdoObservation($error)+['statement'=>schedulingDiagnosticText($this->queryString)],JSON_THROW_ON_ERROR)."\n";
+            throw $error;
+        }
+    }
+}
+function schedulingBackend(Database $observer,int $pid): ?array {
+    return $observer->one("SELECT pid,state,wait_event_type,wait_event,pg_blocking_pids(pid) AS blockers,extract(epoch FROM clock_timestamp()-xact_start) AS transaction_seconds FROM pg_stat_activity WHERE pid=?",[$pid]);
+}
+
 // All business rows live in a test-owned final-schema namespace in the explicitly
 // supplied disposable database. The HTTP fixtures journal only our payment/user IDs.
 function schedulingSchema(): array {
     [$db,$schema]=paymentLegacySchema();applyPaymentMigration($db);
     foreach([13,14] as $n){$file=glob('/migrations/'.sprintf('%03d',$n).'_*.up.sql');same(1,count($file));$db->transaction(fn()=>$db->pdo()->exec(file_get_contents($file[0])));}
+    $db->pdo()->setAttribute(PDO::ATTR_STATEMENT_CLASS,[SchedulingStatement::class]);
     return [$db,$schema];
 }
 function schedulingSession(Database $db,int $code=204,int $delay=0): array {
@@ -95,8 +119,10 @@ test('a long multi-statement payment apply is bounded without replaying its unce
         $db->execute('CREATE TRIGGER scheduling_slow_stock BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION scheduling_slow_stock()');
         $pid=$db->one('SELECT pg_backend_pid() AS pid')['pid'];$start=hrtime(true);
         try{schedulingWorker($db)->run();throw new RuntimeException('expected bounded transaction failure');}
-        catch(PDOException){} // PDO/rollback error text varies after the backend is terminated; verify time, disconnect and durable state below.
-        $elapsed=(hrtime(true)-$start)/1e9;truth($elapsed>=4.5 && $elapsed<8);
+        catch(PDOException $error){$failure=schedulingPdoObservation($error);} // Verify time, disconnect and durable state below.
+        $elapsed=(hrtime(true)-$start)/1e9;
+        print 'Bounded apply diagnostic: '.json_encode(['elapsedSeconds'=>round($elapsed,3),'error'=>$failure,'backend'=>schedulingBackend(paymentSchemaConnection($schema),$pid)],JSON_THROW_ON_ERROR)."\n";
+        truth($elapsed>=4.5 && $elapsed<8);
         $db=paymentSchemaConnection($schema);
         same(0,$db->one('SELECT count(*) AS n FROM pg_stat_activity WHERE pid=?',[$pid])['n']);
         print 'Bounded apply observation: '.json_encode(['elapsedSeconds'=>round($elapsed,3),'connectionTerminated'=>true],JSON_THROW_ON_ERROR)."\n";
@@ -146,7 +172,7 @@ test('real scheduler completes sessions and payments across bounded ticks despit
             if($complete && $sent>=4 && ($state['lastResult']??null)==='success'){break;}
         }while((hrtime(true)-$start)/1e9<$budget+8);
         $elapsed=(hrtime(true)-$start)/1e9;
-        print 'Scheduler observation: '.json_encode(['result'=>$state['lastResult']??null,'elapsedSeconds'=>round($elapsed,3),'healthySession'=>$db->one('SELECT state,recovery_attempts FROM password_session_operations WHERE id=?',[$healthy])],JSON_THROW_ON_ERROR)."\n";
+        print 'Scheduler observation: '.json_encode(['state'=>$state,'elapsedSeconds'=>round($elapsed,3),'healthySession'=>$db->one('SELECT state,recovery_attempts FROM password_session_operations WHERE id=?',[$healthy]),'stdout'=>schedulingDiagnosticText(trim($output)),'stderr'=>schedulingDiagnosticText(trim($errors))],JSON_THROW_ON_ERROR)."\n";
         same('success',$state['lastResult']??null);same(0,$state['lastExitCode']);truth($elapsed<$budget-5);
         same('COMPLETE',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$healthy])['state']);
         same(1,paymentDb()->one('SELECT calls FROM recovery_test_provider WHERE user_id=?',[$user])['calls']);
@@ -236,8 +262,10 @@ test('F3 local expiry transaction timeout preserves committed retention and roll
         $db->execute('CREATE FUNCTION maintenance_slow_stock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_sleep(0.6); RETURN NEW; END $$');
         $db->execute('CREATE TRIGGER maintenance_slow_stock BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION maintenance_slow_stock()');
         [, $repo,$commerce]=paymentServices($db);$start=hrtime(true);
-        try{(new MaintenanceService($db,$repo,$commerce))->run();throw new RuntimeException('expected bounded local expiry failure');}catch(PDOException){}
-        $elapsed=(hrtime(true)-$start)/1e9;truth($elapsed>=4.5 && $elapsed<8);
+        try{(new MaintenanceService($db,$repo,$commerce))->run();throw new RuntimeException('expected bounded local expiry failure');}catch(PDOException $error){$failure=schedulingPdoObservation($error);}
+        $elapsed=(hrtime(true)-$start)/1e9;
+        print 'Maintenance local diagnostic: '.json_encode(['elapsedSeconds'=>round($elapsed,3),'error'=>$failure],JSON_THROW_ON_ERROR)."\n";
+        truth($elapsed>=4.5 && $elapsed<8);
         $db=paymentSchemaConnection($schema);same(0,$db->one('SELECT count(*) AS n FROM processed_webhooks')['n']);
         same('CREATED',$db->one('SELECT status FROM orders WHERE id=?',[$order['id']])['status']);same(null,$db->one('SELECT stock_restored_at FROM orders WHERE id=?',[$order['id']])['stock_restored_at']);
         same(8,$db->one('SELECT stock FROM products WHERE id=?',[$product])['stock']);same(0,$db->one('SELECT count(*) AS n FROM payment_operations')['n']);
@@ -282,7 +310,7 @@ test('F3 real maintenance scheduler retains cleanup progress and queues expiry w
             if(($state['lastResult']??null)!==null){break;}
         }while((hrtime(true)-$start)/1e9<45);
         $elapsed=(hrtime(true)-$start)/1e9;
-        print 'Maintenance scheduler observation: '.json_encode(['result'=>$state['lastResult']??null,'elapsedSeconds'=>round($elapsed,3),'output'=>trim($output)],JSON_THROW_ON_ERROR)."\n";
+        print 'Maintenance scheduler observation: '.json_encode(['state'=>$state,'elapsedSeconds'=>round($elapsed,3),'stdout'=>schedulingDiagnosticText(trim($output)),'stderr'=>schedulingDiagnosticText(trim($errors))],JSON_THROW_ON_ERROR)."\n";
         same('success',$state['lastResult']??null);same(0,$state['lastExitCode']);truth($elapsed<35);same('',$errors);
         proc_terminate($scheduler);foreach($pipes as $pipe){fclose($pipe);}proc_close($scheduler);$scheduler=null;
         same(100,$db->one("SELECT count(*) AS n FROM payment_operations WHERE kind='void' AND state='READY'")['n']);
@@ -347,7 +375,7 @@ test('R3 round2 two workers progress past row-busy first expired SENT without HT
 });
 /** Real PDO statement observer: every SQL result still comes from PostgreSQL.
  * Installs a second-connection lock precisely after preparation commits. */
-class RecoveryClaimBarrier extends PDOStatement {
+class RecoveryClaimBarrier extends SchedulingStatement {
     protected function __construct(private Closure $barrier) {}
     public function execute(?array $params=null): bool {
         $result=parent::execute($params);

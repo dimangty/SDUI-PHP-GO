@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"shopkmp/backend-sdui/internal/application"
 	"shopkmp/backend-sdui/internal/bff"
 	"shopkmp/backend-sdui/internal/observe"
 	"shopkmp/backend-sdui/internal/yii"
@@ -56,7 +57,13 @@ func Operations(up *yii.Client, observer *observe.Recorder) http.Handler {
 func Run(ctx context.Context, c Config) error {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	observer := observe.New(logger)
+	tracing, err := observe.NewTraceProvider(ctx, c.Tracing)
+	if err != nil {
+		return err
+	}
+	defer tracing.Shutdown(context.Background())
 	c.Yii.Observer = observer
+	c.Yii.Tracing = tracing
 	up, err := yii.New(c.Yii)
 	if err != nil {
 		return err
@@ -73,11 +80,16 @@ func Run(ctx context.Context, c Config) error {
 	}
 	defer admin.Close()
 	logger.Info("sdui_started", "public", public.Addr().String(), "internal", admin.Addr().String())
-	err = Serve(ctx, c, public, admin, bff.New(up, bff.Config{RequestTimeout: c.RequestTimeout, Observer: observer, TrustedEdgeIPs: c.TrustedEdgeIPs}), Operations(up, observer))
+	app := application.New(up, up, up, up, up)
+	err = serve(ctx, c, public, admin, bff.NewHandler(app, bff.Config{RequestTimeout: c.RequestTimeout, Observer: observer, Tracing: tracing, TrustedEdgeIPs: c.TrustedEdgeIPs}), Operations(up, observer), tracing)
 	logger.Info("sdui_stopped", "graceful", err == nil)
 	return err
 }
 func Serve(ctx context.Context, c Config, public, admin net.Listener, handler, health http.Handler) error {
+	return serve(ctx, c, public, admin, handler, health, nil)
+}
+
+func serve(ctx context.Context, c Config, public, admin net.Listener, handler, health http.Handler, tracing *observe.Tracing) error {
 	makeServer := func(h http.Handler) *http.Server {
 		return &http.Server{Handler: h, ReadHeaderTimeout: c.ReadHeaderTimeout, ReadTimeout: c.ReadTimeout, WriteTimeout: c.WriteTimeout, IdleTimeout: c.IdleTimeout, MaxHeaderBytes: 16 << 10}
 	}
@@ -105,6 +117,9 @@ func Serve(ctx context.Context, c Config, public, admin net.Listener, handler, h
 		}()
 	}
 	wg.Wait()
+	// End/export spans only after both listeners have drained. Tracing gets the
+	// remainder of the same shutdown budget, not an additional full timeout.
+	_ = tracing.Shutdown(shutdownCtx)
 	close(shutdownErrors)
 	if serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) {
 		return serveErr
