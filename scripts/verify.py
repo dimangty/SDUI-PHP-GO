@@ -14,14 +14,15 @@ def main():
     parser.add_argument('--project', default='shopkmp-migrated-e2e')
     parser.add_argument('--url', default='http://127.0.0.1:58095')
     parser.add_argument('--disposable', action='store_true', required=True)
+    parser.add_argument('--evidence-dir', type=Path, default=ROOT / 'deploy/evidence')
     args = parser.parse_args()
     if not args.project.endswith('-e2e'):
         parser.error('The disposable project must end in -e2e')
     env = os.environ | {'COMPOSE_PROJECT_NAME': args.project}
     compose = command((ROOT / args.env).resolve(), args.project)
     verify = command((ROOT / args.env).resolve(), args.project, verify=True)
-    evidence = ROOT / 'deploy/evidence'
-    evidence.mkdir(exist_ok=True)
+    evidence = args.evidence_dir.resolve()
+    evidence.mkdir(parents=True, exist_ok=True)
 
     def run(label, cmd, extra=None, cwd=ROOT):
         print(label, flush=True)
@@ -30,7 +31,7 @@ def main():
         if result.returncode:
             print((evidence / (label + '.log')).read_text(), end='', flush=True)
             raise SystemExit(result.returncode)
-        print(f'{label}: PASS (deploy/evidence/{label}.log)', flush=True)
+        print(f'{label}: PASS ({evidence / (label + ".log")})', flush=True)
 
     run('route-matrix', [sys.executable, 'scripts/route_matrix.py', '--check'])
     run('scheduler-regression', [sys.executable, 'scripts/test_scheduler.py', '--image', args.project + '-yii2'])
@@ -62,7 +63,7 @@ def main():
             subprocess.run(compose + ['up', '-d', '--no-deps', *sql_workers], cwd=ROOT, env=env, check=True)
     run('runtime', [sys.executable, 'scripts/runtime_checks.py', '--env', args.env, '--project', args.project,
                     '--url', args.url, '--shutdown'])
-    print('PASS Task4 disposable verification. Evidence: deploy/evidence/. No mobile or production cutover claim.')
+    print(f'PASS Task4 disposable verification. Evidence: {evidence}. No mobile or production cutover claim.')
 
 
 if __name__ == '__main__':

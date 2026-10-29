@@ -77,7 +77,7 @@ final class ApiKernel
             if($route[3]==='admin' && !$user['is_admin']){throw new ApiError('ADMIN_REQUIRED','admin role required');}
             $limit=(int)Env::get($relative==='/payments/webhook'?'WEBHOOK_BODY_LIMIT_BYTES':($relative==='/users/me/avatar' && str_starts_with(strtolower($headers['content-type']??''),'multipart/form-data')?'AVATAR_BODY_LIMIT_BYTES':'JSON_BODY_LIMIT_BYTES'),$relative==='/users/me/avatar'?'5242880':'1048576');
             if(strlen($body)>$limit){throw new ApiError('REQUEST_TOO_LARGE','request body exceeds the configured limit');}
-            if($relative==='/payments/webhook'){$this->verifyWebhook($headers,$body,$client);}
+            if($relative==='/payments/webhook'){$this->verifyWebhook($headers,$body,$remote);}
             $input=[];
             if($route[4]!==null && !($relative==='/auth/logout' && $body==='')){$input=JsonInput::decode($body,$headers['content-type']??'',$route[4],$limit);}
             // IDs from routes and JSON are never interpolated into SQL. Invalid UUIDs fail at the boundary.
@@ -156,7 +156,9 @@ final class ApiKernel
     {
         $secret=Env::get('PAYMENT_WEBHOOK_SECRET');if($secret===''){throw new ApiError('WEBHOOK_NOT_CONFIGURED','payment webhook is not configured');}
         $allowed=Env::get('PAYMENT_WEBHOOK_ALLOWED_CIDRS');
-        if(($allowed!=='' || Env::production()) && !Network::allowed($client,$allowed)){throw new ApiError('WEBHOOK_SOURCE_DENIED','webhook source is not allowed');}
+        try{$sourceAllowed=Network::allowed($client,$allowed);}
+        catch(\InvalidArgumentException){throw new ApiError('WEBHOOK_NOT_CONFIGURED','payment webhook source configuration is invalid');}
+        if(($allowed!=='' || Env::production()) && !$sourceAllowed){throw new ApiError('WEBHOOK_SOURCE_DENIED','webhook source is not allowed');}
         $ts=$h['x-webhook-timestamp']??'';$id=$h['x-webhook-id']??'';$sig=$h['x-webhook-signature']??'';
         $now=microtime(true);
         if(!preg_match('/^[0-9]{1,12}$/D',$ts) || $id==='' || strlen($id)>255 || $now-(int)$ts>Env::duration('WEBHOOK_MAX_AGE',300) || (int)$ts-$now>60){throw new ApiError('INVALID_SIGNATURE','missing or stale webhook signature');}
@@ -174,6 +176,7 @@ final class ApiKernel
     {
         $components=[];
         try{
+            Network::cidrs(Env::get('PAYMENT_WEBHOOK_ALLOWED_CIDRS'));
             $this->db->one('SELECT 1 FROM users LIMIT 1');$this->db->one('SELECT 1 FROM biometric_challenges LIMIT 1');
             // Old writers/schema are incompatible with durable effects and token
             // revocation. Check the complete 012-014 shape before serving traffic.

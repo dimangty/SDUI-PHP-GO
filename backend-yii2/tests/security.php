@@ -22,10 +22,29 @@ test('distributed rate limit persists across application instances',function()us
     $bucket='test:'.Ids::uuid();(new RateLimiter($db))->check($bucket,2);(new RateLimiter($db))->check($bucket,2);
     errorCode('RATE_LIMITED',fn()=>(new RateLimiter($db))->check($bucket,2));
 });
+test('invalid webhook CIDR configuration rejects signed requests and readiness',function()use($kernel){
+    putenv('PAYMENT_WEBHOOK_SECRET=security-test-secret');$body=json_encode(['paymentId'=>Ids::uuid(),'status'=>'CAPTURED']);$ts=(string)time();$id=Ids::uuid();
+    $h=['content-type'=>'application/json','x-webhook-timestamp'=>$ts,'x-webhook-id'=>$id,'x-webhook-signature'=>hash_hmac('sha256',$ts.':'.$id.':'.$body,'security-test-secret')];
+    try{
+        foreach(['192.0.2.0/24,203.0.113.0/','203.0.113.0/garbage','::/0garbage'] as $list){
+            putenv('PAYMENT_WEBHOOK_ALLOWED_CIDRS='.$list);
+            $r=$kernel->handle('POST','/api/v1/payments/webhook',$h,$body,'192.0.2.234');
+            same(503,$r['status']);same('WEBHOOK_NOT_CONFIGURED',$r['data']['error']['code']);
+            same(503,$kernel->handle('GET','/health/ready',[],'','192.0.2.234')['status']);
+        }
+    }finally{putenv('PAYMENT_WEBHOOK_ALLOWED_CIDRS');}
+});
 test('forwarded addresses require trusted proxies and IPv4 IPv6 CIDR boundaries',function(){
     truth(Network::contains('203.0.113.1','203.0.113.0/24'));same(false,Network::contains('203.0.114.1','203.0.113.0/24'));
     truth(Network::contains('2001:db8::1','2001:db8::/32'));same(false,Network::contains('2001:db9::1','2001:db8::/32'));
     same('192.0.2.1',Network::client('192.0.2.1',['x-forwarded-for'=>'203.0.113.1']));
+});
+test('trusted BFF rate context cannot replace the transport webhook source',function()use($kernel){
+    $before=getenv('TRUSTED_BFF_IPS');putenv('TRUSTED_BFF_IPS=192.0.2.235');putenv('PAYMENT_WEBHOOK_ALLOWED_CIDRS=203.0.113.1/32');
+    putenv('PAYMENT_WEBHOOK_SECRET=security-test-secret');$body=json_encode(['paymentId'=>Ids::uuid(),'status'=>'CAPTURED']);$ts=(string)time();$id=Ids::uuid();
+    $h=['content-type'=>'application/json','x-webhook-timestamp'=>$ts,'x-webhook-id'=>$id,'x-webhook-signature'=>hash_hmac('sha256',$ts.':'.$id.':'.$body,'security-test-secret'),'x-shop-rate-client-ip'=>'203.0.113.1'];
+    try{same(403,$kernel->handle('POST','/api/v1/payments/webhook',$h,$body,'192.0.2.235')['status']);}
+    finally{putenv('PAYMENT_WEBHOOK_ALLOWED_CIDRS');putenv($before===false?'TRUSTED_BFF_IPS':'TRUSTED_BFF_IPS='.$before);}
 });
 test('avatar rejects script input and excessive decoded pixels before allocation',function()use($db){
     $avatar=new AvatarService($db,new ShopRepository($db));errorCode('INVALID_FILE_TYPE',fn()=>$avatar->normalize('<svg onload="alert(1)"></svg>'));

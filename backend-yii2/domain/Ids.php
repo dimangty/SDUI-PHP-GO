@@ -10,6 +10,12 @@ final class Ids
         $h=bin2hex($b); return substr($h,0,8).'-'.substr($h,8,4).'-'.substr($h,12,4).'-'.substr($h,16,4).'-'.substr($h,20);
     }
     public static function valid(string $id): bool { return (bool)preg_match('/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/iD', $id); }
+    /** Only for an already validated UUID, never opaque identifiers or request bodies. */
+    public static function canonical(string $id): string
+    {
+        if(!self::valid($id)){throw new \InvalidArgumentException('Invalid UUID');}
+        return strtolower($id);
+    }
     public static function opaque(): string { return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '='); }
     public static function timestamp(?string $value): ?string
     {

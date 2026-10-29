@@ -52,6 +52,7 @@ final class PasswordSessionRecovery
     public function recover(string $operation,bool $passwordOutcomeConfirmed=false): void
     {
         if(!Ids::valid($operation)){throw new ApiError('IDENTITY_PROVIDER_ERROR','invalid recovery operation');}
+        $operation=Ids::canonical($operation);
         if($this->db->pdo()->inTransaction()){throw new \LogicException('Recovery must run outside a transaction');}
         $scope='password-session-recovery:'.$operation;
         // Session-level lock serializes recovery without an open SQL transaction
@@ -68,7 +69,10 @@ final class PasswordSessionRecovery
                 $this->db->transaction(function()use($operation,$job){
                     $this->sessions->lockUser($job['user_id']);
                     $this->db->execute("UPDATE password_session_operations SET state='COMPLETE',last_error=NULL,updated_at=clock_timestamp() WHERE id=?",[$operation]);
-                    $this->db->execute('UPDATE users SET sessions_blocked=FALSE WHERE id=?',[$job['user_id']]);
+                    // The active recovery job owns this fence. Ordinary logout
+                    // also advances security_version but creates no newer fence.
+                    // The user lock serializes this predicate with begin().
+                    $this->db->execute("UPDATE users SET sessions_blocked=FALSE WHERE id=? AND NOT EXISTS (SELECT 1 FROM password_session_operations op WHERE op.user_id=users.id AND op.state<>'COMPLETE')",[$job['user_id']]);
                 });
             }catch(\Throwable $e){throw $this->signal($operation,$e);}
         }finally{$this->unlock($scope);}

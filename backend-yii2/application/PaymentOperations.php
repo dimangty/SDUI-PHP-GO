@@ -18,10 +18,18 @@ final class PaymentOperations
     // must scope SQL timeouts as RecoveryService does; this is admission, not cancellation.
     private const RECOVERY_CANDIDATE_SECONDS=30;
     public function __construct(private Database $db,private ShopRepository $repo,private CommerceService $commerce) {}
-    private function lock(string $id,?string $user=null): array
+    private function lock(string $id,?string $user=null,bool $nonblocking=false): array
     {
-        $p=$this->repo->payment($id,$user);$o=$this->commerce->lockOrderPayment($p['order_id']);
-        if($o['payment_id']!==$id){throw new ApiError('INVALID_PAYMENT_STATUS','payment is not linked to order');}
+        $p=$this->repo->payment($id,$user);
+        if($nonblocking){
+            // Recovery probes in the same global order as every financial writer.
+            // NOWAIT rolls the transaction back on contention; never lock payment
+            // first or keep an order lock while skipping a busy payment.
+            $this->db->one('SELECT id FROM orders WHERE id=? FOR UPDATE NOWAIT',[$p['order_id']]);
+            $this->db->one('SELECT id FROM payments WHERE id=? FOR UPDATE NOWAIT',[$p['id']]);
+        }
+        $o=$this->commerce->lockOrderPayment($p['order_id']);
+        if($o['payment_id']!==$p['id']){throw new ApiError('INVALID_PAYMENT_STATUS','payment is not linked to order');}
         return $this->repo->payment($id,$user);
     }
     private function active(string $id): ?array
@@ -115,9 +123,14 @@ final class PaymentOperations
     }
     public function dispatch(string $id,bool $followUp=true): void
     {
-        $claim=$this->db->transaction(function()use($id){
+        $this->dispatchAttempt($id,$followUp,false);
+    }
+    /** false means only pre-HTTP claim contention; no provider call has happened. */
+    private function dispatchAttempt(string $id,bool $followUp,bool $nonblocking): bool
+    {
+        try{$claim=$this->db->transaction(function()use($id,$nonblocking){
             $row=$this->db->required('SELECT * FROM payment_operations WHERE id=?',[$id],'INVALID_PAYMENT_STATUS','operation not found');
-            $p=$this->lock($row['payment_id']);$op=$this->db->one('SELECT * FROM payment_operations WHERE id=? FOR UPDATE',[$id]);
+            $p=$this->lock($row['payment_id'],null,$nonblocking);$op=$this->db->one('SELECT * FROM payment_operations WHERE id=? FOR UPDATE'.($nonblocking?' NOWAIT':''),[$id]);
             if($op['state']!=='READY'){return null;}
             // Capture can win after intent commit but before send claim. This void
             // is provably unsent: supersede it atomically instead of creating a
@@ -129,8 +142,8 @@ final class PaymentOperations
             }
             $token=Ids::uuid();$this->db->execute("UPDATE payment_operations SET state='SENT',lease_token=?,lease_until=clock_timestamp()+?*interval '1 second',sent_at=clock_timestamp(),updated_at=now() WHERE id=?",[$token,self::LEASE_SECONDS,$id]);
             $p['operation_key']=$op['operation_key'];return [$p,$op['kind'],$token];
-        });
-        if($claim===null){return;}[$p,$kind,$token]=$claim;
+        });}catch(\PDOException $e){if($nonblocking && $e->getCode()==='55P03'){return false;}throw $e;}
+        if($claim===null){return true;}[$p,$kind,$token]=$claim;
         // No SQL transaction (or row lock) survives this boundary.
         try{$result=(new PaymentGateway())->call($kind,$p);}
         catch(\Throwable $e){
@@ -159,6 +172,7 @@ final class PaymentOperations
             $this->compensate($this->repo->payment($p['id']));
         });
         if($followUp){$this->dispatchReady($p['id']);}
+        return true;
     }
     private function link(string $payment,string $transaction): bool
     {
@@ -273,12 +287,16 @@ WHERE EXISTS (SELECT 1 FROM payment_operations op WHERE op.payment_id=p.id
              AND EXISTS (SELECT 1 FROM payment_operations a WHERE a.payment_id=p.id AND a.kind='authorize' AND a.sent_at IS NOT NULL)
              AND NOT EXISTS (SELECT 1 FROM payment_operations v WHERE v.payment_id=p.id AND v.kind='void'))))
 ORDER BY p.id LIMIT ?
-SQL,[$limit]):[];$dispatched=0;
+SQL,[min(1000,max(25,$limit))]):[];$dispatched=0;$claimed=0;
         foreach($rows as $row){
             if($deadline!==null && hrtime(true)/1e9+self::RECOVERY_CANDIDATE_SECONDS>$deadline){break;}
-            $this->db->transaction(function()use($row){$p=$this->lock($row['id']);$this->db->execute("UPDATE payment_operations SET state='UNKNOWN',last_error='worker lease expired; do not replay',updated_at=now() WHERE payment_id=? AND state='SENT' AND lease_until<=clock_timestamp()",[$p['id']]);$this->compensate($p);});
-            try{$ready=$this->db->one("SELECT id FROM payment_operations WHERE payment_id=? AND state='READY'",[$row['id']]);if($ready){if($deadline===null){$this->dispatchReady($row['id']);}else{$this->dispatch($ready['id'],false);}$dispatched++;}}
+            try{
+                $this->db->transaction(function()use($row){$p=$this->lock($row['id'],null,true);$this->db->execute("UPDATE payment_operations SET state='UNKNOWN',last_error='worker lease expired; do not replay',updated_at=now() WHERE payment_id=? AND state='SENT' AND lease_until<=clock_timestamp()",[$p['id']]);$this->compensate($p);});
+            }catch(\PDOException $e){if($e->getCode()==='55P03'){continue;}throw $e;}
+            try{$ready=$this->db->one("SELECT id FROM payment_operations WHERE payment_id=? AND state='READY'",[$row['id']]);if($ready){if($deadline===null){$this->dispatchReady($row['id']);}elseif(!$this->dispatchAttempt($ready['id'],false,true)){continue;}$dispatched++;}}
             catch(ApiError $e){if($e->errorCode!=='PAYMENT_GATEWAY_UNAVAILABLE'){throw $e;}}
+            $claimed++;
+            if($claimed>=$limit){break;}
         }
         return ['dispatched'=>$dispatched,'review'=>$includeReview?$this->db->all("SELECT op.id,op.payment_id,op.kind,op.operation_key,op.state,op.last_error,op.sent_at,p.order_id,p.status AS payment_status,p.transaction_id,p.amount,p.cancel_requested_at,p.refund_requested_at FROM payment_operations op JOIN payments p ON p.id=op.payment_id WHERE op.state='UNKNOWN' OR (op.state='ABORTED' AND op.kind='refund' AND op.result->>'outcome'='NO_EFFECT') ORDER BY op.created_at,op.id"):[]];
     }

@@ -143,12 +143,19 @@ def check_auth():
 
 
 def check_webhook():
-    body = json.dumps({"paymentId": str(uuid.uuid4()), "status": "CAPTURED"}, separators=(",", ":"))
+    reset()
+    # Real business services initiate a disposable demo payment; the Nginx/FPM
+    # boundary must reach its financial state machine, not just return NOT_FOUND.
+    order = json.loads(php("$db=new Shop\\infrastructure\\Database(getenv('DATABASE_URL')); $repo=new Shop\\repositories\\ShopRepository($db); $c=new Shop\\application\\CommerceService($db,$repo); $u=Shop\\domain\\Ids::uuid(); $a=Shop\\domain\\Ids::uuid(); $cat=Shop\\domain\\Ids::uuid(); $p=Shop\\domain\\Ids::uuid(); $db->execute(\"INSERT INTO users(id,email,password_hash,full_name,phone) VALUES(?,?,'','Webhook buyer','+79991234567')\",[$u,$u.'@trust.example']); $db->execute(\"INSERT INTO addresses(id,user_id,city,street,house) VALUES(?,?,'X','Y','1')\",[$a,$u]); $db->execute(\"INSERT INTO categories(id,name) VALUES(?,'Webhook')\",[$cat]); $db->execute(\"INSERT INTO products(id,category_id,name,price,stock) VALUES(?,?,'Webhook','10.23',10)\",[$p,$cat]); $c->addCart($u,['productId'=>$p,'quantity'=>1]); $o=$c->createOrder($u,['deliveryAddressId'=>$a,'paymentMethod'=>'CARD']); (new Shop\\application\\PaymentService($db,$repo,$c))->confirm($u,$o['paymentId']); print json_encode($o);"))
+    body = json.dumps({"paymentId": order["paymentId"].upper(), "status": "CAPTURED"}, separators=(",", ":"))
     timestamp, event = str(int(time.time())), str(uuid.uuid4())
     signature = hmac.new(b"trust-live-test-only", (timestamp + ":" + event + ":" + body).encode(), hashlib.sha256).hexdigest()
     headers = {"Content-Type": "application/json", "X-Webhook-Timestamp": timestamp, "X-Webhook-Id": event, "X-Webhook-Signature": signature, "X-Real-IP": "10.248.11.10", "X-Shop-Rate-Client-IP": "10.248.11.10", "X-Forwarded-For": "10.248.11.10"}
     path = "/api/v1/payments/webhook"
-    expect(404, request("client-a", path, headers=headers, body=body))
+    invalid = headers | {"X-Webhook-Signature": "invalid"}
+    expect(401, request("client-a", path, headers=invalid, body=body))
+    expect(204, request("client-a", path, headers=headers, body=body))
+    expect(409, request("client-a", path, headers=headers, body=body))
     for client, target in [("client-b", None), ("untrusted", "http://10.247.249.3:8080")]:
         result = expect(403, request(client, path, target=target, headers=headers, body=body))
         assert json.loads(result[2])["error"]["code"] == "WEBHOOK_SOURCE_DENIED", result
@@ -173,7 +180,12 @@ def check_fpm():
     result = json.loads(compose("exec", "-T", "untrusted", "php", "-r", code))
     assert result == {"bytes": 0, "timeout": False}, result
     assert buckets() == [], buckets()
-    assert "Connection disallowed" in compose("logs", "yii2")
+    # The worker closes the socket before its stderr reaches the master's log.
+    deadline = time.monotonic() + 3
+    while "Connection disallowed" not in compose("logs", "yii2"):
+        if time.monotonic() >= deadline:
+            raise AssertionError("FPM denial log not observed after transport rejection")
+        time.sleep(.05)
     print("PASS untrusted FastCGI peer cannot forge REMOTE_ADDR or rate context")
 
 

@@ -7,6 +7,10 @@ SCHEDULER_TEST_IMAGE ?= shopkmp-task4-scheduler-tests
 PHP_TEST_IMAGE ?= shopkmp-php-tests
 E2E_PROJECT ?= shopkmp-migrated-e2e
 E2E_PORT ?= 58095
+SECURITY_PLATFORM ?= linux/amd64
+SECURITY_OUTPUT ?= deploy/evidence/security
+ARTIFACT_RECEIPT ?= deploy/evidence/$(E2E_PROJECT)-artifacts.json
+VERIFY_EVIDENCE_DIR ?= deploy/evidence
 COMPOSE = python3 scripts/compose.py --env "$(ENV_FILE)"
 PROD_COMPOSE = python3 scripts/compose.py --env "$(PROD_ENV_FILE)" --prod
 
@@ -38,19 +42,26 @@ integration-up:
 	EDGE_PORT=$(E2E_PORT) python3 scripts/compose.py --env .env.example --project $(E2E_PROJECT) stop edge sdui yii2-http maintenance reconcile payment-recovery yii2
 	# Prepare ingress/FPM proxy containers before the full dependency startup.
 	EDGE_PORT=$(E2E_PORT) python3 scripts/compose.py --env .env.example --project $(E2E_PROJECT) up --no-start --no-deps yii2-http edge
-	EDGE_PORT=$(E2E_PORT) python3 scripts/compose.py --env .env.example --project $(E2E_PROJECT) up -d --build --wait --wait-timeout $(WAIT_TIMEOUT)
+	EDGE_PORT=$(E2E_PORT) python3 scripts/backend_artifacts.py --env .env.example --project $(E2E_PROJECT) --receipt "$(ARTIFACT_RECEIPT)" --phase build -- python3 scripts/compose.py --env .env.example --project $(E2E_PROJECT) up -d --build --wait --wait-timeout $(WAIT_TIMEOUT)
 	EDGE_PORT=$(E2E_PORT) python3 scripts/compose.py --env .env.example --project $(E2E_PROJECT) run --rm --no-deps seed
 	EDGE_PORT=$(E2E_PORT) python3 scripts/compose.py --env .env.example --project $(E2E_PROJECT) exec -T yii2 php yii maintenance/reindex
 
 integration-check:
-	EDGE_PORT=$(E2E_PORT) python3 scripts/verify.py --env .env.example --project $(E2E_PROJECT) --url http://127.0.0.1:$(E2E_PORT) --disposable
+	EDGE_PORT=$(E2E_PORT) python3 scripts/backend_artifacts.py --env .env.example --project $(E2E_PROJECT) --receipt "$(ARTIFACT_RECEIPT)" --phase test -- python3 scripts/verify.py --env .env.example --project $(E2E_PROJECT) --url http://127.0.0.1:$(E2E_PORT) --disposable --evidence-dir "$(VERIFY_EVIDENCE_DIR)"
 
 .PHONY: test-backend-fixes test-trust-live
 test-backend-fixes:
 	python3 scripts/backend_fixes.py --env .env.example --project $(E2E_PROJECT) --disposable
 
 test-trust-live:
-	python3 backend-yii2/tests/trust-live/run.py
+	python3 scripts/backend_trust_check.py --env "$(ENV_FILE)" --project "$(E2E_PROJECT)"
+
+.PHONY: security-backend test-security-policy
+test-security-policy:
+	python3 scripts/test_backend_security.py
+
+security-backend: test-security-policy
+	python3 scripts/backend_security.py --env "$(ENV_FILE)" --project "$(E2E_PROJECT)" --platform "$(SECURITY_PLATFORM)" --output "$(SECURITY_OUTPUT)" --receipt "$(ARTIFACT_RECEIPT)"
 
 test-php:
 	docker build -t "$(PHP_TEST_IMAGE)" backend-yii2

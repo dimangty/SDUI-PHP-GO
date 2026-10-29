@@ -32,7 +32,7 @@ services:
       fpm: {ipv4_address: 10.246.249.4}
       database:
   yii2-http:
-    image: nginx:1.27-alpine
+    image: nginx:1.30.6-alpine3.24-slim@sha256:dede8895648b461178c3bc604f7eed4423efe5220b2c4d839f5eb3d34ac3f8f7
     cap_drop: [NET_RAW]
     environment:
       EDGE_IP: 10.247.249.2
@@ -51,7 +51,7 @@ services:
     networks:
       ingress: {ipv4_address: 10.247.249.5, aliases: [sdui]}
   edge:
-    image: nginx:1.27-alpine
+    image: nginx:1.30.6-alpine3.24-slim@sha256:dede8895648b461178c3bc604f7eed4423efe5220b2c4d839f5eb3d34ac3f8f7
     cap_drop: [NET_RAW]
     volumes:
       - ./edge.conf:/etc/nginx/conf.d/default.conf:ro

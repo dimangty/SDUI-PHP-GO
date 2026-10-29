@@ -82,7 +82,7 @@ class FocusedRunner(unittest.TestCase):
     def test_focused_suites_get_child_only_gateway_configuration(self):
         calls=self.invoke()
         suites=[(a,k) for a,k in calls if 'run' in a]
-        self.assertEqual(['tests/payment-migration.php','tests/payments.php','tests/payment-http.php','tests/recovery.php','tests/recovery-scheduling.php'],[a[-1] for a,k in suites])
+        self.assertEqual(['tests/payment-migration.php','tests/payments.php','tests/payment-http.php','tests/uuid_identity.php','tests/uuid_recovery.php','tests/recovery.php','tests/recovery-scheduling.php'],[a[-1] for a,k in suites])
         for argv,kwargs in suites:
             self.assertIn('PAYMENT_GATEWAY_URL=http://payment-fixture-gateway:8080',argv)
             self.assertEqual(os.environ.get('PAYMENT_GATEWAY_URL'),kwargs['env'].get('PAYMENT_GATEWAY_URL'))

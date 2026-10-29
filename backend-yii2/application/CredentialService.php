@@ -131,8 +131,8 @@ final class CredentialService
             $owner=$this->db->required('SELECT user_id FROM device_biometrics WHERE id=?',[$id],'BIOMETRIC_NOT_SET','biometric credential not found');$this->sessions->lockUser($owner['user_id']);
             $r=$this->db->required('SELECT *,encode(public_key,\'hex\') AS key_hex FROM device_biometrics WHERE id=? FOR UPDATE',[$id],'BIOMETRIC_NOT_SET','biometric login is not enabled for this credential');$this->activeLock($r,'BIOMETRIC');
             $c=$this->db->one('SELECT * FROM biometric_challenges WHERE challenge=? FOR UPDATE',[$nonce]);
-            if(!$c || $c['credential_id']!==$id || $c['used'] || strtotime($c['expires_at'])<=time()){
-                if($c && $c['credential_id']===$id){$this->db->execute('DELETE FROM biometric_challenges WHERE challenge=?',[$nonce]);}
+            if(!$c || $c['credential_id']!==$r['id'] || $c['used'] || strtotime($c['expires_at'])<=time()){
+                if($c && $c['credential_id']===$r['id']){$this->db->execute('DELETE FROM biometric_challenges WHERE challenge=?',[$nonce]);}
                 return new ApiError('CHALLENGE_EXPIRED','biometric challenge expired or was already used');
             }
             $sig=$this->base64($input['signature']??'');$der=hex2bin($r['key_hex']);$valid=false;

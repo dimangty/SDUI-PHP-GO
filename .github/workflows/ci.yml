@@ -82,9 +82,19 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
   full-stack-integration:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux/amd64
+            arch: amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
     needs: [go, php, contracts, images]
-    timeout-minutes: 60
+    timeout-minutes: 120
     env:
       E2E_PROJECT: shopkmp-migrated-e2e
       E2E_PORT: '58095'
@@ -99,9 +109,19 @@ jobs:
       - name: Configure OpenSearch host requirement
         run: sudo sysctl -w vm.max_map_count=262144
       - name: Start the root Yii2 and BFF stack
+        timeout-minutes: 40
         run: make integration-up
       - name: Verify the shared edge, PHP business suites, BFF and ops
+        timeout-minutes: 40
         run: make integration-check
+      - name: Verify live Nginx/FPM trusted peers and signed webhook source boundary
+        timeout-minutes: 5
+        run: make test-trust-live ENV_FILE=.env.example
+      - name: Backend security policy on the exact tested runtime artifacts
+        timeout-minutes: 18
+        # No runtime rebuild or tag re-resolution between integration and scan.
+        # Findings and scanner/report/DB errors all fail this job.
+        run: make security-backend ENV_FILE=.env.example SECURITY_PLATFORM=${{ matrix.platform }} SECURITY_OUTPUT=deploy/evidence/security-${{ matrix.arch }}
       - name: Print service logs on failure
         if: failure()
         run: python3 scripts/compose.py --env .env.example --project "$E2E_PROJECT" --verify logs --no-color --tail 300
@@ -109,12 +129,36 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: full-stack-integration-evidence
-          path: deploy/evidence/
+          name: full-stack-integration-evidence-${{ matrix.arch }}
+          path: |
+            deploy/evidence/
+            !deploy/evidence/security-*/**
           if-no-files-found: ignore
+      - name: Upload raw security reports, SBOM, provenance and policy result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-security-${{ matrix.arch }}
+          path: |
+            deploy/evidence/security-${{ matrix.arch }}/*.json
+            deploy/evidence/security-${{ matrix.arch }}/*.stdout
+            deploy/evidence/security-${{ matrix.arch }}/*.stderr
+            deploy/evidence/security-${{ matrix.arch }}/cache/db/metadata.json
+            deploy/evidence/security-${{ matrix.arch }}/cache/java-db/metadata.json
+          if-no-files-found: error
       - name: Stop the disposable stack
+        timeout-minutes: 5
         if: always()
         run: python3 scripts/compose.py --env .env.example --project "$E2E_PROJECT" --verify down --volumes --remove-orphans
+
+  backend-security:
+    name: backend-security
+    if: always()
+    needs: [full-stack-integration]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require functional and artifact security checks on both architectures
+        run: test '${{ needs.full-stack-integration.result }}' = success
 
   android:
     runs-on: ubuntu-latest

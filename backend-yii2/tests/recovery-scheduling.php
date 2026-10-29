@@ -310,6 +310,78 @@ test('F3 real maintenance scheduler retains cleanup progress and queues expiry w
         schedulingCleanup($db,$schema);
     }
 });
+test('R3 round2 two workers progress past row-busy first expired SENT without HTTP replay',function(){
+    [$db,$schema]=schedulingSchema();$blocker=paymentSchemaConnection($schema);
+    try{
+        $orders=[];
+        for($i=0;$i<2;$i++){
+            [$u,$o]=paymentFixture('CARD','AUTHORIZED',[],$db);paymentServices($db)[3]->confirm($u,$o['paymentId']);$orders[]=$o;
+            $db->execute("UPDATE payment_operations SET state='SENT',lease_until=clock_timestamp()-interval '1 second' WHERE payment_id=?",[$o['paymentId']]);
+        }
+        usort($orders,fn($a,$b)=>strcmp($a['paymentId'],$b['paymentId']));[$a,$b]=$orders;
+        $blocker->pdo()->beginTransaction();$blocker->one('SELECT id FROM orders WHERE id=? FOR UPDATE',[$a['id']]);
+        $observations=[];
+        for($scan=0;$scan<2;$scan++){
+            $env=getenv();$env['PGOPTIONS']='-c search_path='.$schema;$workers=[];$start=hrtime(true);
+            for($i=0;$i<2;$i++){
+                $process=proc_open([PHP_BINARY,'/app/yii','maintenance/recover'],[0=>['file','/dev/null','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,null,$env);$workers[]=[$process,$pipes];
+            }
+            $results=[];
+            foreach($workers as [$process,$pipes]){
+                $output=stream_get_contents($pipes[1]);$errors=stream_get_contents($pipes[2]);foreach($pipes as $pipe){fclose($pipe);}
+                $results[]=[proc_close($process),$output,$errors];
+            }
+            truth((hrtime(true)-$start)/1e9<4);
+            $observations[]=['workers'=>$results,'a'=>$db->one('SELECT state FROM payment_operations WHERE payment_id=?',[$a['paymentId']])['state'],
+                'b'=>$db->one('SELECT state FROM payment_operations WHERE payment_id=?',[$b['paymentId']])['state']];
+        }
+        print 'R3 contention observations: '.json_encode($observations,JSON_THROW_ON_ERROR)."\n";
+        foreach($observations as $observation){
+            same('UNKNOWN',$observation['b']);same('SENT',$observation['a']);
+            foreach($observation['workers'] as [$exit,$output,$errors]){same(0,$exit);same('',$errors);same(0,json_decode($output,true,32,JSON_THROW_ON_ERROR)['paymentsDispatched']);}
+        }
+        $blocker->pdo()->rollBack();schedulingWorker($db)->run();
+        same('UNKNOWN',$db->one('SELECT state FROM payment_operations WHERE payment_id=?',[$a['paymentId']])['state']);
+        foreach($orders as $o){same(1,count(journal($o['paymentId'])));same(1,journal($o['paymentId'])[0]['attempts']);same('AUTHORIZED',$db->one('SELECT status FROM payments WHERE id=?',[$o['paymentId']])['status']);}
+    }finally{if($blocker->pdo()->inTransaction()){$blocker->pdo()->rollBack();}schedulingCleanup($db,$schema);}
+});
+/** Real PDO statement observer: every SQL result still comes from PostgreSQL.
+ * Installs a second-connection lock precisely after preparation commits. */
+class RecoveryClaimBarrier extends PDOStatement {
+    protected function __construct(private Closure $barrier) {}
+    public function execute(?array $params=null): bool {
+        $result=parent::execute($params);
+        if($this->queryString==="SELECT id FROM payment_operations WHERE payment_id=? AND state='READY'"){($this->barrier)();}
+        return $result;
+    }
+}
+test('R3 round2 READY claim skips an order taken after preparation and progresses another candidate',function(){
+    [$db,$schema]=schedulingSchema();$blocker=paymentSchemaConnection($schema);$armed=true;
+    try{
+        $orders=[];for($i=0;$i<2;$i++){[, $o]=schedulingPayment($db);$orders[]=$o;}
+        usort($orders,fn($a,$b)=>strcmp($a['paymentId'],$b['paymentId']));[$a,$b]=$orders;
+        $db->pdo()->setAttribute(PDO::ATTR_STATEMENT_CLASS,[RecoveryClaimBarrier::class,[function()use($db,$blocker,$a,&$armed){
+            if(!$armed){return;}$armed=false;same(false,$db->pdo()->inTransaction());
+            $blocker->pdo()->beginTransaction();$blocker->one('SELECT id FROM orders WHERE id=? FOR UPDATE',[$a['id']]);
+        }]]);
+        same(1,schedulingWorker($db)->run()['paymentsDispatched']);same(false,$armed);
+        same([],journal($a['paymentId']));same(1,journal($b['paymentId'])[0]['attempts']);
+        same('READY',$db->one('SELECT state FROM payment_operations WHERE payment_id=?',[$a['paymentId']])['state']);
+        $blocker->pdo()->rollBack();same(1,schedulingWorker($db)->run()['paymentsDispatched']);
+        same(1,journal($a['paymentId'])[0]['attempts']);same(0,journal($a['paymentId'])[0]['in_transaction']);
+    }finally{if($blocker->pdo()->inTransaction()){$blocker->pdo()->rollBack();}schedulingCleanup($db,$schema);}
+});
+test('R3 round2 unexpected SQL errors roll back and propagate rather than become successful busy scans',function(){
+    [$db,$schema]=schedulingSchema();
+    try{
+        [$u,$o]=paymentFixture('CARD','AUTHORIZED',[],$db);paymentServices($db)[3]->confirm($u,$o['paymentId']);
+        $db->execute("UPDATE payment_operations SET state='SENT',lease_until=clock_timestamp()-interval '1 second' WHERE payment_id=?",[$o['paymentId']]);
+        [$trigger,$function]=paymentFailureTrigger($db,$o['paymentId'],'UNKNOWN');
+        try{try{schedulingWorker($db)->run();throw new RuntimeException('SQL failure hidden');}catch(PDOException $e){truth(str_contains($e->getMessage(),'injected payment commit'));}}
+        finally{dropPaymentTrigger($db,$trigger,$function);}
+        same('SENT',$db->one('SELECT state FROM payment_operations WHERE payment_id=?',[$o['paymentId']])['state']);same(1,journal($o['paymentId'])[0]['attempts']);
+    }finally{schedulingCleanup($db,$schema);}
+});
 $filter=Env::get('RECOVERY_TEST_FILTER');
 if($filter!==''){$tests=array_filter($tests,fn($name)=>str_contains($name,$filter),ARRAY_FILTER_USE_KEY);if(!$tests){throw new RuntimeException('No matching recovery tests');}}
 runTests();

@@ -41,8 +41,28 @@ if (PHP_SAPI === 'cli-server') {
         header('Content-Type: application/json');print json_encode(['access_token'=>$jwt,'refresh_token'=>'provider-secret-not-for-storage','expires_in'=>300]);return;
     }
     $fixtureUser=(string)getenv('SESSION_FIXTURE_USER');
-    if(str_starts_with($mode,'grant-') && str_starts_with($path,'/admin/') && ($_SERVER['HTTP_AUTHORIZATION']??'')!=='Bearer service-token-not-for-logs'){http_response_code(401);return;}
     if(str_starts_with($path,'/admin/') && $fixtureUser!=='' && !str_contains($path,'/users/'.$fixtureUser.'/')){http_response_code(409);return;}
+    if($mode==='uuid-barrier' && str_ends_with($path,'/logout')){
+        require dirname(__DIR__).'/vendor/autoload.php';
+        $db=new \Shop\infrastructure\Database(getenv('DATABASE_URL'));
+        $db->execute("UPDATE uuid_recovery_barrier SET entered=true,calls=calls+1,open_transactions=(SELECT count(*) FROM pg_stat_activity WHERE application_name=? AND xact_start IS NOT NULL) WHERE user_id=?",['uuid-recovery-'.$fixtureUser,$fixtureUser]);
+        $deadline=microtime(true)+8;
+        while(!$db->one('SELECT released FROM uuid_recovery_barrier WHERE user_id=?',[$fixtureUser])['released']){
+            if(microtime(true)>$deadline){http_response_code(503);return;}usleep(10000);
+        }
+    }
+    if($mode==='next-generation' && str_ends_with($path,'/logout')){
+        require dirname(__DIR__).'/vendor/autoload.php';
+        $db=new \Shop\infrastructure\Database(getenv('DATABASE_URL'));
+        // An independent real PostgreSQL connection makes the next transition
+        // while the old recovery is outside SQL, awaiting its HTTP response.
+        $db->transaction(function()use($db,$fixtureUser){
+            $db->execute("UPDATE password_session_operations SET state='COMPLETE' WHERE user_id=? AND state='REVOKE_PENDING'",[$fixtureUser]);
+            $db->execute('UPDATE users SET session_security_version=session_security_version+1,sessions_blocked=true WHERE id=?',[$fixtureUser]);
+            $db->execute("INSERT INTO password_session_operations(id,user_id,security_version,state) SELECT ?,id,session_security_version,'RESET_PENDING' FROM users WHERE id=?",[\Shop\domain\Ids::uuid(),$fixtureUser]);
+        });
+    }
+    if(str_starts_with($mode,'grant-') && str_starts_with($path,'/admin/') && ($_SERVER['HTTP_AUTHORIZATION']??'')!=='Bearer service-token-not-for-logs'){http_response_code(401);return;}
     if(str_contains($path,'reset-password') && in_array($mode,['probe','recovery-lock-probe'],true)){
         require dirname(__DIR__).'/vendor/autoload.php';
         $db=new \Shop\infrastructure\Database(getenv('DATABASE_URL'));$repo=new \Shop\repositories\ShopRepository($db);$s=new \Shop\application\SessionService($db,$repo);

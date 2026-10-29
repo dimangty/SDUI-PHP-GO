@@ -72,6 +72,7 @@ final class RecoveryService
         if(!$confirmed || !Ids::valid($operation) || !preg_match('/^[A-Z][A-Z0-9_]{1,31}-[1-9][0-9]{0,11}$/D',$evidence)){
             throw new ApiError('BAD_REQUEST','explicit independent outcome confirmation and an operator ticket reference are required');
         }
+        $operation=Ids::canonical($operation);
         if($this->db->pdo()->inTransaction()){throw new \LogicException('Recovery must run outside a transaction');}
         $scope='password-session-recovery:'.$operation;
         if(!$this->db->one('SELECT pg_try_advisory_lock(hashtextextended(?,0)) AS acquired',[$scope])['acquired']){throw new ApiError('IDENTITY_PROVIDER_UNAVAILABLE','session recovery is already running');}
