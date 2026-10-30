@@ -103,7 +103,7 @@ test('card Unicode completeness boundaries null image full detail and pagination
 test('product and order snapshot mappings perform zero native PDO executions',function()use($db,$repo){readFixture(1,function($u,$c,$ids,$orders)use($db,$repo){
     $product=$repo->product($ids[0]);$order=$db->one('SELECT * FROM orders WHERE id=?',[$orders[0]]);$items=$db->all('SELECT * FROM order_items WHERE order_id=? ORDER BY id',[$orders[0]]);
     ReadCountingStatement::$executions=0;
-    $dto=$repo->productDto($product,['first','tie','late']);$snapshot=$repo->orderDto($order,$items);
+    $dto=\Shop\repositories\ProductDtoMapper::map($product,['first','tie','late']);$snapshot=\Shop\repositories\OrderDtoMapper::map($order,$items);
     same(0,ReadCountingStatement::$executions);same(['first','tie','late'],$dto['imageUrls']);same(['Snapshot one','Snapshot two'],array_column($snapshot['items'],'productName'));
 });});
 test('OpenSearch batch rehydration preserves rank current values inactive exclusion and projection',function()use($db,$catalog){readFixture(20,function($u,$c,$ids)use($db,$catalog){

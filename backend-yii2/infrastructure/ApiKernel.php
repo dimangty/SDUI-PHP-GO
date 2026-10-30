@@ -96,7 +96,14 @@ final class ApiKernel
             }
             return $this->result($status,$value,$outHeaders);
         }catch(\Throwable $e){
-            if(!$e instanceof ApiError){error_log('Request '.$trace.' failed: '.get_class($e).' '.$e->getMessage());$e=$e instanceof \PDOException?new ApiError('DATABASE_UNAVAILABLE','database operation failed'):new ApiError('INTERNAL_ERROR','internal server error');}
+            if(!$e instanceof ApiError){
+                $database=$e instanceof \PDOException;
+                $state=$database && preg_match('/^[0-9A-Z]{5}$/D',(string)$e->getCode())?(string)$e->getCode():'unknown';
+                // Native driver details can contain SQL arguments/PII; caller
+                // correlation IDs can contain secrets even when syntactically valid.
+                error_log('Request failed: '.($database?'database SQLSTATE='.$state:'unexpected'));
+                $e=$database?new ApiError('DATABASE_UNAVAILABLE','database operation failed'):new ApiError('INTERNAL_ERROR','internal server error');
+            }
             $error=['code'=>$e->errorCode,'message'=>$e->getMessage(),'traceId'=>$trace];if($e->details!==[]){$error['details']=$e->details;}
             if($e->status()===429){$outHeaders['retry-after']=(string)max(1,(int)ceil(Env::duration('RATE_LIMIT_WINDOW',60)));}
             return $this->result($e->status(),['error'=>$error],$outHeaders);
@@ -199,7 +206,7 @@ final class ApiKernel
             if(Env::get('OPENSEARCH_URL')!==''){(new OpenSearch($this->db,new ShopRepository($this->db)))->ready();$components['opensearch']='up';}
             if(Env::production() && (Env::get('PAYMENT_GATEWAY_URL')==='' || Env::get('PAYMENT_GATEWAY_API_KEY')==='' || Env::get('PAYMENT_WEBHOOK_SECRET')==='' || Env::get('PAYMENT_WEBHOOK_ALLOWED_CIDRS')==='')){throw new \RuntimeException('Production payment configuration missing');}
             return $this->result(200,['status'=>'ok','components'=>$components,'capabilities'=>['catalog-cards-v1']],$headers);
-        }catch(\Throwable $e){error_log('Readiness: '.$e->getMessage());$components['dependency']='down';return $this->result(503,['status'=>'unavailable','components'=>$components],$headers);}
+        }catch(\Throwable){error_log('Readiness dependency unavailable');$components['dependency']='down';return $this->result(503,['status'=>'unavailable','components'=>$components],$headers);}
     }
     private function media(string $path,array $headers): array
     {

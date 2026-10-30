@@ -23,5 +23,5 @@
   },
   "autoload": {"psr-4": {"Shop\\": ""}},
   "config": {"allow-plugins": {"yiisoft/yii2-composer": true}, "sort-packages": true},
-  "scripts": {"test": "php tests/run.php", "test:integration": "php tests/integration.php", "test:all": "php tests/all.php", "lint": "php tests/lint.php"}
+  "scripts": {"test": ["@php tests/run.php", "@php tests/round4_transactions.php", "@php tests/round4_search_query.php", "@php tests/round4_inventory_query.php"], "test:integration": "php tests/integration.php", "test:all": "php tests/all.php", "lint": "php tests/lint.php"}
 }

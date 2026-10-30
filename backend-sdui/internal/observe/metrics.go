@@ -12,6 +12,7 @@ import (
 // releases the recorder lock before serialization or a slow metrics consumer.
 func (r *Recorder) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	r.mu.RLock()
+	tracing := r.tracing
 	snapshot := make(map[key]metric, len(r.values))
 	keys := make([]key, 0, len(r.values))
 	for k, m := range r.values {
@@ -26,6 +27,7 @@ func (r *Recorder) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 		return cmp.Compare(a.operation, b.operation)
 	})
 	var out bytes.Buffer
+	fmt.Fprintf(&out, "# TYPE sdui_trace_export_failures_total counter\nsdui_trace_export_failures_total %d\n", tracing.ExportFailures())
 	for _, k := range keys {
 		m := snapshot[k]
 		labels := fmt.Sprintf(`kind=%q,operation=%q`, k.kind, k.operation)

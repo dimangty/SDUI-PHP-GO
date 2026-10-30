@@ -32,6 +32,16 @@ final class MaintenanceController extends \yii\console\Controller
         $db=new Database(Env::get('DATABASE_URL'));$count=(new OpenSearch($db,new ShopRepository($db)))->reindex();
         $this->stdout("SQL products reconciled: $count\n");return 0;
     }
+    public function actionSearchInventory(int $limit=100000): int
+    {
+        $db=new Database(Env::get('DATABASE_URL'));
+        $this->stdout(json_encode((new OpenSearch($db,new ShopRepository($db)))->inventory($limit),JSON_THROW_ON_ERROR)."\n");return 0;
+    }
+    public function actionSearchStage(string $target,int $limit=100000): int
+    {
+        $db=new Database(Env::get('DATABASE_URL'));
+        $this->stdout(json_encode((new OpenSearch($db,new ShopRepository($db)))->stage($target,$limit),JSON_THROW_ON_ERROR)."\n");return 0;
+    }
     public function actionPayments(): int
     {
         $db=new Database(Env::get('DATABASE_URL'));$repo=new ShopRepository($db);

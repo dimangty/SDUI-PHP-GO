@@ -2,15 +2,114 @@ package runtime
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"shopkmp/backend-sdui/internal/observe"
 )
+
+// Exercise the real Run composition: a unit Recorder test alone cannot catch
+// forgetting to attach tracing to the protected operational listener.
+func TestRunExportsCollectorFailuresWithoutChangingReadinessOrBusinessResponse(t *testing.T) {
+	var collectorCalls atomic.Uint64
+	collector := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		collectorCalls.Add(1)
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "PRIVATE-collector-error")
+	}))
+	defer collector.Close()
+	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"status":"ok","capabilities":["catalog-cards-v1"]}`)
+	}))
+	defer up.Close()
+	address := func() string {
+		t.Helper()
+		l, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer l.Close()
+		return l.Addr().String()
+	}
+	cfg := Defaults()
+	cfg.ListenAddr, cfg.AdminAddr, cfg.Yii.Origin = address(), address(), up.URL
+	cfg.Tracing.Enabled, cfg.Tracing.Endpoint, cfg.Tracing.SampleRatio = true, collector.URL+"/PRIVATE", 1
+	cfg.Tracing.BatchTimeout = time.Millisecond
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- Run(ctx, cfg) }()
+	defer func() {
+		cancel()
+		select {
+		case err := <-done:
+			if err != nil {
+				t.Error(err)
+			}
+		case <-time.After(3 * time.Second):
+			t.Error("runtime did not drain")
+		}
+	}()
+	client := &http.Client{Timeout: time.Second}
+	defer client.CloseIdleConnections()
+	get := func(origin, path string) (int, string, error) {
+		r, err := client.Get("http://" + origin + path)
+		if err != nil {
+			return 0, "", err
+		}
+		defer r.Body.Close()
+		body, err := io.ReadAll(r.Body)
+		return r.StatusCode, string(body), err
+	}
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		if code, _, err := get(cfg.AdminAddr, "/health/live"); err == nil && code == 200 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("runtime did not listen")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if code, _, err := get(cfg.ListenAddr, "/api/v1/screens/cart"); err != nil || code != 401 {
+		t.Fatalf("business error contract changed: %d %v", code, err)
+	}
+	for {
+		_, body, err := get(cfg.AdminAddr, "/metrics")
+		if err != nil || strings.Contains(body, "PRIVATE") || strings.Contains(body, collector.URL) {
+			t.Fatalf("unsafe/unavailable metrics: %v", err)
+		}
+		var failures uint64
+		for _, line := range strings.Split(body, "\n") {
+			if strings.HasPrefix(line, "sdui_trace_export_failures_total ") {
+				if _, err := fmt.Sscanf(line, "sdui_trace_export_failures_total %d", &failures); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		// Batch timing may split the server/build spans into multiple exports.
+		// Every observed failed collector call must be counted exactly once.
+		if failures > 0 && failures == collectorCalls.Load() {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("runtime exporter failure not visible: %s", body)
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if code, _, err := get(cfg.AdminAddr, "/health/ready"); err != nil || code != 200 {
+		t.Fatalf("collector failure affected readiness: %d %v", code, err)
+	}
+	if code, _, err := get(cfg.ListenAddr, "/metrics"); err != nil || code != 404 {
+		t.Fatalf("metrics escaped to public listener: %d %v", code, err)
+	}
+}
 
 func TestTraceOperatorEnvironment(t *testing.T) {
 	t.Setenv("YII_ORIGIN", "http://127.0.0.1:58088")

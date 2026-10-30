@@ -18,8 +18,8 @@ final class SocketUpstream {
                 while(($line=fgets($connection))!==false && trim($line)!==''){
                     if(str_contains($line,':')){[$name,$value]=explode(':',$line,2);$headers[strtolower($name)]=trim($value);}
                 }
-                $remaining=(int)($headers['content-length']??0);while($remaining>0){$chunk=fread($connection,$remaining);if($chunk===false || $chunk===''){break;}$remaining-=strlen($chunk);}
-                $response($connection,$headers,$first);fclose($connection);
+                $body='';$remaining=(int)($headers['content-length']??0);while($remaining>0){$chunk=fread($connection,$remaining);if($chunk===false || $chunk===''){break;}$body.=$chunk;$remaining-=strlen($chunk);}
+                $response($connection,$headers,$first,$body);fclose($connection);
             }
             fwrite($child,(string)$attempts);fclose($child);fclose($listener);exit(0);
         }

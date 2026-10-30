@@ -2,13 +2,13 @@
 declare(strict_types=1);
 namespace Shop\repositories;
 
-use Shop\domain\{ApiError,Money,Rules};
+use Shop\domain\{ApiError,Ids,Money,Rules};
 use Shop\infrastructure\Database;
 
 /** Parent pagination always precedes the single ordered image load. */
 final class CatalogReadRepository
 {
-    public function __construct(private Database $db,private ShopRepository $repo) {}
+    public function __construct(private Database $db) {}
     public static function projected(array $query): bool
     {
         if(!array_key_exists('projection',$query)){return false;}
@@ -28,14 +28,32 @@ final class CatalogReadRepository
     public function loadDtos(array $rows,bool $card=false): array
     {
         $images=$this->images(array_column($rows,'id'),$card);
-        return array_map(fn($row)=>$this->repo->productDto($row,$images[$row['id']]??[],$card),$rows);
+        return array_map(static fn(array $row): array=>ProductDtoMapper::map($row,$images[$row['id']]??[],$card),$rows);
     }
-    public function byIds(array $ids,bool $card=false): array
+    public function byIds(array $ids, bool $card = false): array
     {
-        if(!$ids){return [];}$ids=array_values(array_unique($ids));$marks=implode(',',array_fill(0,count($ids),'?'));
-        $rows=$this->db->all('SELECT '.$this->columns($card).' FROM products p WHERE p.is_active AND p.id IN ('.$marks.')',$ids);
-        $mapped=array_column($this->loadDtos($rows,$card),null,'id');$ordered=[];
-        foreach($ids as $id){if(isset($mapped[$id])){$ordered[]=$mapped[$id];}}return $ordered;
+        if (!$ids) {
+            return [];
+        }
+        $canonical = [];
+        foreach ($ids as $id) {
+            if (!is_string($id) || !Ids::valid($id)) {
+                throw new \UnexpectedValueException('Invalid catalog upstream identity');
+            }
+            $canonical[Ids::canonical($id)] = true;
+        }
+        // PHP keeps insertion order: first hit wins, independent of UUID spelling.
+        $ids = array_keys($canonical);
+        $marks = implode(',', array_fill(0, count($ids), '?'));
+        $rows = $this->db->all('SELECT '.$this->columns($card).' FROM products p WHERE p.is_active AND p.id IN ('.$marks.')', $ids);
+        $mapped = array_column($this->loadDtos($rows, $card), null, 'id');
+        $ordered = [];
+        foreach ($ids as $id) {
+            if (isset($mapped[$id])) {
+                $ordered[] = $mapped[$id];
+            }
+        }
+        return $ordered;
     }
     public function page(string $query,string $category,string $sort,array $prices,int $page,int $size,bool $card): array
     {

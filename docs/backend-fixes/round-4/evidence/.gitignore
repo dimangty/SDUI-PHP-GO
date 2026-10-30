@@ -1,0 +1,6 @@
+# Retain only the bounded portable evidence package, not local caches/binaries.
+*
+!.gitignore
+!README.md
+!INDEX.json
+!round4-evidence.zip

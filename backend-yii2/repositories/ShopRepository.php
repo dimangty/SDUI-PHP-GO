@@ -17,12 +17,6 @@ final class ShopRepository
     {
         return $this->db->required('SELECT p.*, (SELECT count(*) FROM reviews r WHERE r.product_id=p.id) AS reviews_count FROM products p WHERE p.id=?'.($includeInactive?'':' AND p.is_active').($lock?' FOR UPDATE OF p':''),[$id],'PRODUCT_NOT_FOUND','product not found');
     }
-    /** Pure mapping; images are preloaded URL strings in sort_order,id order. */
-    public function productDto(array $p,array $images,bool $card=false): array
-    {
-        $dto=['id'=>$p['id'],'categoryId'=>$p['category_id'],'name'=>$p['name'],'price'=>Money::format(Money::parse($p['price'])),'discountPrice'=>$p['discount_price']===null?null:Money::format(Money::parse($p['discount_price'])),'stock'=>$p['stock'],'rating'=>$p['rating']===null?null:(float)$p['rating'],'isActive'=>$p['is_active'],'reviewsCount'=>$p['reviews_count']];
-        return $dto+($card?['imageUrl'=>$images[0]??null,'descriptionSnippet'=>mb_substr($p['description'],0,257,'UTF-8'),'descriptionComplete'=>$p['description_complete']??mb_strlen($p['description'],'UTF-8')<=257]:['description'=>$p['description'],'imageUrls'=>$images]);
-    }
     public function lockCart(string $user): void
     {
         // All cart writers and checkout acquire the parent before the aggregate/address.
@@ -47,13 +41,7 @@ final class ShopRepository
     }
     public function order(string $id,?string $user=null): array
     {
-        return (new OrderReadRepository($this->db,$this))->order($id,$user);
-    }
-    /** Pure snapshot mapping; preloaded item rows retain their original id order. */
-    public function orderDto(array $r,array $preloadedItems): array
-    {
-        $items=array_map(fn($i)=>['productId'=>$i['product_id'],'productName'=>$i['product_name'],'quantity'=>$i['quantity'],'priceSnapshot'=>Money::format(Money::parse($i['price_snapshot']))],$preloadedItems);
-        return ['id'=>$r['id'],'number'=>$r['number'],'userId'=>$r['user_id'],'status'=>$r['status'],'items'=>$items,'totalAmount'=>Money::format(Money::parse($r['total_amount'])),'deliveryAddressId'=>$r['delivery_address_id'],'deliveryAddress'=>$r['delivery_address'],'paymentId'=>$r['payment_id'],'paymentMethod'=>$r['payment_method'],'createdAt'=>Ids::timestamp($r['created_at']),'comment'=>$r['comment']];
+        return (new OrderReadRepository($this->db))->order($id,$user);
     }
     public function payment(string $id,?string $user=null): array
     {

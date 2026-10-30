@@ -1,5 +1,5 @@
 # Official multi-platform indexes; update deliberately with a runtime test + full scan.
-FROM composer:2.10.3@sha256:b6dcd72ca98fa19d0e5b8476de179859704891fad06dd9e0b96833d4c430a5fc AS composer-bin
+FROM composer:2.11.0@sha256:278dfc7bd35169965d03f87194816f43bf4e6b6ea61707c2114e52ad12fe24ce AS composer-bin
 FROM php:8.3.36-fpm-alpine3.24@sha256:25e15cf35ed0f5b75d8cf14fc2c4ed7e0e6bee00d359e681b7fa3e91a7bee49f
 # The default image remains both the FPM runtime and the Composer/CLI test image.
 # mbstring, sodium, openssl and curl are already supplied by the official base.

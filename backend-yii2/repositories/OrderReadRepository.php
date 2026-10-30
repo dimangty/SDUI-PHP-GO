@@ -7,12 +7,12 @@ use Shop\infrastructure\Database;
 
 final class OrderReadRepository
 {
-    public function __construct(private Database $db,private ShopRepository $repo) {}
+    public function __construct(private Database $db) {}
     private function loadDtos(array $rows): array
     {
         if(!$rows){return [];}$ids=array_column($rows,'id');$marks=implode(',',array_fill(0,count($ids),'?'));$items=[];
         foreach($this->db->all('SELECT * FROM order_items WHERE order_id IN ('.$marks.') ORDER BY order_id,id',$ids) as $item){$items[$item['order_id']][]=$item;}
-        return array_map(fn($row)=>$this->repo->orderDto($row,$items[$row['id']]??[]),$rows);
+        return array_map(static fn(array $row): array=>OrderDtoMapper::map($row,$items[$row['id']]??[]),$rows);
     }
     public function order(string $id,?string $user=null): array
     {

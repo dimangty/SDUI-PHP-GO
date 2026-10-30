@@ -1,0 +1,275 @@
+{
+  "base": "f8f5f33a9174daa56226ea35eb360e4936491097",
+  "status": "PASSED",
+  "frozenClientAndContractsUnchanged": true,
+  "mobileCIJobsUnchanged": true,
+  "contracts": {
+    "backend-sdui/contracts/action-request.schema.json": {
+      "baseSha256": "92ee9e46dfe429aaaa39b9ea8322e54aaa9be8f7b7dea4da19e2cccf2dd0baa9",
+      "currentSha256": "92ee9e46dfe429aaaa39b9ea8322e54aaa9be8f7b7dea4da19e2cccf2dd0baa9",
+      "equal": true
+    },
+    "backend-sdui/contracts/action-response.schema.json": {
+      "baseSha256": "8339640659c0a36d11dd866487a2c294c4ebec5c30f7602eba6d5fa84edcd88b",
+      "currentSha256": "8339640659c0a36d11dd866487a2c294c4ebec5c30f7602eba6d5fa84edcd88b",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/README.md": {
+      "baseSha256": "3e054eb78ab646e881f79c757889ee3df00b8bb3308da7111201d656798580e1",
+      "currentSha256": "3e054eb78ab646e881f79c757889ee3df00b8bb3308da7111201d656798580e1",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/cart-continuation.json": {
+      "baseSha256": "bcf7d01722d39187548b32c9fc487fab6969b66bed7597453fde49debd223479",
+      "currentSha256": "bcf7d01722d39187548b32c9fc487fab6969b66bed7597453fde49debd223479",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/cart.json": {
+      "baseSha256": "2bd015cfe19c21d8f7dad77a491c97b15781535a0861d5c3b8b39e133234e187",
+      "currentSha256": "2bd015cfe19c21d8f7dad77a491c97b15781535a0861d5c3b8b39e133234e187",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/catalog-continuation.json": {
+      "baseSha256": "f8d42628cc9b32949a4734922a9441cc3728b0570f1d2389e5177ba81b349ab7",
+      "currentSha256": "f8d42628cc9b32949a4734922a9441cc3728b0570f1d2389e5177ba81b349ab7",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/catalog.json": {
+      "baseSha256": "7a2a87e61f6e58fab79a05a6205734e45082470f31932a26e5d100e223f1174d",
+      "currentSha256": "7a2a87e61f6e58fab79a05a6205734e45082470f31932a26e5d100e223f1174d",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/devices.json": {
+      "baseSha256": "f77747ff87bab4433efd52f09716d04729b2feb24f0bae1b93e46e8f7f6d1fe0",
+      "currentSha256": "f77747ff87bab4433efd52f09716d04729b2feb24f0bae1b93e46e8f7f6d1fe0",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/home-continuation.json": {
+      "baseSha256": "a8cc9a54f301ce8328b2dc649453c0f608eb494f2bef776ff7401ece8237bddd",
+      "currentSha256": "a8cc9a54f301ce8328b2dc649453c0f608eb494f2bef776ff7401ece8237bddd",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/home.json": {
+      "baseSha256": "7e11af42acf6e9c365f974299f17264fb40a1581fd579774e5ee767747a000eb",
+      "currentSha256": "7e11af42acf6e9c365f974299f17264fb40a1581fd579774e5ee767747a000eb",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/order.json": {
+      "baseSha256": "e8e058de2f9ea537a00ffa0a360390700505bea40d382ac6352c7d80d1a5002f",
+      "currentSha256": "e8e058de2f9ea537a00ffa0a360390700505bea40d382ac6352c7d80d1a5002f",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/orders.json": {
+      "baseSha256": "a1111a5d3268a6e300fad44aa01236a0fd915fdf80f47ac2d373a6571902582a",
+      "currentSha256": "a1111a5d3268a6e300fad44aa01236a0fd915fdf80f47ac2d373a6571902582a",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/primitives.json": {
+      "baseSha256": "ff1b488f41e4009d39330c527cbf2beb73294527bae40f61c7d87c7c5376b23f",
+      "currentSha256": "ff1b488f41e4009d39330c527cbf2beb73294527bae40f61c7d87c7c5376b23f",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/product-long-description.json": {
+      "baseSha256": "50799229fceb936196723edcc432f8d074356ba4eee6a677866a217f83fc2801",
+      "currentSha256": "50799229fceb936196723edcc432f8d074356ba4eee6a677866a217f83fc2801",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/product.json": {
+      "baseSha256": "430abb45e0a7f1cf63d8e28efc98a637ca44268ff20a7db0d581b122c4287105",
+      "currentSha256": "430abb45e0a7f1cf63d8e28efc98a637ca44268ff20a7db0d581b122c4287105",
+      "equal": true
+    },
+    "backend-sdui/contracts/fixtures/profile.json": {
+      "baseSha256": "e32f7c470d7b3017d44c0128af7ebf049df7d14da41aa14cbee1c57d0a176a3b",
+      "currentSha256": "e32f7c470d7b3017d44c0128af7ebf049df7d14da41aa14cbee1c57d0a176a3b",
+      "equal": true
+    },
+    "backend-sdui/contracts/screen.schema.json": {
+      "baseSha256": "936ec632f9da57c7174aad0a73c34ea318e04d9452d1a9daf9bb7c97c2c8353d",
+      "currentSha256": "936ec632f9da57c7174aad0a73c34ea318e04d9452d1a9daf9bb7c97c2c8353d",
+      "equal": true
+    },
+    "backend-yii2/contracts/openapi.yaml": {
+      "baseSha256": "e2640153e648741a8a466c18faa0be92675773f98bb7d7dc9583df3972ba8437",
+      "currentSha256": "e2640153e648741a8a466c18faa0be92675773f98bb7d7dc9583df3972ba8437",
+      "equal": true
+    },
+    "backend-yii2/contracts/routes.json": {
+      "baseSha256": "327614b3c634f01002a916e59cb30ac4eab886ce45a3d8efb8156958cf8e4f97",
+      "currentSha256": "327614b3c634f01002a916e59cb30ac4eab886ce45a3d8efb8156958cf8e4f97",
+      "equal": true
+    }
+  },
+  "migrations": {
+    "backend-yii2/migrations/README.md": {
+      "baseSha256": "e78d09936b28d3074aa585ef48a088a032760595262307bfec4210fe0e2a2f94",
+      "currentSha256": "e78d09936b28d3074aa585ef48a088a032760595262307bfec4210fe0e2a2f94",
+      "equal": true
+    },
+    "backend-yii2/migrations/m261029_000001_credential_remediation_audit.php": {
+      "baseSha256": "23a6cff136f31cbb9bed0ccc15bf6eaad53108d5b601d8757d82034bec2bf462",
+      "currentSha256": "23a6cff136f31cbb9bed0ccc15bf6eaad53108d5b601d8757d82034bec2bf462",
+      "equal": true
+    },
+    "tools/ops/migrations/001_init.down.sql": {
+      "baseSha256": "ef35732043d8e51129309b1a32373513be98d0809efb445322be5fe7dc89837d",
+      "currentSha256": "ef35732043d8e51129309b1a32373513be98d0809efb445322be5fe7dc89837d",
+      "equal": true
+    },
+    "tools/ops/migrations/001_init.up.sql": {
+      "baseSha256": "e2d09e0fdf91fd7ef1bccfbffe3e783da1e70c1915ddf6dd0adee8f90cc8441f",
+      "currentSha256": "e2d09e0fdf91fd7ef1bccfbffe3e783da1e70c1915ddf6dd0adee8f90cc8441f",
+      "equal": true
+    },
+    "tools/ops/migrations/002_shop_state.down.sql": {
+      "baseSha256": "f20e33a1b3853210a2974a78ecc69a9043409f9ff493fe0f06c93f06caf470c5",
+      "currentSha256": "f20e33a1b3853210a2974a78ecc69a9043409f9ff493fe0f06c93f06caf470c5",
+      "equal": true
+    },
+    "tools/ops/migrations/002_shop_state.up.sql": {
+      "baseSha256": "336ac1d7332f9744da314d6dd8b9c283ed5e6ab7fcd16e074fa498f2232c85b6",
+      "currentSha256": "336ac1d7332f9744da314d6dd8b9c283ed5e6ab7fcd16e074fa498f2232c85b6",
+      "equal": true
+    },
+    "tools/ops/migrations/003_shared_runtime_state.down.sql": {
+      "baseSha256": "c181533c7f10e54e96cc602298336a66eca00b9c1fc8893fade5f426e05920ea",
+      "currentSha256": "c181533c7f10e54e96cc602298336a66eca00b9c1fc8893fade5f426e05920ea",
+      "equal": true
+    },
+    "tools/ops/migrations/003_shared_runtime_state.up.sql": {
+      "baseSha256": "39f973530fd773b957641588b745ccd30ee0e5f0a586993927fcc2a1a9c2ad27",
+      "currentSha256": "39f973530fd773b957641588b745ccd30ee0e5f0a586993927fcc2a1a9c2ad27",
+      "equal": true
+    },
+    "tools/ops/migrations/004_shop_state_version.down.sql": {
+      "baseSha256": "bdf4f057274f0a59078c2ae695247228e595b20b2ad914c447f20ab5c2ec9a63",
+      "currentSha256": "bdf4f057274f0a59078c2ae695247228e595b20b2ad914c447f20ab5c2ec9a63",
+      "equal": true
+    },
+    "tools/ops/migrations/004_shop_state_version.up.sql": {
+      "baseSha256": "35f18dccda80846686ce0825b77f569d62137cac9a2c25dfd6ec99916c19ba51",
+      "currentSha256": "35f18dccda80846686ce0825b77f569d62137cac9a2c25dfd6ec99916c19ba51",
+      "equal": true
+    },
+    "tools/ops/migrations/005_normalized_runtime.down.sql": {
+      "baseSha256": "8bfdcdd123df3fcd6604719740041eaa83812d1867d15453177eb6925994cb65",
+      "currentSha256": "8bfdcdd123df3fcd6604719740041eaa83812d1867d15453177eb6925994cb65",
+      "equal": true
+    },
+    "tools/ops/migrations/005_normalized_runtime.up.sql": {
+      "baseSha256": "ceaf08aaa1620e71b52e03345ca286c183fc1208f1576f8889b8e5615e0c6c27",
+      "currentSha256": "ceaf08aaa1620e71b52e03345ca286c183fc1208f1576f8889b8e5615e0c6c27",
+      "equal": true
+    },
+    "tools/ops/migrations/006_orders_source_of_truth.down.sql": {
+      "baseSha256": "74b7dd1fbbc4d4d31f9bc3ca8b12efd3aa4a761ae9fa301b3f704db73a8d012c",
+      "currentSha256": "74b7dd1fbbc4d4d31f9bc3ca8b12efd3aa4a761ae9fa301b3f704db73a8d012c",
+      "equal": true
+    },
+    "tools/ops/migrations/006_orders_source_of_truth.up.sql": {
+      "baseSha256": "d078a503c68be54927c2fb230bd8d72dd730f8c853540779cc9f20c560634d5a",
+      "currentSha256": "d078a503c68be54927c2fb230bd8d72dd730f8c853540779cc9f20c560634d5a",
+      "equal": true
+    },
+    "tools/ops/migrations/007_multi_replica_runtime.down.sql": {
+      "baseSha256": "f5267ff7c5ddc18edd0da0cefad58fd4391bc10e38c40c8105ee8c93ff2c0745",
+      "currentSha256": "f5267ff7c5ddc18edd0da0cefad58fd4391bc10e38c40c8105ee8c93ff2c0745",
+      "equal": true
+    },
+    "tools/ops/migrations/007_multi_replica_runtime.up.sql": {
+      "baseSha256": "33e0b772772de6d18776279bc5cb27ab5194d42d8e059561db4118bd2ebafa49",
+      "currentSha256": "33e0b772772de6d18776279bc5cb27ab5194d42d8e059561db4118bd2ebafa49",
+      "equal": true
+    },
+    "tools/ops/migrations/008_biometric_auth.down.sql": {
+      "baseSha256": "f3dd9c7be34db9340e300da6b80e9a430594b0b23d2bd8ddbb8e67fde0188286",
+      "currentSha256": "f3dd9c7be34db9340e300da6b80e9a430594b0b23d2bd8ddbb8e67fde0188286",
+      "equal": true
+    },
+    "tools/ops/migrations/008_biometric_auth.up.sql": {
+      "baseSha256": "ffd23b749953db7d04e3461fe1008447c537933bd88d06aedbe79a2d20107683",
+      "currentSha256": "ffd23b749953db7d04e3461fe1008447c537933bd88d06aedbe79a2d20107683",
+      "equal": true
+    },
+    "tools/ops/migrations/009_biometric_credential_ids.down.sql": {
+      "baseSha256": "2d2ffbc099bbcb7f6c107e3df9e17948058a81248aeab7f6356a0df8a23e3fae",
+      "currentSha256": "2d2ffbc099bbcb7f6c107e3df9e17948058a81248aeab7f6356a0df8a23e3fae",
+      "equal": true
+    },
+    "tools/ops/migrations/009_biometric_credential_ids.up.sql": {
+      "baseSha256": "d5418f8eccd4f358b52b3d90fa5a50d109a30b371e9f83d902679cc51f08f916",
+      "currentSha256": "d5418f8eccd4f358b52b3d90fa5a50d109a30b371e9f83d902679cc51f08f916",
+      "equal": true
+    },
+    "tools/ops/migrations/010_remove_snapshot_runtime.down.sql": {
+      "baseSha256": "247531f518e10ab052a985547799ee8bd176381fe07f1b97d5313982186fa8ff",
+      "currentSha256": "247531f518e10ab052a985547799ee8bd176381fe07f1b97d5313982186fa8ff",
+      "equal": true
+    },
+    "tools/ops/migrations/010_remove_snapshot_runtime.up.sql": {
+      "baseSha256": "81a131ddc15617f273070231bcd59587029fbb1936661e733392ab7598d30e39",
+      "currentSha256": "81a131ddc15617f273070231bcd59587029fbb1936661e733392ab7598d30e39",
+      "equal": true
+    },
+    "tools/ops/migrations/011_legacy_import_marker.down.sql": {
+      "baseSha256": "22e1822ea5fee244080ed7fc10a3ff2dced36380e2c953aa29235f366fde65e1",
+      "currentSha256": "22e1822ea5fee244080ed7fc10a3ff2dced36380e2c953aa29235f366fde65e1",
+      "equal": true
+    },
+    "tools/ops/migrations/011_legacy_import_marker.up.sql": {
+      "baseSha256": "a21ff58c88d7edf59e34f3e9587bcaaeb21f0a68df11ebfd938914474973b407",
+      "currentSha256": "a21ff58c88d7edf59e34f3e9587bcaaeb21f0a68df11ebfd938914474973b407",
+      "equal": true
+    },
+    "tools/ops/migrations/012_payment_operations.down.sql": {
+      "baseSha256": "6851006fc72c76c5d8b7f9017910f40f03a978cd7f82e7b6fdb943d033459ee7",
+      "currentSha256": "6851006fc72c76c5d8b7f9017910f40f03a978cd7f82e7b6fdb943d033459ee7",
+      "equal": true
+    },
+    "tools/ops/migrations/012_payment_operations.up.sql": {
+      "baseSha256": "35bd9b19a7a6411c6ae461dd07b3303c638093931979122abc4f4eb3e498552c",
+      "currentSha256": "35bd9b19a7a6411c6ae461dd07b3303c638093931979122abc4f4eb3e498552c",
+      "equal": true
+    },
+    "tools/ops/migrations/013_session_revocation.down.sql": {
+      "baseSha256": "70b47f3ee15dc600c3740b8ee83051d6c6955c8271a77de5b36b935d58912666",
+      "currentSha256": "70b47f3ee15dc600c3740b8ee83051d6c6955c8271a77de5b36b935d58912666",
+      "equal": true
+    },
+    "tools/ops/migrations/013_session_revocation.up.sql": {
+      "baseSha256": "711c980aaf6aa906b5cbcb902846cb82522a1dfbb5bb68ff2954537dfaaab200",
+      "currentSha256": "711c980aaf6aa906b5cbcb902846cb82522a1dfbb5bb68ff2954537dfaaab200",
+      "equal": true
+    },
+    "tools/ops/migrations/014_recovery_schedule.down.sql": {
+      "baseSha256": "e9e62df589794d7bfe951a6f804f787240d31a4b2e2392929d0c25865ba7b8ff",
+      "currentSha256": "e9e62df589794d7bfe951a6f804f787240d31a4b2e2392929d0c25865ba7b8ff",
+      "equal": true
+    },
+    "tools/ops/migrations/014_recovery_schedule.up.sql": {
+      "baseSha256": "aaa9d92afeab9046e1a62278bb8afb8c555467e6f28563ee7fd35c64186e8a5f",
+      "currentSha256": "aaa9d92afeab9046e1a62278bb8afb8c555467e6f28563ee7fd35c64186e8a5f",
+      "equal": true
+    },
+    "tools/ops/migrations/SHA256SUMS": {
+      "baseSha256": "76ad157ae446d1c7ae80388c85e3a09d23cd0c78045874522a62a2c9ef6cc0e6",
+      "currentSha256": "76ad157ae446d1c7ae80388c85e3a09d23cd0c78045874522a62a2c9ef6cc0e6",
+      "equal": true
+    },
+    "tools/ops/migrations/checksums_test.go": {
+      "baseSha256": "71865c0a3cb2209b5e224289830db7eb423c44c6ffe248169ab0e734577a8e01",
+      "currentSha256": "71865c0a3cb2209b5e224289830db7eb423c44c6ffe248169ab0e734577a8e01",
+      "equal": true
+    },
+    "tools/ops/migrations/migrate.go": {
+      "baseSha256": "e803af0be14ac3d012cefc3bfc27a12d5e1804b9b80c97345ff084f6e096ce58",
+      "currentSha256": "e803af0be14ac3d012cefc3bfc27a12d5e1804b9b80c97345ff084f6e096ce58",
+      "equal": true
+    },
+    "tools/ops/migrations/migrate_test.go": {
+      "baseSha256": "844230f1905a4c724e41772f9f43fba342faf1a86fce2ea661940ab8b3f11b62",
+      "currentSha256": "844230f1905a4c724e41772f9f43fba342faf1a86fce2ea661940ab8b3f11b62",
+      "equal": true
+    }
+  }
+}

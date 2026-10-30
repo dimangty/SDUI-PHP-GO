@@ -29,14 +29,23 @@ type metric struct {
 }
 
 type Recorder struct {
-	logger *slog.Logger
-	mu     sync.RWMutex
-	values map[key]metric
-	logKey []byte
+	logger  *slog.Logger
+	mu      sync.RWMutex
+	values  map[key]metric
+	logKey  []byte
+	tracing *Tracing
 }
 
 func New(logger *slog.Logger) *Recorder {
 	return &Recorder{logger: logger, values: make(map[key]metric), logKey: []byte(rand.Text())}
+}
+
+// SetTracing connects only local aggregate health, never collector text or labels.
+// It is safe to call concurrently with scrapes; runtime binds it at construction.
+func (r *Recorder) SetTracing(tracing *Tracing) {
+	r.mu.Lock()
+	r.tracing = tracing
+	r.mu.Unlock()
 }
 
 func bounds() [8]float64 { return [8]float64{.001, .005, .01, .025, .05, .1, .5, 2} }

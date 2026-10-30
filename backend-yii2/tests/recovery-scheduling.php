@@ -18,9 +18,11 @@ function schedulingPdoObservation(PDOException $error): array {
         'primary'=>schedulingDiagnosticText(explode("\n",$error->getMessage())[0])];
 }
 class SchedulingStatement extends PDOStatement {
+    public static ?PDOException $firstFailure=null;
     public function execute(?array $params=null): bool {
         try{return parent::execute($params);}
         catch(PDOException $error){
+            self::$firstFailure??=$error;
             print 'Scheduling SQL failure: '.json_encode(schedulingPdoObservation($error)+['statement'=>schedulingDiagnosticText($this->queryString)],JSON_THROW_ON_ERROR)."\n";
             throw $error;
         }
@@ -118,8 +120,9 @@ test('a long multi-statement payment apply is bounded without replaying its unce
         $db->execute('CREATE FUNCTION scheduling_slow_stock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_sleep(0.6); RETURN NEW; END $$');
         $db->execute('CREATE TRIGGER scheduling_slow_stock BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION scheduling_slow_stock()');
         $pid=$db->one('SELECT pg_backend_pid() AS pid')['pid'];$start=hrtime(true);
+        SchedulingStatement::$firstFailure=null;
         try{schedulingWorker($db)->run();throw new RuntimeException('expected bounded transaction failure');}
-        catch(PDOException $error){$failure=schedulingPdoObservation($error);} // Verify time, disconnect and durable state below.
+        catch(PDOException $error){truth($error===SchedulingStatement::$firstFailure);$failure=schedulingPdoObservation($error);} // Preserve the actual failed statement's cause.
         $elapsed=(hrtime(true)-$start)/1e9;
         print 'Bounded apply diagnostic: '.json_encode(['elapsedSeconds'=>round($elapsed,3),'error'=>$failure,'backend'=>schedulingBackend(paymentSchemaConnection($schema),$pid)],JSON_THROW_ON_ERROR)."\n";
         truth($elapsed>=4.5 && $elapsed<8);
@@ -262,7 +265,8 @@ test('F3 local expiry transaction timeout preserves committed retention and roll
         $db->execute('CREATE FUNCTION maintenance_slow_stock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_sleep(0.6); RETURN NEW; END $$');
         $db->execute('CREATE TRIGGER maintenance_slow_stock BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION maintenance_slow_stock()');
         [, $repo,$commerce]=paymentServices($db);$start=hrtime(true);
-        try{(new MaintenanceService($db,$repo,$commerce))->run();throw new RuntimeException('expected bounded local expiry failure');}catch(PDOException $error){$failure=schedulingPdoObservation($error);}
+        SchedulingStatement::$firstFailure=null;
+        try{(new MaintenanceService($db,$repo,$commerce))->run();throw new RuntimeException('expected bounded local expiry failure');}catch(PDOException $error){truth($error===SchedulingStatement::$firstFailure);$failure=schedulingPdoObservation($error);}
         $elapsed=(hrtime(true)-$start)/1e9;
         print 'Maintenance local diagnostic: '.json_encode(['elapsedSeconds'=>round($elapsed,3),'error'=>$failure],JSON_THROW_ON_ERROR)."\n";
         truth($elapsed>=4.5 && $elapsed<8);

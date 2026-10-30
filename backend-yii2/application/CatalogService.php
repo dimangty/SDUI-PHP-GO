@@ -14,7 +14,7 @@ final class CatalogService
     public function category(string $id): array
     {return $this->repo->categoryDto($this->db->required('SELECT * FROM categories WHERE id=?',[$id],'CATEGORY_NOT_FOUND','category not found'));}
     public function children(string $id): array {$this->category($id);return $this->categories($id);}
-    private function reads(): CatalogReadRepository {return new CatalogReadRepository($this->db,$this->repo);}
+    private function reads(): CatalogReadRepository {return new CatalogReadRepository($this->db);}
     public function product(string $id): array {return $this->reads()->loadDtos([$this->repo->product($id)])[0];}
     public function products(array $q,bool $search=false): array
     {
@@ -57,7 +57,7 @@ final class CatalogService
     }
     private function writeProduct(string $id,array $p,bool $new): void
     {
-        if($new){$this->db->execute('INSERT INTO products(id,category_id,name,description,price,discount_price,stock,is_active) VALUES(?,?,?,?,?,?,?,true)',[$id,$p['categoryId'],$p['name'],$p['description'],$p['price'],$p['discountPrice'],$p['stock']]);}
+        if($new){$this->db->execute('INSERT INTO products(id,category_id,name,description,price,discount_price,stock,is_active) VALUES(?,?,?,?,?,?,?,?)',[$id,$p['categoryId'],$p['name'],$p['description'],$p['price'],$p['discountPrice'],$p['stock'],$p['isActive']]);}
         else{$this->db->execute('UPDATE products SET category_id=?,name=?,description=?,price=?,discount_price=?,stock=?,is_active=? WHERE id=?',[$p['categoryId'],$p['name'],$p['description'],$p['price'],$p['discountPrice'],$p['stock'],$p['isActive'],$id]);}
         $this->db->execute('DELETE FROM product_images WHERE product_id=?',[$id]);
         foreach($p['imageUrls'] as $i=>$url){$this->db->execute('INSERT INTO product_images(product_id,url,sort_order) VALUES(?,?,?)',[$id,$url,$i]);}
@@ -112,6 +112,6 @@ final class CatalogService
     public function sync(string $id): void
     {
         if(Env::get('OPENSEARCH_URL')===''){return;}
-        try{(new OpenSearch($this->db,$this->repo))->index($id);}catch(\Throwable $e){error_log('Product index update failed: '.$e->getMessage());}
+        try{(new OpenSearch($this->db,$this->repo))->index($id);}catch(\Throwable){error_log('Product index update failed');}
     }
 }

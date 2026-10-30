@@ -62,6 +62,7 @@ func Run(ctx context.Context, c Config) error {
 		return err
 	}
 	defer tracing.Shutdown(context.Background())
+	observer.SetTracing(tracing)
 	c.Yii.Observer = observer
 	c.Yii.Tracing = tracing
 	up, err := yii.New(c.Yii)
