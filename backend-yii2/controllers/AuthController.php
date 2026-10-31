@@ -4,7 +4,7 @@ namespace Shop\controllers;
 
 use Shop\application\{LocalIdentityMigration,SessionService};
 use Shop\domain\ApiError;
-use Shop\infrastructure\{Database,Env};
+use Shop\infrastructure\{Database,DatabaseRole,Env};
 use Shop\repositories\ShopRepository;
 
 /** Deliberately registered only in config/console.php, never in the HTTP route map. */
@@ -31,6 +31,7 @@ final class AuthController extends \yii\console\Controller
     private function service(): LocalIdentityMigration
     {
         $db=new Database(Env::get('DATABASE_URL'));$repo=new ShopRepository($db);
+        if (Env::production()) { DatabaseRole::identity($db, 'operator'); }
         return new LocalIdentityMigration($db,new SessionService($db,$repo));
     }
     private function reviewedState(string $value): bool

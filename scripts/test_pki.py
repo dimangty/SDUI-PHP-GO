@@ -50,7 +50,9 @@ def main():
                   YII_FPM_DYNAMIC_RANGE=str(list(fpm_subnet.subnets(prefixlen_diff=1))[1]),
                   PUBLIC_API_HOST='api.shopkmp.test', TLS_CERT_DIR=str(path), CA_BUNDLE_FILE=str(path / 'ca.crt'),
                   PAYMENT_GATEWAY_URL='https://localhost:18443', PAYMENT_WEBHOOK_ALLOWED_CIDRS='192.0.2.16/28')
-    for key in ('POSTGRES_PASSWORD', 'OPENSEARCH_ADMIN_PASSWORD', 'PAYMENT_WEBHOOK_SECRET', 'PAYMENT_GATEWAY_API_KEY'):
+    for key in ('POSTGRES_PASSWORD', 'POSTGRES_RUNTIME_PASSWORD', 'POSTGRES_OWNER_PASSWORD',
+                'POSTGRES_SEARCH_PASSWORD','POSTGRES_INDEXER_PASSWORD','POSTGRES_MAINTENANCE_PASSWORD','POSTGRES_RECOVERY_PASSWORD',
+                'POSTGRES_OPERATOR_PASSWORD', 'OPENSEARCH_ADMIN_PASSWORD', 'PAYMENT_WEBHOOK_SECRET', 'PAYMENT_GATEWAY_API_KEY'):
         values[key] = secrets.token_urlsafe(36)
     env = path / 'test.env'
     env.write_text('\n'.join(k + '=' + v for k, v in values.items()) + '\n')

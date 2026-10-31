@@ -1,0 +1,9 @@
+# Explicit opt-in for owned disposable acceptance on hosts with exhausted pools.
+# The production wrapper never includes this file. Business services are unchanged.
+networks:
+  application:
+    ipam:
+      config: [{subnet: '${APPLICATION_TEST_SUBNET:?explicit disposable application subnet required}'}]
+  data:
+    ipam:
+      config: [{subnet: '${DATA_TEST_SUBNET:?explicit disposable data subnet required}'}]

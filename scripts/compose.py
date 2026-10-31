@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """One entry point for the root stack; production validation precedes Docker."""
 import argparse
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -33,6 +34,11 @@ def command(env_file, project=None, prod=False, verify=False):
     result += ['-f', str(ROOT / 'docker-compose.yml')]
     if prod:
         result += ['-f', str(ROOT / 'docker-compose.prod.yml')]
+    elif os.getenv('BACKEND_DISPOSABLE_NETWORKS') == '1':
+        owned_project = project or os.getenv('COMPOSE_PROJECT_NAME', '')
+        if not owned_project.startswith('shopkmp-') or not owned_project.endswith('-e2e'):
+            raise ValueError('Disposable network overrides require an explicit owned -e2e project')
+        result += ['-f', str(ROOT / 'deploy/compose.disposable-networks.yml')]
     if verify:
         result += ['-f', str(ROOT / 'deploy/compose.verify.yml')]
     return result
@@ -49,8 +55,19 @@ def main():
     path = (ROOT / args.env).resolve()
     compose = command(path, args.project, args.prod, args.verify)
     if args.prod and (not args.args or args.args[0] not in ('down', 'logs', 'ps', 'stop')):
-        from validate_production import validate
+        from validate_production import validate, validate_model
         validate(load_env(path))
+        # Include any explicit overlay flags supplied before the lifecycle verb.
+        global_args = []
+        i = 0
+        while i < len(args.args) and args.args[i].startswith('-'):
+            flag = args.args[i]
+            if flag in ('-f', '--file', '--profile', '--project-directory', '--env-file'):
+                global_args.extend(args.args[i:i+2]); i += 2
+            else:
+                raise ValueError('Unsupported production Compose global option')
+        rendered = subprocess.check_output(compose + global_args + ['config', '--format', 'json'], cwd=ROOT)
+        validate_model(json.loads(rendered))
     return subprocess.call(compose + args.args, cwd=ROOT)
 
 

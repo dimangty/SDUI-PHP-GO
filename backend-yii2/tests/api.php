@@ -97,7 +97,7 @@ test('API catalog admin profile cart checkout webhook reviews and cancellation r
 });
 test('avatar image is normalized, downloaded by owner and cannot leak across users',function(){
     [$u,,$token]=apiFixture();[,,$other]=apiFixture();
-    $image=imagecreatetruecolor(800,600);ob_start();imagepng($image);$bytes=ob_get_clean();imagedestroy($image);
+    $image=imagecreatetruecolor(800,600);ob_start();imagepng($image);$bytes=ob_get_clean();unset($image);
     $boundary='shopkmp-test-boundary';$body='--'.$boundary."\r\nContent-Disposition: form-data; name=\"file\"; filename=\"../evil.php\"\r\nContent-Type: image/png\r\n\r\n".$bytes."\r\n--".$boundary."--\r\n";
     $r=request('PUT','/api/v1/users/me/avatar',null,$token,['content-type'=>'multipart/form-data; boundary='.$boundary],$body);same(200,$r['status']);$url=$r['data']['avatarUrl'];
     same(403,request('GET',$url,null,$other)['status']);$download=request('GET',$url,null,$token);same(200,$download['status']);$info=getimagesizefromstring($download['data']);same(512,$info[0]);same(384,$info[1]);

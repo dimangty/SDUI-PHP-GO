@@ -22,7 +22,7 @@ def docker(*args):
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=120)
 
 
-def runtime_tests(image):
+def runtime_tests(image, expected_minor=5):
     class PhpRuntime(unittest.TestCase):
         def run_image(self, *command):
             result = docker('run', '--rm', '--network', 'none', image, *command)
@@ -88,26 +88,29 @@ def runtime_tests(image):
             self.assertEqual('Executables resolve\n', output, 'PHP startup/loader diagnostics')
             extensions = json.loads(self.run_image('php', '-r',
                 "echo json_encode(glob(ini_get('extension_dir').'/*.so'), JSON_THROW_ON_ERROR);"))
-            self.assertGreaterEqual(len(extensions), 6)
+            # PHP 8.5 builds OPcache into the executable, rather than a sixth .so.
+            # Verify required shared identities and OPcache loading, not packaging count.
+            self.assertTrue({'gd','intl','pcntl','pdo_pgsql','sodium'}.issubset(
+                {Path(extension).stem for extension in extensions}))
             options = []
-            names = []
+            names = {'Zend OPcache'}
             for extension in extensions:
                 name = Path(extension).stem
                 options.extend(['-d', ('zend_extension=' if name == 'opcache' else 'extension=') + extension])
-                names.append('Zend OPcache' if name == 'opcache' else name)
+                names.add('Zend OPcache' if name == 'opcache' else name)
             # -n prevents the regular ini from masking an omitted extension; eager
             # binding plus exact clean output catches missing libraries AND symbols.
             probe = '''foreach (json_decode($argv[1]) as $name) {
                 if (!extension_loaded($name)) { fwrite(STDERR, "Not loaded: $name"); exit(1); }
             } echo "All shared extensions loaded cleanly\\n";'''
             output = self.run_image('env', 'LD_BIND_NOW=1', 'php', '-n', *options,
-                                    '-r', probe, json.dumps(names))
+                                    '-r', probe, json.dumps(sorted(names)))
             self.assertEqual('All shared extensions loaded cleanly\n', output)
 
-        def test_php83_extensions_tls_image_codecs_and_job_processes_work(self):
+        def test_target_php_extensions_tls_image_codecs_and_job_processes_work(self):
             self.run_image('php', '-r', r'''
                 function need($ok, $why) { if (!$ok) { fwrite(STDERR, $why."\n"); exit(1); } }
-                need(PHP_MAJOR_VERSION === 8 && PHP_MINOR_VERSION === 3, 'PHP 8.3 contract');
+                need(PHP_MAJOR_VERSION === 8 && PHP_MINOR_VERSION === (int)$argv[1], 'Target PHP runtime contract');
                 need(PHP_INT_SIZE === 8 && PHP_INT_MAX === 9223372036854775807, '64-bit integer money contract');
                 foreach (['pdo_pgsql', 'intl', 'mbstring', 'sodium', 'openssl', 'gd', 'curl', 'pcntl'] as $ext) {
                     need(extension_loaded($ext), "Missing extension: $ext");
@@ -134,7 +137,7 @@ def runtime_tests(image):
                 $child = proc_open([PHP_BINARY, '-r', 'exit(17);'], [], $pipes);
                 need(is_resource($child) && proc_close($child) === 17, 'Scheduler proc_open');
                 echo PHP_VERSION." extensions, codecs, CA and child processes OK\n";
-            ''')
+            ''', '--', str(expected_minor))
             # Inspect the linked libpq itself; SSL support is a runtime dependency.
             output = self.run_image('php', '-r', r'''
                 $pq = array_merge(glob('/usr/lib/libpq.so.5'), glob('/usr/lib/*/libpq.so.5'));
@@ -285,13 +288,14 @@ def runtime_tests(image):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--image', default='shopkmp-a1-php')
+    parser.add_argument('--php-minor', type=int, choices=(3,5), default=5)
     args = parser.parse_args()
     inspect = docker('image', 'inspect', args.image)
     if inspect.returncode:
         parser.error(inspect.stdout)
     metadata = json.loads(inspect.stdout)[0]
     print(f'Checking {args.image}: {metadata["Id"]}', flush=True)
-    result = unittest.TextTestRunner(verbosity=2).run(runtime_tests(args.image))
+    result = unittest.TextTestRunner(verbosity=2).run(runtime_tests(args.image,args.php_minor))
     raise SystemExit(not result.wasSuccessful())
 
 

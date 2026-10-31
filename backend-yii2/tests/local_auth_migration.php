@@ -146,7 +146,7 @@ test('disabled identities remain disabled through attestation and password setup
     migrationService()->setDisabled($id,migrationTicket(),false,true);same(false,$repo->user($id)['account_disabled']);
 });
 test('trusted registration remains ordinary until a console operator attests the admin role and revokes its old pair',function()use($db,$repo,$sessions){
-    $auth=new \Shop\application\AuthService($db,$repo,$sessions);$pair=$auth->register(['email'=>Ids::uuid().'@bootstrap.example','password'=>'StrongPass7395','fullName'=>'Operator','phone'=>'+79991234567']);
+    $auth=\Shop\infrastructure\AuthComposition::create($db,$repo,$sessions);$pair=$auth->register(['email'=>Ids::uuid().'@bootstrap.example','password'=>'StrongPass7395','fullName'=>'Operator','phone'=>'+79991234567']);
     same(false,$repo->user($pair['userId'])['is_admin']);
     migrationService()->attest($pair['userId'],migrationTicket(),true,false,true);
     same(true,$repo->user($pair['userId'])['is_admin']);errorCode('UNAUTHORIZED',fn()=>$sessions->authenticate($pair['accessToken']));
@@ -292,7 +292,7 @@ test('real runtime and least-privileged operator roles enforce the documented re
     try{
         $db->execute('GRANT SELECT,INSERT,UPDATE,DELETE ON users,cart_metadata,session_families,access_sessions,refresh_sessions,login_attempts,rate_limit_hits TO '.$runtime);
         $db->execute('GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO '.$runtime);
-        $runtimeDb->execute('SET SESSION AUTHORIZATION '.$runtime);$r=new ShopRepository($runtimeDb);$s=new SessionService($runtimeDb,$r);$a=new \Shop\application\AuthService($runtimeDb,$r,$s);
+        $runtimeDb->execute('SET SESSION AUTHORIZATION '.$runtime);$r=new ShopRepository($runtimeDb);$s=new SessionService($runtimeDb,$r);$a=\Shop\infrastructure\AuthComposition::create($runtimeDb,$r,$s);
         $email=Ids::uuid().'@migration.example';$pair=$a->register(['email'=>$email,'password'=>'OriginalOwner7395','fullName'=>'Role fixture','phone'=>'+79991234567']);$id=$pair['userId'];
         errorCode('MIGRATION_OPERATOR_PERMISSION_REQUIRED',fn()=>(new LocalIdentityMigration($runtimeDb,$s))->attest($id,migrationTicket(),true,false,true));
         $db->execute('GRANT SELECT,UPDATE ON users,password_session_operations,session_families TO '.$operator);

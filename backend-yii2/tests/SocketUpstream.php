@@ -6,14 +6,23 @@ final class SocketUpstream {
     public readonly string $origin;
     private int $pid;
     private $control;
-    public function __construct(Closure $response) {
-        $listener=stream_socket_server('tcp://127.0.0.1:0',$errno,$message);
+    public function __construct(Closure $response, ?array $tls = null) {
+        $context=stream_context_create($tls===null?[]:['ssl'=>$tls]);
+        $listener=stream_socket_server(($tls===null?'tcp':'tls').'://127.0.0.1:0',$errno,$message,STREAM_SERVER_BIND|STREAM_SERVER_LISTEN,$context);
         if(!$listener){throw new RuntimeException($message);}
-        $this->origin='http://'.stream_socket_get_name($listener,false);
+        $address=stream_socket_get_name($listener,false);
+        $this->origin=$tls===null?'http://'.$address:'https://localhost:'.substr(strrchr($address,':'),1);
         [$parent,$child]=stream_socket_pair(STREAM_PF_UNIX,STREAM_SOCK_STREAM,0);$pid=pcntl_fork();
         if($pid===0){
             fclose($parent);$attempts=0;
-            while($connection=@stream_socket_accept($listener,$attempts===0?3:0.4)){
+            // Parent ownership, not inter-request idle time, defines lifetime.
+            // Keep the existing per-connection I/O/handshake budget unchanged.
+            while(true){
+                $read=[$listener,$child];$write=null;$except=null;
+                if(@stream_select($read,$write,$except,3)===false){continue;}
+                if(in_array($child,$read,true)){break;}
+                if(!in_array($listener,$read,true)){continue;}
+                $connection=@stream_socket_accept($listener,3);if(!$connection){continue;}
                 $attempts++;stream_set_timeout($connection,3);$headers=[];$first=fgets($connection);
                 while(($line=fgets($connection))!==false && trim($line)!==''){
                     if(str_contains($line,':')){[$name,$value]=explode(':',$line,2);$headers[strtolower($name)]=trim($value);}
@@ -26,6 +35,9 @@ final class SocketUpstream {
         fclose($listener);fclose($child);$this->pid=$pid;$this->control=$parent;stream_set_timeout($parent,20);
     }
     public function finish(): int {
+        // A crashed peer can already have closed its end; its exit status below
+        // remains authoritative rather than a secondary broken-pipe warning.
+        @fwrite($this->control,'stop');
         $count=(int)stream_get_contents($this->control);fclose($this->control);pcntl_waitpid($this->pid,$status);
         same(0,pcntl_wexitstatus($status));return $count;
     }

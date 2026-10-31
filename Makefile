@@ -49,7 +49,10 @@ integration-up:
 integration-check:
 	EDGE_PORT=$(E2E_PORT) python3 scripts/backend_artifacts.py --env .env.example --project $(E2E_PROJECT) --receipt "$(ARTIFACT_RECEIPT)" --phase test -- python3 scripts/verify.py --env .env.example --project $(E2E_PROJECT) --url http://127.0.0.1:$(E2E_PORT) --disposable --evidence-dir "$(VERIFY_EVIDENCE_DIR)"
 
-.PHONY: test-backend-fixes test-trust-live
+.PHONY: test-backend-fixes test-trust-live test-database-roles
+test-database-roles:
+	python3 scripts/database_roles_native.py
+
 test-backend-fixes:
 	python3 scripts/backend_fixes.py --env .env.example --project $(E2E_PROJECT) --disposable
 

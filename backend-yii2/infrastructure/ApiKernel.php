@@ -21,7 +21,7 @@ final class ApiKernel
     {
         $this->routes=require dirname(__DIR__).'/config/routes.php';$repo=new ShopRepository($db);$sessions=new SessionService($db,$repo);
         $hasher=new PasswordHasher(null,static fn(string $stage,float $seconds)=>AuthMetrics::hash($stage,$seconds));
-        $this->auth=new AuthService($db,$repo,$sessions,$hasher);$this->avatar=new AvatarService($db,$repo);$this->catalog=new CatalogService($db,$repo);
+        $this->auth=AuthComposition::create($db,$repo,$sessions,$hasher);$this->avatar=new AvatarService($db,$repo);$this->catalog=new CatalogService($db,$repo);
         $this->commerce=new CommerceService($db,$repo);$this->credentials=new CredentialService($db,$repo,$sessions);
         $this->payments=new PaymentService($db,$repo,$this->commerce);$this->profile=new ProfileService($db,$repo);
         foreach($this->routes as $r){if(!method_exists('Shop\\application\\'.$r[1].'Service',$r[2])){throw new \LogicException('Missing route operation '.$r[0]);}}
@@ -192,6 +192,7 @@ final class ApiKernel
         $components=[];
         try{
             Network::cidrs(Env::get('PAYMENT_WEBHOOK_ALLOWED_CIDRS'));
+            if (Env::production()) { DatabaseRole::identity($this->db, 'runtime'); }
             $this->db->one('SELECT 1 FROM users LIMIT 1');$this->db->one('SELECT 1 FROM biometric_challenges LIMIT 1');
             // Old writers/schema are incompatible with durable effects and local
             // identity. Verify the additive schema before serving traffic.
@@ -224,7 +225,7 @@ final class ApiKernel
         $product=str_starts_with($path,'/images/products/');$row=$this->db->one($product?'SELECT id FROM product_images WHERE url=? LIMIT 1':'SELECT id FROM categories WHERE icon_url=? LIMIT 1',[$path]);
         if(!$row){throw new ApiError($product?'IMAGE_NOT_FOUND':'ICON_NOT_FOUND',$product?'product image not found':'category icon not found',[],404);}
         $seed=0;foreach(mb_str_split(basename($path)) as $char){$seed=($seed*33+mb_ord($char)) & 0xffffffff;}
-        if($product){$image=imagecreatetruecolor(320,240);for($y=0;$y<240;$y++){for($x=0;$x<320;$x++){$shade=($x+$y)%48;$color=imagecolorallocate($image,96+$seed%96+intdiv($shade,3),96+intdiv($seed,7)%96+intdiv($shade,4),96+intdiv($seed,13)%96+intdiv($shade,5));imagesetpixel($image,$x,$y,$color);}}ob_start();imagepng($image);$data=ob_get_clean();imagedestroy($image);$headers['content-type']='image/png';}
+        if($product){$image=imagecreatetruecolor(320,240);for($y=0;$y<240;$y++){for($x=0;$x<320;$x++){$shade=($x+$y)%48;$color=imagecolorallocate($image,96+$seed%96+intdiv($shade,3),96+intdiv($seed,7)%96+intdiv($shade,4),96+intdiv($seed,13)%96+intdiv($shade,5));imagesetpixel($image,$x,$y,$color);}}ob_start();imagepng($image);$data=ob_get_clean();unset($image);$headers['content-type']='image/png';}
         else{$color=sprintf('#%06x',0x404040+$seed%0xbfbfbf);$data='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"><rect width="64" height="64" rx="14" fill="'.$color.'"/><path d="M18 32h28M32 18v28" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg>';$headers['content-type']='image/svg+xml; charset=utf-8';}
         $headers['cache-control']='public, max-age=86400';return $this->result(200,$data,$headers,true);
     }

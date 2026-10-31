@@ -8,10 +8,14 @@ use Shop\repositories\{ShopRepository,UserCredentialsRepository};
 
 final class AuthService
 {
-    private UserCredentialsRepository $credentials;
-    private LoginThrottle $throttle;
-    public function __construct(private Database $db,private ShopRepository $repo,private SessionService $sessions,private PasswordHasher $hasher=new PasswordHasher())
-    {$this->credentials=new UserCredentialsRepository($db);$this->throttle=new LoginThrottle($db);}
+    public function __construct(
+        private Database $db,
+        private ShopRepository $repo,
+        private SessionService $sessions,
+        private UserCredentialsRepository $credentials,
+        private LoginThrottle $throttle,
+        private PasswordHasher $hasher
+    ) {}
     public function register(array $input,string $bootstrap=''): array
     {
         $email=strtolower(trim($input['email']??''));$password=$input['password']??'';

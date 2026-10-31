@@ -57,6 +57,6 @@ final class HttpClient
             if($ok===false){throw new \RuntimeException('Configured upstream unavailable');}
             $status=(int)curl_getinfo($curl,CURLINFO_RESPONSE_CODE);
             return ['status'=>$status,'headers'=>$responseHeaders,'body'=>$response];
-        }finally{curl_close($curl);}
+        }finally{unset($curl);}
     }
 }

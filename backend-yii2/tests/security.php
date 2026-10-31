@@ -48,7 +48,7 @@ test('trusted BFF rate context cannot replace the transport webhook source',func
 });
 test('avatar rejects script input and excessive decoded pixels before allocation',function()use($db){
     $avatar=new AvatarService($db,new ShopRepository($db));errorCode('INVALID_FILE_TYPE',fn()=>$avatar->normalize('<svg onload="alert(1)"></svg>'));
-    $image=imagecreatetruecolor(1,1);ob_start();imagepng($image);$png=ob_get_clean();imagedestroy($image);
+    $image=imagecreatetruecolor(1,1);ob_start();imagepng($image);$png=ob_get_clean();unset($image);
     $bomb=substr_replace($png,pack('NN',100000,100000),16,8);errorCode('INVALID_FILE_TYPE',fn()=>$avatar->normalize($bomb));
 });
 test('cookies and forged identity headers cannot authorize private API',function()use($kernel){

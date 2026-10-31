@@ -48,8 +48,8 @@ final class AvatarService
         try{
             $max=max($info[0],$info[1],512);$w=max(1,intdiv($info[0]*512,$max));$h=max(1,intdiv($info[1]*512,$max));
             $target=imagecreatetruecolor($w,$h);imagealphablending($target,false);imagesavealpha($target,true);
-            imagecopyresampled($target,$src,0,0,0,0,$w,$h,$info[0],$info[1]);ob_start();imagepng($target);$out=ob_get_clean();imagedestroy($target);return $out;
-        }finally{imagedestroy($src);}
+            imagecopyresampled($target,$src,0,0,0,0,$w,$h,$info[0],$info[1]);ob_start();imagepng($target);$out=ob_get_clean();unset($target);return $out;
+        }finally{unset($src);}
     }
     public function download(array $actor,string $owner,string $file): array
     {

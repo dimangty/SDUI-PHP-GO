@@ -13,14 +13,31 @@ RETIRED_PROVIDER = 'key' + 'cloak'
 
 
 class IntegrationModel(unittest.TestCase):
+    def test_owned_disposable_network_overlay_is_opt_in_and_never_changes_production(self):
+        overlay = str(ROOT/'deploy/compose.disposable-networks.yml')
+        with patch.dict(os.environ, {'BACKEND_DISPOSABLE_NETWORKS':'1'}):
+            self.assertIn(overlay, command(ROOT/'.env.example','shopkmp-round6-acceptance-e2e'))
+            self.assertNotIn(overlay, command(ROOT/'.env.example','shopkmp-round6-roles-e2e',prod=True))
+            with self.assertRaises(ValueError):
+                command(ROOT/'.env.example','shopkmp-production')
+            with patch.dict(os.environ, {'COMPOSE_PROJECT_NAME':'shopkmp-round6-acceptance-e2e'}):
+                self.assertIn(overlay, command(ROOT/'.env.example'))
+
     def model(self, prod=False, verify=False):
         # Config rendering only; no deployment and no production credentials.
         env = os.environ | {'TLS_CERT_DIR': '/tmp/config-only-tls', 'CA_BUNDLE_FILE': '/tmp/config-only-ca',
                             'PUBLIC_API_HOST': 'config-only.example.test', 'OPENSEARCH_ADMIN_PASSWORD': 'config-only',
                             'PAYMENT_GATEWAY_URL': 'https://provider.example.test',
-                            'PAYMENT_GATEWAY_API_KEY': 'config-only', 'PAYMENT_WEBHOOK_ALLOWED_CIDRS': '192.0.2.9/32'}
+                            'PAYMENT_GATEWAY_API_KEY': 'config-only', 'PAYMENT_WEBHOOK_ALLOWED_CIDRS': '192.0.2.9/32',
+                            'POSTGRES_RUNTIME_PASSWORD': 'runtime-config-only',
+                            'POSTGRES_OWNER_PASSWORD': 'owner-config-only',
+                            'POSTGRES_OPERATOR_PASSWORD': 'operator-config-only',
+                            'POSTGRES_SEARCH_PASSWORD': 'search-config-only',
+                            'POSTGRES_INDEXER_PASSWORD': 'indexer-config-only',
+                            'POSTGRES_MAINTENANCE_PASSWORD': 'maintenance-config-only',
+                            'POSTGRES_RECOVERY_PASSWORD': 'recovery-config-only'}
         return json.loads(subprocess.check_output(command(ROOT / '.env.example', prod=prod, verify=verify) +
-                          ['--profile', 'verification', '--profile', 'tools', 'config', '--format', 'json'], env=env))
+                          ['--profile', 'verification', '--profile', 'tools', '--profile', 'database-admin', 'config', '--format', 'json'], env=env))
 
     def test_exact_transport_boundaries_survive_all_overlays(self):
         for prod, verify in ((False, False), (True, False), (False, True)):
@@ -38,6 +55,34 @@ class IntegrationModel(unittest.TestCase):
                 self.assertEqual('EDGE_IP',s['yii2-http']['environment']['NGINX_ENVSUBST_FILTER'])
                 for name, service in s.items():
                     if name!='edge': self.assertFalse(service.get('ports'))
+
+    def test_production_database_credentials_are_separated_in_the_merged_model(self):
+        from urllib.parse import urlsplit
+        s = self.model(prod=True)['services']
+        for name, role in {'yii2':'runtime','maintenance':'maintenance','reconcile':'search','payment-recovery':'recovery','reindex':'indexer'}.items():
+            env = s[name]['environment']
+            self.assertEqual('shopkmp_'+role, urlsplit(env['DATABASE_URL']).username, name)
+            self.assertNotIn('PGPASSWORD', env, name)
+            self.assertNotIn('POSTGRES_OWNER_PASSWORD', env, name)
+            self.assertNotIn('POSTGRES_OPERATOR_PASSWORD', env, name)
+            self.assertEqual(role, env['DATABASE_ROLE'])
+        for name in ('migrate', 'yii-migrate'):
+            self.assertEqual('shopkmp_owner', urlsplit(s[name]['environment']['DATABASE_URL']).username)
+        self.assertEqual('shopkmp_identity_operator', urlsplit(s['identity-operator']['environment']['DATABASE_URL']).username)
+
+    def test_production_model_gate_rejects_unsafe_overrides_and_missing_runtime_secret(self):
+        import copy
+        from validate_production import validate_model
+        cfg = self.model(prod=True)
+        validate_model(cfg)
+        for change in ({'DATABASE_URL':'postgres://shopkmp@postgres/shopkmp?sslmode=verify-full'},
+                       {'DATABASE_URL':'postgres://shopkmp_runtime@postgres/shopkmp?sslmode=disable'},
+                       {'APP_ENV':'development'}, {'PGPASSWORD':'owner-secret'},
+                       {'DATABASE_ROLE':'owner'}):
+            altered = copy.deepcopy(cfg)
+            altered['services']['yii2']['environment'].update(change)
+            with self.assertRaises(ValueError):
+                validate_model(altered)
 
     def test_local_identity_graph_has_no_provider_or_registration_admin_secrets(self):
         for prod, verify in ((False, False), (True, False), (False, True)):
@@ -111,8 +156,10 @@ class FocusedRunner(unittest.TestCase):
 
     def test_focused_suites_get_child_only_gateway_configuration(self):
         calls=self.invoke()
+        self.assertTrue(any(str(ROOT/'scripts/database_roles_native.py') in a for a,k in calls),
+                        'Focused acceptance must execute the real production role matrix')
         suites=[(a,k) for a,k in calls if 'run' in a]
-        self.assertEqual(['tests/local_auth_concurrency.php','tests/local_recovery.php','tests/payment-migration.php','tests/payments.php','tests/payment-http.php','tests/uuid_identity.php','tests/uuid_recovery.php','tests/recovery.php','tests/recovery-scheduling.php'],[a[-1] for a,k in suites])
+        self.assertEqual(['tests/local_auth_relock_native.php','tests/local_auth_concurrency.php','tests/local_recovery.php','tests/payment-migration.php','tests/payments.php','tests/payment-http.php','tests/uuid_identity.php','tests/uuid_recovery.php','tests/recovery.php','tests/recovery-scheduling.php'],[a[-1] for a,k in suites])
         for argv,kwargs in suites:
             self.assertIn('PAYMENT_GATEWAY_URL=http://payment-fixture-gateway:8080',argv)
             self.assertEqual(os.environ.get('PAYMENT_GATEWAY_URL'),kwargs['env'].get('PAYMENT_GATEWAY_URL'))

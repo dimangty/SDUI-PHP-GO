@@ -31,6 +31,15 @@ permission. A deployment administrator grants these rights outside the migration
 to the actual operator. Development's shared schema-owner credential is not a
 production privilege separation model.
 
+V7 provides explicit production roles, secret injection, existing-volume upgrade
+and bounded preflight in [round-6 rollout](../round-6-local-auth/ROLLOUT_ROLLBACK.md).
+Runtime has no journal SELECT/INSERT or ownership; separately managed owner and
+operator credentials are absent from web/recurring workers. The selected operator
+also retains explicit legacy-device remediation: device DELETE and lock-only
+UPDATE(last_used_at), plus INSERT into its remediation audit, never PIN/key writes.
+The actual native role-test results and remaining publication gaps are recorded
+in [V7 test results](../round-6-local-auth/TEST_RESULTS.md).
+
 Database owners/superusers can change triggers/data by design; the journal is an
 append-only application audit, not a defense against a compromised DBA. Retain
 DB backups and external ticket/audit evidence under the deployment's controls.

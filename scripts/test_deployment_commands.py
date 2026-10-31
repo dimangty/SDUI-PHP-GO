@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import tempfile
 import unittest
 from compose import ROOT, command
@@ -21,9 +22,11 @@ def tests(production_env):
             # production validation run. Every would-be Docker argv is recorded.
             executable = self.path / 'docker'
             executable.write_text('#!/usr/bin/env python3\nimport json,os,sys\nwith open(os.environ["DOCKER_COMMAND_TRACE"],"a") as f: f.write(json.dumps(sys.argv[1:])+"\\n")\n')
+            executable.write_text(executable.read_text() + '\nimport subprocess\nif sys.argv[-3:]==["config","--format","json"]:\n sys.exit(subprocess.call([os.environ["REAL_DOCKER_PATH"],*sys.argv[1:]]))\n')
             executable.chmod(0o755)
             self.env = os.environ | {'PATH': str(self.path) + os.pathsep + os.environ['PATH'],
-                                     'DOCKER_COMMAND_TRACE': str(self.trace)}
+                                     'DOCKER_COMMAND_TRACE': str(self.trace),
+                                     'REAL_DOCKER_PATH': shutil.which('docker')}
 
         def run_make(self, target, **values):
             self.trace.unlink(missing_ok=True)
@@ -76,6 +79,9 @@ def tests(production_env):
                 with self.subTest(target=target):
                     result, calls = self.run_make(target, PROD_ENV_FILE=production_env)
                     self.assertEqual(0, result.returncode, result.stdout)
+                    models = [argv for argv in calls if argv[-3:] == ['config','--format','json']]
+                    self.assertEqual(0 if expected[0][0]=='stop' else len(expected),len(models))
+                    calls = [argv for argv in calls if argv not in models]
                     self.assertEqual(len(expected), len(calls))
                     for argv, (action, names) in zip(calls, expected):
                         self.assertEqual('compose', argv[0])

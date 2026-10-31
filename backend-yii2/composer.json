@@ -23,7 +23,7 @@
   "autoload": {"psr-4": {"Shop\\": ""}},
   "config": {"allow-plugins": {"yiisoft/yii2-composer": true}, "sort-packages": true},
   "scripts": {
-    "test": ["@php tests/run.php", "@php tests/auth_metrics.php", "@php tests/round4_transactions.php", "@php tests/round4_search_query.php", "@php tests/round4_inventory_query.php", "@php tests/round5_search_protocol.php"],
+    "test": ["@php tests/run.php", "@php tests/login_lockout_policy.php", "@php tests/runtime_compatibility.php", "@php tests/auth_metrics.php", "@php tests/round4_transactions.php", "@php tests/round4_search_query.php", "@php tests/round4_inventory_query.php", "@php tests/round5_search_protocol.php"],
     "test:integration": ["@php tests/integration.php", "@php tests/local_auth_core.php"],
     "test:all": "@php tests/all.php",
     "lint": "php tests/lint.php"

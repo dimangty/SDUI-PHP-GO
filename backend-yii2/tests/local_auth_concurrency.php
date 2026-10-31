@@ -13,7 +13,11 @@ class ConcurrentPasswordHasher extends PasswordHasher {
 }
 if(($argv[1]??'')==='worker'){
     $input=json_decode(fgets(STDIN),true,32,JSON_THROW_ON_ERROR);[, , ,$auth]=localServices(new ConcurrentPasswordHasher($input['phase']));
-    try{$result=$input['operation']==='register'?$auth->register($input['body']):$auth->login($input['body']);print json_encode(['ok'=>$result]);}
+    try{$result=match($input['operation']){
+        'register'=>$auth->register($input['body']),
+        'change-password'=>$auth->changePassword($input['user'],$input['body']),
+        default=>$auth->login($input['body']),
+    };print json_encode(['ok'=>$result]);}
     catch(ApiError $e){print json_encode(['error'=>$e->errorCode]);}exit;
 }
 function hashingWorker(array $input): array {
@@ -40,6 +44,61 @@ foreach(['native','legacy-rehash'] as $kind){
         $auth->changePassword($u,['oldPassword'=>'StrongPass7395','newPassword'=>'ChangedPass8395']);$changed=$db->one('SELECT password_hash,session_security_version FROM users WHERE id=?',[$u]);
         same(['error'=>'INVALID_CREDENTIALS'],finishHashingWorker($worker));same($changed,$db->one('SELECT password_hash,session_security_version FROM users WHERE id=?',[$u]));
         same(0,$db->one('SELECT count(*) AS n FROM session_families WHERE user_id=?',[$u])['n']);same($u,$auth->login(['email'=>$email,'password'=>'ChangedPass8395'])['userId']);
+    });
+}
+test('five concurrent PostgreSQL failures after an expired lock accumulate without lost updates', function () {
+    [$db, , , $auth] = localServices();
+    [$pair, $email] = localRegister($auth);
+    $user = $pair['userId'];
+    $db->execute("INSERT INTO login_attempts(user_id,failed_attempts,last_attempt,locked_until) VALUES(?,5,clock_timestamp(),clock_timestamp()-interval '1 second')", [$user]);
+    $workers = [];
+    for ($i = 0; $i < 5; $i++) {
+        $workers[] = hashingWorker(['operation'=>'login','phase'=>'verify','body'=>['email'=>$email,'password'=>'wrong']]);
+    }
+    foreach ($workers as [, $pipes]) { fwrite($pipes[0], "go\n"); }
+    $codes = [];
+    foreach ($workers as [$process, $pipes]) {
+        fclose($pipes[0]);
+        $codes[] = json_decode(stream_get_contents($pipes[1]), true, 32, JSON_THROW_ON_ERROR)['error'];
+        same('', stream_get_contents($pipes[2]));
+        fclose($pipes[1]); fclose($pipes[2]); same(0, proc_close($process));
+    }
+    sort($codes);
+    same(['ACCOUNT_LOCKED','INVALID_CREDENTIALS','INVALID_CREDENTIALS','INVALID_CREDENTIALS','INVALID_CREDENTIALS'], $codes);
+    same(5, $db->one('SELECT failed_attempts FROM login_attempts WHERE user_id=?', [$user])['failed_attempts']);
+});
+
+foreach (['failure-first', 'success-first'] as $order) {
+    test('correct and incorrect PostgreSQL login race uses user-first serialization: '.$order, function () use ($order) {
+        [$db, , , $auth] = localServices();
+        [$pair, $email] = localRegister($auth);
+        $user = $pair['userId'];
+        $db->execute('INSERT INTO login_attempts(user_id,failed_attempts,last_attempt) VALUES(?,4,clock_timestamp())', [$user]);
+        $good = hashingWorker(['operation'=>'login','phase'=>'verify','body'=>['email'=>$email,'password'=>'StrongPass7395']]);
+        $bad = hashingWorker(['operation'=>'login','phase'=>'verify','body'=>['email'=>$email,'password'=>'wrong']]);
+        if ($order === 'failure-first') {
+            same(['error'=>'ACCOUNT_LOCKED'], finishHashingWorker($bad));
+            same(['error'=>'ACCOUNT_LOCKED'], finishHashingWorker($good));
+            same(1, $db->one('SELECT count(*) AS n FROM session_families WHERE user_id=?', [$user])['n']);
+        } else {
+            same($user, finishHashingWorker($good)['ok']['userId']);
+            same(['error'=>'INVALID_CREDENTIALS'], finishHashingWorker($bad));
+            same(1, $db->one('SELECT failed_attempts FROM login_attempts WHERE user_id=?', [$user])['failed_attempts']);
+        }
+    });
+}
+
+foreach (['login', 'change-password'] as $operation) {
+    test('stale wrong-password '.$operation.' cannot overwrite counters after a password change', function () use ($operation) {
+        [$db, , , $auth] = localServices();
+        [$pair, $email] = localRegister($auth);
+        $user = $pair['userId'];
+        $body = $operation === 'login' ? ['email'=>$email,'password'=>'wrong'] : ['oldPassword'=>'wrong','newPassword'=>'OtherPass8395'];
+        $worker = hashingWorker(['operation'=>$operation,'user'=>$user,'phase'=>'verify','body'=>$body]);
+        $auth->changePassword($user, ['oldPassword'=>'StrongPass7395','newPassword'=>'ChangedPass8395']);
+        same(['error'=>$operation === 'login' ? 'INVALID_CREDENTIALS' : 'PASSWORD_CHANGED'], finishHashingWorker($worker));
+        same(null, $db->one('SELECT * FROM login_attempts WHERE user_id=?', [$user]));
+        errorCode('UNAUTHORIZED', fn()=>$auth->authenticate($pair['accessToken']));
     });
 }
 runTests();

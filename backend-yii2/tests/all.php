@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__).'/vendor/autoload.php';
+foreach (['login_lockout_policy.php', 'runtime_compatibility.php', 'local_auth_relock_native.php'] as $securitySuite) {
+    passthru(escapeshellarg(PHP_BINARY).' '.escapeshellarg(__DIR__.'/'.$securitySuite), $status);
+    if ($status !== 0) { exit($status); }
+}
 passthru(escapeshellarg(PHP_BINARY).' '.escapeshellarg(__DIR__.'/auth_metrics.php'),$status);
 if($status!==0){exit($status);}
 $files=['lint.php','run.php','round4_transactions.php','round4_search_query.php','round5_search_protocol.php','round4_catalog.php','round3_devices_unit.php','round3_reads.php','r9_order_summary.php','round3_devices.php','network_cidr.php','durations.php','cors.php','integration.php','auth.php','local_auth_core.php','local_auth_concurrency.php','local_recovery.php','opaque_authorization.php','security.php','throttling.php','trusted_clients.php','trusted_rate_limits.php','session_revocation.php','session_password_recovery.php','session_concurrency.php','logout_regression.php','session_upgrade.php','concurrency.php','address_race.php','api.php','search.php','adapters.php','readiness.php','deadlines.php'];

@@ -1,7 +1,8 @@
 # Docker Compose >=2.24.4 (!override). Only the edge's TLS port is published.
 x-production-env: &production-env
   APP_ENV: production
-  DATABASE_URL: postgres://shopkmp:${POSTGRES_PASSWORD:?required}@postgres:5432/shopkmp?sslmode=verify-full
+  DATABASE_URL: postgres://shopkmp_runtime:${POSTGRES_RUNTIME_PASSWORD:?runtime secret required}@postgres:5432/shopkmp?sslmode=verify-full
+  DATABASE_ROLE: runtime
   PGSSLROOTCERT: /run/tls/ca.crt
   OPENSEARCH_URL: https://admin:${OPENSEARCH_ADMIN_PASSWORD:?required}@opensearch:9200
   PAYMENT_GATEWAY_URL: ${PAYMENT_GATEWAY_URL:?required HTTPS provider}
@@ -24,13 +25,20 @@ services:
       - ./deploy/pg_hba.conf:/run/tls/pg_hba.conf:ro
   migrate:
     environment:
-      DATABASE_URL: postgres://shopkmp@postgres:5432/shopkmp?sslmode=verify-full&sslrootcert=/run/tls/ca.crt
+      DATABASE_URL: postgres://shopkmp_owner@postgres:5432/shopkmp?sslmode=verify-full&sslrootcert=/run/tls/ca.crt
+      PGPASSWORD: ${POSTGRES_OWNER_PASSWORD:?migration secret required}
     volumes: ["${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro"]
   yii-migrate:
-    environment: *production-env
+    environment:
+      <<: *production-env
+      DATABASE_URL: postgres://shopkmp_owner:${POSTGRES_OWNER_PASSWORD:?migration secret required}@postgres:5432/shopkmp?sslmode=verify-full
+      DATABASE_ROLE: owner
     volumes: *production-volumes
   reindex:
-    environment: *production-env
+    environment:
+      <<: *production-env
+      DATABASE_URL: postgres://shopkmp_indexer:${POSTGRES_INDEXER_PASSWORD:?index bootstrap secret required}@postgres:5432/shopkmp?sslmode=verify-full
+      DATABASE_ROLE: indexer
     volumes: *production-volumes
   yii2:
     environment: *production-env
@@ -39,23 +47,68 @@ services:
       - ${CA_BUNDLE_FILE}:/run/tls/ca-bundle.crt:ro
       - ./deploy/php/tls.ini:/usr/local/etc/php/conf.d/zz-tls.ini:ro
   maintenance:
-    environment: *production-env
+    environment:
+      <<: *production-env
+      DATABASE_URL: postgres://shopkmp_maintenance:${POSTGRES_MAINTENANCE_PASSWORD:?maintenance secret required}@postgres:5432/shopkmp?sslmode=verify-full
+      DATABASE_ROLE: maintenance
     volumes:
       - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
       - ${CA_BUNDLE_FILE}:/run/tls/ca-bundle.crt:ro
       - ./deploy/php/tls.ini:/usr/local/etc/php/conf.d/zz-tls.ini:ro
   reconcile:
-    environment: *production-env
+    environment:
+      <<: *production-env
+      DATABASE_URL: postgres://shopkmp_search:${POSTGRES_SEARCH_PASSWORD:?search worker secret required}@postgres:5432/shopkmp?sslmode=verify-full
+      DATABASE_ROLE: search
     volumes:
       - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
       - ${CA_BUNDLE_FILE}:/run/tls/ca-bundle.crt:ro
       - ./deploy/php/tls.ini:/usr/local/etc/php/conf.d/zz-tls.ini:ro
   payment-recovery:
-    environment: *production-env
+    environment:
+      <<: *production-env
+      DATABASE_URL: postgres://shopkmp_recovery:${POSTGRES_RECOVERY_PASSWORD:?payment recovery secret required}@postgres:5432/shopkmp?sslmode=verify-full
+      DATABASE_ROLE: recovery
     volumes: *production-volumes
   seed:
     environment: *production-env
     volumes: *production-volumes
+  identity-operator:
+    build: ./backend-yii2
+    image: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}-yii2
+    profiles: [database-admin]
+    command: [php, yii, auth/inventory]
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgres://shopkmp_identity_operator:${POSTGRES_OPERATOR_PASSWORD:?operator secret required}@postgres:5432/shopkmp?sslmode=verify-full
+      DATABASE_ROLE: operator
+      PGSSLROOTCERT: /run/tls/ca.crt
+    volumes:
+      - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
+    networks: [data]
+    restart: "no"
+    security_opt: [no-new-privileges:true]
+  database-provision:
+    build: ./backend-yii2
+    image: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}-yii2
+    profiles: [database-admin]
+    command: [php, /opt/database-provision.php, roles]
+    environment:
+      DATABASE_URL: postgres://shopkmp:${POSTGRES_PASSWORD:?DBA secret required}@postgres:5432/shopkmp?sslmode=verify-full
+      PGSSLROOTCERT: /run/tls/ca.crt
+      POSTGRES_OWNER_PASSWORD: ${POSTGRES_OWNER_PASSWORD:?migration secret required}
+      POSTGRES_RUNTIME_PASSWORD: ${POSTGRES_RUNTIME_PASSWORD:?runtime secret required}
+      POSTGRES_OPERATOR_PASSWORD: ${POSTGRES_OPERATOR_PASSWORD:?operator secret required}
+      POSTGRES_SEARCH_PASSWORD: ${POSTGRES_SEARCH_PASSWORD:?search worker secret required}
+      POSTGRES_INDEXER_PASSWORD: ${POSTGRES_INDEXER_PASSWORD:?index bootstrap secret required}
+      POSTGRES_MAINTENANCE_PASSWORD: ${POSTGRES_MAINTENANCE_PASSWORD:?maintenance secret required}
+      POSTGRES_RECOVERY_PASSWORD: ${POSTGRES_RECOVERY_PASSWORD:?payment recovery secret required}
+    volumes:
+      - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
+      - ./deploy/database-provision.php:/opt/database-provision.php:ro
+    networks: [data]
+    restart: "no"
+    security_opt: [no-new-privileges:true]
   opensearch:
     environment:
       DISABLE_SECURITY_PLUGIN: !reset null

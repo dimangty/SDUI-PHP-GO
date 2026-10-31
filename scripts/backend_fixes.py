@@ -3,6 +3,7 @@
 import argparse
 import os
 import subprocess
+import sys
 from compose import ROOT, command
 
 
@@ -33,8 +34,9 @@ def main():
         payment_env = ['-e', 'PAYMENT_GATEWAY_URL=http://payment-fixture-gateway:8080',
                        '-e', 'PAYMENT_GATEWAY_API_KEY=payment-fixture-key',
                        '-e', 'PAYMENT_WEBHOOK_SECRET=payment-test-secret',
-                       '-e', 'PAYMENT_TEST_HTTP_ORIGIN=http://payment-fixture-http:8080']
-        for suite in ('local_auth_concurrency.php', 'local_recovery.php', 'payment-migration.php', 'payments.php', 'payment-http.php', 'uuid_identity.php', 'uuid_recovery.php', 'recovery.php', 'recovery-scheduling.php'):
+                        '-e', 'PAYMENT_TEST_HTTP_ORIGIN=http://payment-fixture-http:8080']
+        subprocess.run([sys.executable, str(ROOT / 'scripts/database_roles_native.py')], cwd=ROOT, env=env, check=True)
+        for suite in ('local_auth_relock_native.php', 'local_auth_concurrency.php', 'local_recovery.php', 'payment-migration.php', 'payments.php', 'payment-http.php', 'uuid_identity.php', 'uuid_recovery.php', 'recovery.php', 'recovery-scheduling.php'):
             print('Focused backend suite: ' + suite, flush=True)
             subprocess.run(compose + ['run', '--rm', '--no-deps', *payment_env,
                                       'yii2', 'php', 'tests/' + suite], cwd=ROOT, env=env, check=True)

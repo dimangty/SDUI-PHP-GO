@@ -30,14 +30,14 @@ test('password transaction completion failure rolls back hash and every local re
 test('password verification snapshot cannot overwrite an intervening security generation',function(){
     [$db,$sessions,,$auth]=localServices();[$pair]=localRegister($auth);$u=$pair['userId'];$before=$db->one('SELECT password_hash FROM users WHERE id=?',[$u]);
     $hasher=new VerificationBarrierHasher(function()use($u){[, $other]=localServices();$other->logout($u);});
-    $racing=new AuthService($db,new ShopRepository($db),$sessions,$hasher);
+    $racing=Shop\infrastructure\AuthComposition::create($db,new ShopRepository($db),$sessions,$hasher);
     errorCode('PASSWORD_CHANGED',fn()=>$racing->changePassword($u,['oldPassword'=>'StrongPass7395','newPassword'=>'ChangedPass8395']));
     same($before,$db->one('SELECT password_hash FROM users WHERE id=?',[$u]));same(0,$db->one('SELECT count(*) AS n FROM password_session_operations WHERE user_id=?',[$u])['n']);
 });
 test('lost SQL connection after verification leaves no partially applied password change after restart',function(){
     [$db,$sessions,,$auth]=localServices();[$pair,$email]=localRegister($auth);$pid=$db->one('SELECT pg_backend_pid() AS pid')['pid'];
     $hasher=new VerificationBarrierHasher(function()use($pid){$observer=new Database(Env::get('DATABASE_URL'));truth($observer->one('SELECT pg_terminate_backend(?) AS killed',[$pid])['killed']);});
-    $racing=new AuthService($db,new ShopRepository($db),$sessions,$hasher);
+    $racing=Shop\infrastructure\AuthComposition::create($db,new ShopRepository($db),$sessions,$hasher);
     try{$racing->changePassword($pair['userId'],['oldPassword'=>'StrongPass7395','newPassword'=>'ChangedPass8395']);throw new RuntimeException('connection loss hidden');}catch(PDOException){}
     [$fresh,$s,,$a]=localServices();same($pair['userId'],$s->authenticate($pair['accessToken'])['id']);same($pair['userId'],$a->login(['email'=>$email,'password'=>'StrongPass7395'])['userId']);
     same(0,$fresh->one('SELECT count(*) AS n FROM password_session_operations WHERE user_id=?',[$pair['userId']])['n']);

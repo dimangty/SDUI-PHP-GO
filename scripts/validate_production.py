@@ -6,12 +6,45 @@ import subprocess
 from urllib.parse import urlsplit
 
 
+def validate_model(model):
+    """Inspect Docker's fully merged model; never log its credential values."""
+    services = model['services']
+    expected = {name: ('shopkmp_runtime', 'runtime') for name in ('yii2', 'seed')}
+    expected.update({'maintenance':('shopkmp_maintenance','maintenance'),
+                     'reconcile':('shopkmp_search','search'),
+                     'payment-recovery':('shopkmp_recovery','recovery'),
+                     'reindex':('shopkmp_indexer','indexer')})
+    expected.update({'yii-migrate': ('shopkmp_owner', 'owner'),
+                     'identity-operator': ('shopkmp_identity_operator', 'operator')})
+    for name, (user, capability) in expected.items():
+        if name not in services:
+            if name in ('seed', 'identity-operator'):
+                continue  # disabled CLI profiles are not runtime services
+            raise ValueError('Production database service missing: '+name)
+        env = services[name].get('environment', {})
+        url = urlsplit(env.get('DATABASE_URL', ''))
+        if (url.scheme not in ('postgres', 'postgresql') or url.username != user
+                or not url.password or url.hostname != 'postgres' or url.path != '/shopkmp'
+                or url.query != 'sslmode=verify-full'
+                or env.get('APP_ENV') != 'production' or env.get('DATABASE_ROLE') != capability):
+            raise ValueError(name+': unsafe production database configuration')
+        if any(key in env for key in ('PGPASSWORD', 'PGUSER', 'PGSERVICE', 'PGSERVICEFILE',
+               'POSTGRES_PASSWORD', 'POSTGRES_OWNER_PASSWORD', 'POSTGRES_OPERATOR_PASSWORD')):
+            raise ValueError(name+': unexpected privileged database secret/configuration')
+    migrate = services['migrate']['environment']
+    url = urlsplit(migrate.get('DATABASE_URL', ''))
+    if url.username != 'shopkmp_owner' or not migrate.get('PGPASSWORD') or 'sslmode=verify-full' not in url.query:
+        raise ValueError('migrate: explicit owner TLS credentials required')
+
+
 def openssl(*args):
     return subprocess.check_output(['openssl', *map(str, args)], stderr=subprocess.STDOUT)
 
 
 def validate(env):
-    keys = ('POSTGRES_PASSWORD', 'OPENSEARCH_ADMIN_PASSWORD', 'PAYMENT_WEBHOOK_SECRET',
+    keys = ('POSTGRES_PASSWORD', 'POSTGRES_RUNTIME_PASSWORD', 'POSTGRES_OWNER_PASSWORD',
+            'POSTGRES_SEARCH_PASSWORD','POSTGRES_INDEXER_PASSWORD','POSTGRES_MAINTENANCE_PASSWORD','POSTGRES_RECOVERY_PASSWORD',
+            'POSTGRES_OPERATOR_PASSWORD', 'OPENSEARCH_ADMIN_PASSWORD', 'PAYMENT_WEBHOOK_SECRET',
             'PAYMENT_GATEWAY_API_KEY')
     secrets = []
     for key in keys:

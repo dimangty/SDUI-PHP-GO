@@ -35,6 +35,7 @@ def main():
 
     run('route-matrix', [sys.executable, 'scripts/route_matrix.py', '--check'])
     run('runtime-graph', [sys.executable, 'scripts/runtime_graph_guard.py'])
+    run('php-runtime', [sys.executable, 'scripts/test_php_runtime.py', '--image', args.project + '-yii2'])
     run('scheduler-regression', [sys.executable, 'scripts/test_scheduler.py', '--image', args.project + '-yii2'])
     run('seed-preservation', compose + ['exec', '-T', 'yii2', 'php', 'tests/development_seed.php'])
     # SQL regression suites intentionally insert fixtures without catalog APIs.

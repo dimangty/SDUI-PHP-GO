@@ -9,6 +9,9 @@ local.properties
 xcuserdata/
 *.xcuserstate
 bin/
+!backend-yii2/bin/
+!backend-yii2/bin/entrypoint.sh
+!backend-yii2/bin/database-preflight.php
 coverage.out
 /shopkmp
 __pycache__/

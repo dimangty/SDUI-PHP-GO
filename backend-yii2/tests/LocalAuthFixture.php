@@ -8,7 +8,7 @@ use Shop\repositories\ShopRepository;
 
 function localServices(?PasswordHasher $hasher=null): array {
     $db=new Database(Env::get('DATABASE_URL'));$repo=new ShopRepository($db);$sessions=new SessionService($db,$repo);
-    return [$db,$sessions,new CredentialService($db,$repo,$sessions),new AuthService($db,$repo,$sessions,$hasher??new PasswordHasher())];
+    return [$db,$sessions,new CredentialService($db,$repo,$sessions),Shop\infrastructure\AuthComposition::create($db,$repo,$sessions,$hasher)];
 }
 /** Trusted SQL fixture: represents an individually reviewed ordinary local user. */
 function localUser(Database $db,string $hash='',bool $admin=false): string {

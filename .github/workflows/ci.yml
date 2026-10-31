@@ -34,6 +34,8 @@ jobs:
       - name: Run pinned SDUI linters
         if: matrix.module == 'backend-sdui'
         run: go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0 run --config .golangci.yml
+      - name: Run pinned backend vulnerability check
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 
   php:
     runs-on: ubuntu-latest
@@ -41,6 +43,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build standalone PHP image and run unit tests and lint
         run: make test-php
+      - name: Verify PHP extensions, TLS, runtime pruning and FPM
+        run: python3 scripts/test_php_runtime.py --image shopkmp-php-tests
 
   contracts:
     runs-on: ubuntu-latest

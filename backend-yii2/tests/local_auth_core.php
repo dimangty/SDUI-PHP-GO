@@ -8,7 +8,7 @@ use Shop\infrastructure\{Database,Env,ApiKernel};
 use Shop\repositories\ShopRepository;
 
 $db=new Database(Env::get('DATABASE_URL'));$repo=new ShopRepository($db);
-$sessions=new SessionService($db,$repo);$auth=new AuthService($db,$repo,$sessions);
+$sessions=new SessionService($db,$repo);$auth=Shop\infrastructure\AuthComposition::create($db,$repo,$sessions);
 function localRegistration(AuthService $auth): array {
     $email=Ids::uuid().'@test.example';
     return [$auth->register(['email'=>$email,'password'=>'StrongPass7395','fullName'=>'Local Buyer','phone'=>'+79991234567']),$email];

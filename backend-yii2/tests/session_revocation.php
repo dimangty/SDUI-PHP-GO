@@ -9,7 +9,7 @@ use Shop\repositories\ShopRepository;
 
 function sessionServices(): array {
     $db=new Database(Env::get('DATABASE_URL'));$repo=new ShopRepository($db);$s=new SessionService($db,$repo);
-    return [$db,$s,new CredentialService($db,$repo,$s),new AuthService($db,$repo,$s)];
+    return [$db,$s,new CredentialService($db,$repo,$s),Shop\infrastructure\AuthComposition::create($db,$repo,$s)];
 }
 function sessionUser(Database $db): string {
     return localUser($db,(new \Shop\domain\PasswordHasher())->hash('StrongPass7395'));

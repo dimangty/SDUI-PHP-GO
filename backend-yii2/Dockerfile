@@ -1,6 +1,7 @@
 # Official multi-platform indexes; update deliberately with a runtime test + full scan.
-FROM composer:2.11.0@sha256:278dfc7bd35169965d03f87194816f43bf4e6b6ea61707c2114e52ad12fe24ce AS composer-bin
-FROM php:8.3.36-fpm-alpine3.24@sha256:25e15cf35ed0f5b75d8cf14fc2c4ed7e0e6bee00d359e681b7fa3e91a7bee49f
+ARG PHP_RUNTIME=php:8.5.12-fpm-alpine3.24@sha256:4c2818074ec49f6abe46620f3965e0cb75bc3a5f2b417edd1aacaba6f091c40e
+FROM composer:2.11.1@sha256:537fb03057ed901ae06bde7ef25af348903485ae1acc7fc789b80d8bac666f35 AS composer-bin
+FROM ${PHP_RUNTIME}
 # The default image remains both the FPM runtime and the Composer/CLI test image.
 # mbstring, sodium, openssl and curl are already supplied by the official base.
 ARG PHP_EXTENSION_BUILD_JOBS=2
@@ -10,7 +11,7 @@ RUN set -eux; \
     apk upgrade --no-cache curl libcurl; \
     apk add --no-cache unzip; \
     apk add --no-cache --virtual .shopkmp-build-deps \
-        $PHPIZE_DEPS pax-utils postgresql-dev icu-dev libpng-dev libjpeg-turbo-dev libwebp-dev freetype-dev; \
+        $PHPIZE_DEPS pax-utils libpq-dev icu-dev libpng-dev libjpeg-turbo-dev libwebp-dev freetype-dev; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
     docker-php-ext-install -j"${PHP_EXTENSION_BUILD_JOBS}" pdo_pgsql intl gd pcntl; \
     docker-php-source delete; \
@@ -33,5 +34,7 @@ RUN composer install --no-interaction --prefer-dist --no-dev --no-scripts
 COPY . .
 RUN composer dump-autoload --optimize && mkdir -p runtime && chown -R www-data:www-data runtime
 COPY config/php.ini /usr/local/etc/php/conf.d/shopkmp.ini
+COPY bin/entrypoint.sh /usr/local/bin/shopkmp-entrypoint
+ENTRYPOINT ["/bin/sh", "/usr/local/bin/shopkmp-entrypoint"]
 EXPOSE 9000
 CMD ["php-fpm"]
