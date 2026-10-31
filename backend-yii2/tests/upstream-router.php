@@ -2,10 +2,6 @@
 // Test-only provider protocol fixture. Never loaded by the application.
 declare(strict_types=1);
 $path=parse_url($_SERVER['REQUEST_URI'],PHP_URL_PATH);
-if($path==='/realms/slow/.well-known/openid-configuration'){
-    sleep(3);header('Content-Type: application/json');$issuer='http://'.$_SERVER['HTTP_HOST'].'/realms/slow';
-    print json_encode(['issuer'=>$issuer,'jwks_uri'=>'http://'.$_SERVER['HTTP_HOST'].'/test-keys']);exit;
-}
 if($path==='/redirect'){http_response_code(302);header('Location: http://unreachable.invalid/');exit;}
 if($path==='/oversize'){print str_repeat('x',2048);exit;}
 if($path==='/slow'){sleep(3);print '{}';exit;}

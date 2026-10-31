@@ -24,7 +24,7 @@ type AccountReads interface {
 	Cart(context.Context, model.Identity) (model.Cart, error)
 	Addresses(context.Context, model.Identity) ([]model.Address, error)
 	Session(context.Context, model.Identity, string) (model.Session, error)
-	Orders(context.Context, model.Identity, model.OrderQuery) (model.Page[model.Order], error)
+	OrderSummaries(context.Context, model.Identity, model.OrderQuery) (model.Page[model.OrderSummary], error)
 	Order(context.Context, model.Identity, string) (model.Order, error)
 	Devices(context.Context, model.Identity, string) ([]model.Device, error)
 }

@@ -26,7 +26,7 @@ test('gateway sends integer cents stable operation key and never blindly retries
 });
 test('failed provider HTTP response maps to inherited 400 through API boundary without partial payment state',function()use($origin){
     $db=new \Shop\infrastructure\Database(Env::get('DATABASE_URL'));$repo=new \Shop\repositories\ShopRepository($db);$u=Ids::uuid();$c=Ids::uuid();$p=Ids::uuid();$a=Ids::uuid();
-    $db->execute('INSERT INTO users(id,email,password_hash,full_name,phone) VALUES(?,?,\'\',\'Provider Buyer\',\'+79991234567\')',[$u,$u.'@test.example']);
+    $db->execute('INSERT INTO users(id,email,password_hash,full_name,phone,local_identity_ready) VALUES(?,?,\'\',\'Provider Buyer\',\'+79991234567\',true)',[$u,$u.'@test.example']);
     $db->execute('INSERT INTO categories(id,name) VALUES(?,\'Provider category\')',[$c]);$db->execute('INSERT INTO products(id,category_id,name,price,stock) VALUES(?,?,\'Provider product\',\'1.25\',10)',[$p,$c]);
     $db->execute('INSERT INTO addresses(id,user_id,city,street,house) VALUES(?,?,\'X\',\'Y\',\'1\')',[$a,$u]);
     $commerce=new \Shop\application\CommerceService($db,$repo);$commerce->addCart($u,['productId'=>$p,'quantity'=>2]);$o=$commerce->createOrder($u,['deliveryAddressId'=>$a,'paymentMethod'=>'CARD']);

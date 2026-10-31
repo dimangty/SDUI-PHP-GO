@@ -66,6 +66,10 @@ func (c *Client) decodeResponse(res *http.Response, success successContract, out
 		// These opt-in wire envelopes have semantic requirements beyond JSON
 		// shape. Check them before call() finalizes its span and observer event.
 		switch cards := out.(type) {
+		case *orderSummaryPageWire:
+			if cards.Projection != orderSummaryProjection {
+				return false, &TransportError{Kind: "protocol", Status: res.StatusCode}
+			}
 		case *cardPageWire:
 			if !validCards(cards.Projection, cards.Items) {
 				return false, &TransportError{Kind: "protocol", Status: res.StatusCode}
@@ -100,6 +104,11 @@ func validResponseShape(raw []byte, typ reflect.Type, biometric bool) bool {
 	case reflect.Struct:
 		var fields map[string]json.RawMessage
 		if raw[0] != '{' || json.Unmarshal(raw, &fields) != nil {
+			return false
+		}
+		// A fixed opt-in summary is a closed read contract. Full DTOs retain
+		// their existing additive forward compatibility.
+		if (typ == reflect.TypeFor[orderSummaryPageWire]() || typ == reflect.TypeFor[orderSummaryWire]()) && len(fields) != typ.NumField() {
 			return false
 		}
 		for i := 0; i < typ.NumField(); i++ {

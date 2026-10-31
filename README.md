@@ -1,6 +1,6 @@
 # ShopKMP — Yii2 business API, Go SDUI, Compose Multiplatform
 
-A persistent Android/iOS shop with Keycloak authentication, catalog/search,
+A persistent Android/iOS shop with local PHP/PostgreSQL password authentication, catalog/search,
 cart, checkout, payments, orders, profile and device credentials. The root
 runtime uses **PHP 8.3 / Yii2 for business logic** and an **independent Go 1.27.3
 HTTP-only SDUI BFF**. The shared commonMain client renders eight destinations
@@ -12,7 +12,6 @@ Android / iOS → one Nginx edge
                   │                                      ↓ internal HTTP
                   └─ business API, media, callbacks → yii2-http:8080 → Yii FPM:9000
                                                                        ├─ PostgreSQL
-                                                                       ├─ Keycloak → separate PostgreSQL
                                                                        ├─ OpenSearch
                                                                        └─ configured payment provider
 ```
@@ -20,7 +19,7 @@ Android / iOS → one Nginx edge
 Only the edge publishes a host port. The BFF has no database or identity-provider
 credentials. The canonical business contracts live in `backend-yii2/contracts/`;
 the independent `tools/ops` module provides the checksum-validating one-shot
-migrator and Keycloak HTTP probe. The retired Go business source and original
+migrator. The retired Go business source and original
 archive have been removed after extracting these essentials; see
 [decommissioning and preserved artifacts](docs/LEGACY_REMOVAL.md).
 
@@ -56,7 +55,7 @@ should print `/Applications/Docker.app/Contents/Resources/bin/docker-credential-
 To retain this PATH in new zsh terminals, add the same `export PATH=...` line to
 `~/.zshrc`, then open a new terminal or run `source ~/.zshrc`.
 
-Give Docker Desktop enough memory for Keycloak, OpenSearch and the image builds;
+Give Docker Desktop enough memory for OpenSearch and the image builds;
 **8 GiB** is a practical starting allocation for local development. Additional
 running stacks need additional resources.
 
@@ -75,17 +74,17 @@ python3 scripts/compose.py --env .env config --quiet
 make run
 ```
 
-This keeps an existing `.env` and its database/client credentials intact.
+This keeps an existing `.env` and its database credentials intact.
 The example configuration is for **local development**. For production TLS and
 secrets, follow [the deployment guide](docs/DEPLOYMENT.md).
 
 `make run` builds/starts the stack, waits for real probes, then explicitly runs
-the development seed and search reconciliation. The seed creates two sample
+the development seed and explicit search bootstrap. The seed creates two sample
 products only when **both catalog tables are empty**; it never overwrites a
 populated catalog and is forbidden in production. `make up` starts without seeding.
 
-The first launch downloads images/dependencies and initializes the databases,
-Keycloak and search. Readiness can take several minutes; the default wait is
+The first launch downloads images/dependencies and initializes PostgreSQL and
+search. Readiness can take several minutes; the default wait is
 **2100 seconds (35 minutes)**, in addition to image build time.
 
 ### 3. Check the running services
@@ -93,7 +92,7 @@ Keycloak and search. Readiness can take several minutes; the default wait is
 * API and SDUI: **http://127.0.0.1:8080**
 * Development Swagger: **http://127.0.0.1:8080/swagger/**; serves the unchanged
   [canonical OpenAPI](backend-yii2/contracts/openapi.yaml).
-* No direct database, Keycloak, search, FPM or BFF host ports.
+* No direct database, search, FPM or BFF host ports.
 
 ```sh
 python3 scripts/compose.py --env .env ps --all
@@ -107,6 +106,20 @@ Long-running services should become `healthy`. Initialization jobs `migrate`,
 press Ctrl+C to leave the log view while containers keep running. `make down`
 stops/removes the project's containers and networks while retaining its data
 volumes. Start it again with `make run`.
+
+Password, PIN and biometric flows return opaque application tokens with the same
+mobile DTO. Registration creates ordinary users only; reviewed administrator
+access is managed through the trusted console. Existing accounts require explicit
+per-user identity review/reset; see the [V6 design](docs/backend-fixes/round-5-local-auth/ADR.md).
+Retired identity storage is not mounted or deleted by the new graph. Preserve its
+volumes/backups for audited account migration and the immutable old release.
+
+The `reindex` one-shot invokes `maintenance/search-bootstrap`; the five-minute
+scheduler still invokes `maintenance/reindex`. Search failure is a capability
+failure, not a login/payment readiness dependency. General app startup waits on
+SQL migrations, while the explicit search job and search-specific tests retain
+their own failing status. A full-stack `up --wait` may still report a failed search
+service/job; that must not be confused with PHP's general readiness.
 
 Set `EDGE_PORT` in `.env` for another port. The isolated integration stack runs at
 **http://127.0.0.1:58095** under project **`shopkmp-migrated-e2e`**.
@@ -171,7 +184,7 @@ make test-php                # standalone Docker build/tests; no .env or host PH
 SHOPKMP_E2E_URL=http://127.0.0.1:58095 make e2e
 ```
 
-`integration-check` checks the frozen 54-operation route manifest, scheduler
+`integration-check` checks the active dependency graph, frozen 54-operation route manifest, scheduler
 regressions, seed preservation and initial reindex, the CARD demo-payment journey,
 all eight schema-validated BFF screens/six commands, live BFF races/vet, ops
 tests/vet and the complete PHP business/API/concurrency/security suite through the
@@ -184,7 +197,8 @@ Its comparison harness and reference writers have been retired. Recorded PHP
 counts and mobile/Kover results in the reports describe those earlier runs, not
 new decommissioning passes. [Exact historical parity scope](docs/API_PARITY_REPORT.md) ·
 [Historical verification](docs/VERIFICATION_REPORT.md) ·
-[Handoff and current checks](docs/COMPLETION_REPORT.md).
+[Historical handoff](docs/COMPLETION_REPORT.md) ·
+[Current runtime evidence](docs/backend-fixes/round-5-local-auth/RUNTIME_RESULTS.md).
 
 Installed Android/iOS journeys exercise the same edge, including UI signup/PIN,
 SDUI, native checkout, Chrome/Safari CARD demo capture, paid orders and logout.
@@ -201,7 +215,7 @@ restore/cutover remain separate release gates. No production cutover has occurre
 ## Deployment and mobile endpoints
 
 [DEPLOYMENT.md](docs/DEPLOYMENT.md) covers local/production TLS, private services,
-secrets, issuer/JWKS, database histories, scheduled jobs, backup/rollback and
+secrets, local identity review, database histories, scheduled jobs, backup/rollback and
 single-writer staged rollout. Start from `.env.prod.example`, provision the
 required real secrets/certificates, then use `make prod-config` / `make prod-up`.
 Production publishes only HTTPS on one domain; Swagger/operational routes are hidden.
@@ -271,14 +285,14 @@ backend's `EDGE_PORT`.
 | [Canonical OpenAPI](backend-yii2/contracts/openapi.yaml) / [frozen routes](backend-yii2/contracts/routes.json) | 54 business operations; original names/access policies and decimal-string money |
 | [Route matrix](docs/ROUTE_MATRIX.md) | Exact methods/policies, PHP coverage, 8 screens + 6 commands |
 | [SDUI v1 contract](docs/SDUI_CONTRACT.md) | Finite wire types, schemas, 13 shared fixtures, native actions |
-| [Decommissioning](docs/LEGACY_REMOVAL.md) / [ops tools](tools/ops/README.md) | Preserved SQL/checksums, realm, migrator/probe and external-release rollback |
+| [Historical decommissioning](docs/LEGACY_REMOVAL.md) / [ops tools](tools/ops/README.md) | Preserved SQL/checksums, checksum migrator and external-release rollback |
 | [Migration strategy](docs/MIGRATION_PLAN.md) | Historical compatibility invariants and cutover planning |
 | [Implementation plan](docs/IMPLEMENTATION_PLAN.md) | Historical Task4 checkboxes and execution ledger |
 | [Yii2 service](backend-yii2/README.md) / [BFF service](backend-sdui/README.md) | Build/configuration and focused test suites |
 | [CMP report](docs/CMP_IMPLEMENTATION_REPORT.md) | Shared renderer, native integration and platform evidence |
 
 Client stack: Kotlin 2.3.10, CMP 1.10.3, Ktor 3.5, Koin 4.2, Navigation3,
-SQLDelight and existing UIKit. Infrastructure: PostgreSQL 17.11, Keycloak 26.8.1,
+SQLDelight and existing UIKit. Infrastructure: PostgreSQL 17.11,
 OpenSearch 2.19.7 and Nginx 1.30.6. Historical screenshots/draw.io and migration reports
 describe earlier stacks; the root Compose files define the current runtime.
 Actual rollback uses an independently retained immutable release and verified

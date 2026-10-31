@@ -13,8 +13,6 @@ flowchart TD
     B -->|fixed HTTP origin; bearer + request ID only| H
     H -->|FastCGI| P[Yii2 PHP-FPM :9000]
     P --> DB[(Business PostgreSQL)]
-    P --> K[Private Keycloak issuer]
-    K --> KDB[(Separate identity PostgreSQL)]
     P --> S[OpenSearch]
     P --> G[Configured payment provider]
     M[Independent ops checksum migrator job] --> DB
@@ -30,7 +28,7 @@ flowchart TD
   Thin controllers dispatch application services/repositories. No PHP request
   proxies business work to Go.
 * **BFF** composes eight typed documents using real canonical HTTP DTOs and six
-  finite reauthenticated commands. It neither reads SQL nor receives DB/Keycloak
+  finite reauthenticated commands. It neither reads SQL nor receives DB
   credentials. Its application port is 8080; its separate internal operational
   port is 9090. No personalized shared cache or fixture fallback exists.
 * **CMP** has four shared `core/sdui-*` modules and `feature/main` host. The
@@ -44,10 +42,9 @@ flowchart TD
   pinned pgx v5.10.0 used only by the infrastructure migrator. It preserves all
   22 SQL up/down files for migrations 001–011 byte-for-byte and validates the
   existing `schema_migrations` history. `deploy/migrate.Dockerfile` builds only
-  `cmd/migrate`. `deploy/keycloak/Dockerfile` adds the standard-library
-  `cmd/healthcheck` probe to official Keycloak 26.3.3; the unchanged realm lives
-  in `deploy/keycloak/shopkmp-realm.json`. Both Docker build contexts are
-  `tools/ops`. No Go process serves database-backed business requests.
+  `cmd/migrate`, using `tools/ops` as its build context. Original realm policy is
+  archived under `docs/backend-fixes/local-auth/history/`, never loaded by the
+  runtime. No Go process serves database-backed business requests.
 * **Verification** uses the same Yii/BFF edge plus a disposable provider fixture;
   its overlay adds only fixture support and Yii's verification-network access.
   Prior differential/reference-writer comparisons survive as historical evidence,
@@ -69,7 +66,7 @@ business arithmetic. PostgreSQL NUMERIC and existing replay/hash formats remain.
 
 Only edge has `ports`. The `ingress` network has three fixed addresses (edge,
 Yii HTTP and BFF); `application` carries internal HTTP/provider access; `data`
-is internal and carries the two private databases. PHP/Keycloak have database
+is internal and carries the private business database. PHP has database
 network access; BFF and edge have neither data-network membership nor DB secrets.
 Docker DNS is re-resolved by Nginx so recreated upstream containers do not leave
 stale addresses. No additional service port is implicitly published.
@@ -83,8 +80,8 @@ user/role/admin-identity headers are not copied upstream. It sets **one**
 **only from the fixed edge IP**, then passes the resolved address as FastCGI
 `REMOTE_ADDR`. PHP has `TRUSTED_PROXY_CIDRS=""` and never reparses an untrusted
 forwarding chain. The same resolved address drives auth/network budgets and
-webhook CIDR checks. HMAC/webhook headers and the explicit admin-bootstrap
-credential are preserved; neither is a trusted identity header.
+webhook CIDR checks. HMAC/webhook headers carry the independent callback proof;
+registration cannot grant administrator access.
 
 BFF intentionally forwards only bearer/request ID and finite command headers.
 Its Yii calls therefore use the BFF's internal socket address for network budgets;
@@ -97,27 +94,27 @@ configuration rather than accepting client forwarding headers.
 
 ## Identity and TLS
 
-Password authentication runs through PHP; Keycloak is not exposed to CMP or the
-browser. The preserved realm/client/service account is mounted unchanged. Issuer
-is `http://keycloak:8080/realms/shopkmp` in development and
-`https://keycloak:8443/realms/shopkmp` in production. Keycloak advertises that same
-origin for discovery/JWKS; PHP verifies issuer/signature/audience/azp/typ and
-requires same-origin JWKS discovery. No internal/public issuer rewrite is used.
+PHP owns local password hashing, account state and opaque sessions in PostgreSQL.
+Password/PIN/biometric use the same bearer DTO and revocation truth. Registration
+never grants admin; reviewed roles are persisted and managed by a trusted console.
+Existing users start unreviewed until the operator workflow establishes their
+identity/disabled/role state; no defaults are inferred from archived policy.
+See the [V6 identity decision](backend-fixes/round-5-local-auth/ADR.md).
 
-Production edge uses TLS 1.2/1.3 and one domain. Both DBs require TLS; libpq uses
+Production edge uses TLS 1.2/1.3 and one domain. PostgreSQL requires TLS; libpq uses
 verify-full plus PGSSLROOTCERT, including Yii's separate migration connection.
-Keycloak's JDBC uses verify-full. PHP curl/OpenSSL trust the provisioned combined
-CA bundle for Keycloak, OpenSearch and the real HTTPS payment provider. Search
+PHP curl/OpenSSL trust the provisioned combined
+CA bundle for OpenSearch and the real HTTPS payment provider. Search
 uses authenticated TLS and custom node certificates; fresh bootstrap contains
 only the explicitly configured admin user, no demo credentials/certificates.
-Keycloak 26.3.3's private management probe also verifies its HTTPS certificate.
 Internal edge/BFF/Yii HTTP hops are private Compose HTTP by design.
 
 ## Lifecycle and transaction invariants
 
-PostgreSQL healthy → ops checksum migration → separate Yii migration;
-OpenSearch healthy + Yii migration → initial reindex → FPM/Keycloak healthy →
-Yii HTTP ready → BFF/edge. Migration containers exit successfully; they are not
+PostgreSQL healthy → ops checksum migration → separate Yii migration → FPM →
+Yii HTTP ready → BFF/edge. Separately, OpenSearch healthy + Yii migration →
+explicit `maintenance/search-bootstrap` one-shot (`reindex` service). Search
+initialization/readiness cannot gate general login/payment readiness. Migration containers exit successfully; they are not
 business servers. Existing schema history/data are retained; there is no new
 baseline or reset. Application startup never seeds. `make run` explicitly invokes
 the development-only seed command after startup; the transaction locks both
@@ -126,7 +123,7 @@ catalog tables and does nothing if either is populated.
 Independent PHP scheduler processes run `maintenance/run` every 60 seconds and
 `maintenance/reindex` every 300 seconds; a long reindex cannot block reservation
 maintenance. Each avoids overlapping its own job, reports failures and has a
-heartbeat healthcheck. Initial reindex is a separate required one-shot job.
+heartbeat healthcheck. Initial bootstrap is a separate explicit one-shot job.
 
 Checkout retains key-scoped advisory/cart/product locks, exact current-price
 calculation and atomic order/items/payment/stock/cart/replay writes. PHP owns

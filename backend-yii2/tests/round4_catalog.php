@@ -42,7 +42,7 @@ test('malformed search hit identity fails integration instead of disappearing or
 foreach(['absent'=>[],'true'=>['isActive'=>true],'false'=>['isActive'=>false]] as $label=>$flag){
 test("native admin create respects $label with DB public and search visibility",function()use($db,$repo,$catalog,$flag){
     $user=Ids::uuid();$category=round4Category();
-    $db->execute("INSERT INTO users(id,email,password_hash,full_name,phone,is_admin) VALUES(?,?,'','Round4 admin','+79990000000',true)",[$user,$user.'@example.invalid']);
+    $db->execute("INSERT INTO users(id,email,password_hash,full_name,phone,is_admin,local_identity_ready) VALUES(?,?,'','Round4 admin','+79990000000',true,true)",[$user,$user.'@example.invalid']);
     $tokens=$db->transaction(fn()=>(new SessionService($db,$repo))->issue($user));$kernel=new ApiKernel($db);
     $headers=['authorization'=>'Bearer '.$tokens['accessToken'],'content-type'=>'application/json'];
         $word='visibility'.str_replace('-','',Ids::uuid());
@@ -73,7 +73,7 @@ test("native admin create respects $label with DB public and search visibility",
 }
 test('native admin parser rejects non-boolean isActive',function()use($db,$repo){
     $user=Ids::uuid();$category=round4Category();
-    $db->execute("INSERT INTO users(id,email,password_hash,full_name,phone,is_admin) VALUES(?,?,'','Round4 admin','+79990000000',true)",[$user,$user.'@example.invalid']);
+    $db->execute("INSERT INTO users(id,email,password_hash,full_name,phone,is_admin,local_identity_ready) VALUES(?,?,'','Round4 admin','+79990000000',true,true)",[$user,$user.'@example.invalid']);
     $tokens=$db->transaction(fn()=>(new SessionService($db,$repo))->issue($user));$kernel=new ApiKernel($db);
     $headers=['authorization'=>'Bearer '.$tokens['accessToken'],'content-type'=>'application/json'];
     foreach([null,0,1,'false','true',[],new stdClass()] as $value){

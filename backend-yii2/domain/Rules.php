@@ -20,7 +20,7 @@ final class Rules
     }
     public static function password(string $password): void
     {
-        if (strlen($password)<8 || strlen($password)>128 || !preg_match('/\p{Ll}/u',$password) || !preg_match('/\p{Lu}/u',$password) || !preg_match('/\p{N}/u',$password)) {
+        if (mb_strlen($password)<8 || strlen($password)>128 || !preg_match('/\p{Ll}/u',$password) || !preg_match('/\p{Lu}/u',$password) || !preg_match('/\p{N}/u',$password)) {
             throw new ApiError('WEAK_PASSWORD','password must contain upper/lower-case letters and a digit and be at least 8 characters');
         }
     }

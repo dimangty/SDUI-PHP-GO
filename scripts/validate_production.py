@@ -11,9 +11,8 @@ def openssl(*args):
 
 
 def validate(env):
-    keys = ('POSTGRES_PASSWORD', 'KEYCLOAK_DB_PASSWORD', 'KEYCLOAK_ADMIN_PASSWORD',
-            'KEYCLOAK_CLIENT_SECRET', 'OPENSEARCH_ADMIN_PASSWORD', 'PAYMENT_WEBHOOK_SECRET',
-            'ADMIN_BOOTSTRAP_TOKEN', 'PAYMENT_GATEWAY_API_KEY')
+    keys = ('POSTGRES_PASSWORD', 'OPENSEARCH_ADMIN_PASSWORD', 'PAYMENT_WEBHOOK_SECRET',
+            'PAYMENT_GATEWAY_API_KEY')
     secrets = []
     for key in keys:
         value = env.get(key, '')
@@ -47,7 +46,7 @@ def validate(env):
     ca = directory / 'ca.crt'
     openssl('x509', '-in', ca, '-noout', '-checkend', '86400')
     openssl('crl2pkcs7', '-nocrl', '-certfile', bundle)
-    for name, dns in [('api', host), ('postgres', 'postgres'), ('keycloak-postgres', 'keycloak-postgres'), ('keycloak', 'keycloak'), ('opensearch', 'opensearch')]:
+    for name, dns in [('api', host), ('postgres', 'postgres'), ('opensearch', 'opensearch')]:
         cert, key = directory / (name + '.crt'), directory / (name + '.key')
         openssl('verify', '-CAfile', ca, '-purpose', 'sslserver', '-verify_hostname', dns, cert)
         openssl('verify', '-CAfile', bundle, '-purpose', 'sslserver', '-verify_hostname', dns, cert)

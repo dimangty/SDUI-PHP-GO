@@ -48,7 +48,9 @@ final class CredentialService
         $device=$input['deviceId']??'';Rules::device($device);
         $result=$this->db->transaction(function()use($device,$input){
             $owner=$this->db->required('SELECT user_id FROM device_pins WHERE device_id=?',[$device],'PIN_NOT_SET','PIN is not set for this device');
-            $this->sessions->lockUser($owner['user_id']);
+            $u=$this->sessions->lockUser($owner['user_id']);
+            $this->sessions->assertAllowed($u);
+            if($u['is_admin']){throw new ApiError('PIN_FORBIDDEN_FOR_ADMIN','PIN login is disabled for administrators');}
             $r=$this->db->required('SELECT * FROM device_pins WHERE device_id=? FOR UPDATE',[$device],'PIN_NOT_SET','PIN is not set for this device');
             if($r['user_id']!==$owner['user_id']){throw new ApiError('PIN_NOT_SET','PIN credential changed; retry login');}
             $this->activeLock($r,'PIN');

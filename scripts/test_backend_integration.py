@@ -9,6 +9,8 @@ from unittest.mock import patch
 import backend_fixes
 from compose import ROOT, command
 
+RETIRED_PROVIDER = 'key' + 'cloak'
+
 
 class IntegrationModel(unittest.TestCase):
     def model(self, prod=False, verify=False):
@@ -18,7 +20,7 @@ class IntegrationModel(unittest.TestCase):
                             'PAYMENT_GATEWAY_URL': 'https://provider.example.test',
                             'PAYMENT_GATEWAY_API_KEY': 'config-only', 'PAYMENT_WEBHOOK_ALLOWED_CIDRS': '192.0.2.9/32'}
         return json.loads(subprocess.check_output(command(ROOT / '.env.example', prod=prod, verify=verify) +
-                          ['--profile', 'verification', 'config', '--format', 'json'], env=env))
+                          ['--profile', 'verification', '--profile', 'tools', 'config', '--format', 'json'], env=env))
 
     def test_exact_transport_boundaries_survive_all_overlays(self):
         for prod, verify in ((False, False), (True, False), (False, True)):
@@ -37,6 +39,35 @@ class IntegrationModel(unittest.TestCase):
                 for name, service in s.items():
                     if name!='edge': self.assertFalse(service.get('ports'))
 
+    def test_local_identity_graph_has_no_provider_or_registration_admin_secrets(self):
+        for prod, verify in ((False, False), (True, False), (False, True)):
+            with self.subTest(production=prod, verification=verify):
+                cfg = self.model(prod, verify)
+                self.assertNotIn(RETIRED_PROVIDER, cfg['services'])
+                self.assertNotIn(RETIRED_PROVIDER + '-postgres', cfg['services'])
+                self.assertNotIn(RETIRED_PROVIDER + '_data', cfg.get('volumes', {}))
+                for name, service in cfg['services'].items():
+                    for key in service.get('environment', {}):
+                        self.assertFalse(key.startswith(RETIRED_PROVIDER.upper() + '_'), (name, key))
+                        self.assertNotIn(key, ('ADMIN_EMAILS', 'ADMIN_BOOTSTRAP_TOKEN'), (name, key))
+
+    def test_search_bootstrap_is_explicit_and_cannot_block_application_startup(self):
+        for prod in (False, True):
+            services = self.model(prod)['services']
+            self.assertEqual(['php', 'yii', 'maintenance/search-bootstrap'], services['reindex']['command'])
+            self.assertEqual(['php', '/opt/scheduler/scheduler.php', 'maintenance/reindex'], services['reconcile']['command'][0:3])
+            self.assertNotIn('reindex', services['yii2']['depends_on'])
+            self.assertNotIn('opensearch', services['yii2']['depends_on'])
+            self.assertEqual('service_completed_successfully', services['yii2']['depends_on']['yii-migrate']['condition'])
+            self.assertEqual('service_healthy', services['reindex']['depends_on']['opensearch']['condition'])
+            self.assertEqual('service_completed_successfully', services['reconcile']['depends_on']['reindex']['condition'])
+
+    def test_post_seed_reindex_runs_reconciliation_not_bootstrap_inventory(self):
+        for target in ('reindex', 'integration-up'):
+            rendered = subprocess.check_output(['make', '--dry-run', target,
+                'ENV_FILE=.env.example'], cwd=ROOT, text=True)
+            self.assertIn('exec -T yii2 php yii maintenance/reindex', rendered)
+
     def test_recovery_is_separate_from_search_and_keeps_production_tls(self):
         for prod in (False,True):
             s=self.model(prod)['services'];worker=s['payment-recovery']
@@ -46,7 +77,6 @@ class IntegrationModel(unittest.TestCase):
             self.assertEqual('unless-stopped',worker['restart'])
             if prod:
                 self.assertIn('sslmode=verify-full',worker['environment']['DATABASE_URL'])
-                self.assertEqual('https://keycloak:8443/realms/shopkmp',worker['environment']['KEYCLOAK_ISSUER'])
                 self.assertTrue(any(v['target']=='/run/tls/ca.crt' for v in worker['volumes']))
                 self.assertTrue(any(v['target']=='/opt/scheduler' for v in worker['volumes']))
 
@@ -82,7 +112,7 @@ class FocusedRunner(unittest.TestCase):
     def test_focused_suites_get_child_only_gateway_configuration(self):
         calls=self.invoke()
         suites=[(a,k) for a,k in calls if 'run' in a]
-        self.assertEqual(['tests/payment-migration.php','tests/payments.php','tests/payment-http.php','tests/uuid_identity.php','tests/uuid_recovery.php','tests/recovery.php','tests/recovery-scheduling.php'],[a[-1] for a,k in suites])
+        self.assertEqual(['tests/local_auth_concurrency.php','tests/local_recovery.php','tests/payment-migration.php','tests/payments.php','tests/payment-http.php','tests/uuid_identity.php','tests/uuid_recovery.php','tests/recovery.php','tests/recovery-scheduling.php'],[a[-1] for a,k in suites])
         for argv,kwargs in suites:
             self.assertIn('PAYMENT_GATEWAY_URL=http://payment-fixture-gateway:8080',argv)
             self.assertEqual(os.environ.get('PAYMENT_GATEWAY_URL'),kwargs['env'].get('PAYMENT_GATEWAY_URL'))

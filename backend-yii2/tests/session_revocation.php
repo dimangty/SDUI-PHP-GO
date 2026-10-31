@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__.'/harness.php';
-require __DIR__.'/SessionProviderFixture.php';
+require __DIR__.'/LocalAuthFixture.php';
 use Shop\application\{AuthService,CredentialService,SessionService};
 use Shop\domain\Ids;
 use Shop\infrastructure\{Database,Env};
@@ -12,7 +12,7 @@ function sessionServices(): array {
     return [$db,$s,new CredentialService($db,$repo,$s),new AuthService($db,$repo,$s)];
 }
 function sessionUser(Database $db): string {
-    $id=Ids::uuid();$db->execute("INSERT INTO users(id,email,password_hash,full_name,phone) VALUES(?,?,'','Session Buyer','+79991234567')",[$id,$id.'@test.example']);return $id;
+    return localUser($db,(new \Shop\domain\PasswordHasher())->hash('StrongPass7395'));
 }
 function pinSession(CredentialService $c,string $user,?string $device=null): array {
     $device??=Ids::uuid();$c->setPin($user,['deviceId'=>$device,'deviceName'=>'Session phone','pin'=>'7395']);
@@ -50,9 +50,8 @@ test('terminal biometric lockout revokes its family',function(){
     errorCode('BIOMETRIC_REVOKED',fn()=>$c->loginBiometric(['credentialId'=>$id,'challenge'=>$nonce,'signature'=>base64_encode(str_repeat('x',64))]));rejected($s,$t);
 });
 test('password reset rejects all prior opaque access and refresh across devices including internal families',function(){
-    [$db,$s,$c,$auth]=sessionServices();$u=sessionUser($db);$other=sessionUser($db);[, $pin]=pinSession($c,$u);[, $bio]=bioSession($c,$u,Ids::uuid());$internal=$s->issue($u);$safe=$s->issue($other);$fixture=new SessionProviderFixture('success',$u);
-    try{$auth->changePassword($u,['oldPassword'=>'StrongPass7395','newPassword'=>'ChangedPass8395']);rejected($s,$pin);rejected($s,$bio);rejected($s,$internal);same($other,$s->authenticate($safe['accessToken'])['id']);}
-    finally{$fixture->close();}
+    [$db,$s,$c,$auth]=sessionServices();$u=sessionUser($db);$other=sessionUser($db);[, $pin]=pinSession($c,$u);[, $bio]=bioSession($c,$u,Ids::uuid());$internal=$s->issue($u);$safe=$s->issue($other);
+    $auth->changePassword($u,['oldPassword'=>'StrongPass7395','newPassword'=>'ChangedPass8395']);rejected($s,$pin);rejected($s,$bio);rejected($s,$internal);same($other,$s->authenticate($safe['accessToken'])['id']);
 });
 test('local logout revokes all user refresh families even when one token is supplied',function(){
     [$db,$s,$c]=sessionServices();$u=sessionUser($db);[, $one]=pinSession($c,$u);[, $two]=pinSession($c,$u);$s->logout($u,$one['refreshToken']);rejected($s,$one);rejected($s,$two);

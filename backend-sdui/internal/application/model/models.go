@@ -86,6 +86,18 @@ type OrderItem struct {
 	Quantity      int    `json:"quantity"`
 	PriceSnapshot Money  `json:"priceSnapshot"`
 }
+
+// OrderSummary is the list/card read model, not an incomplete detail Order.
+type OrderSummary struct {
+	ID              string `json:"id"`
+	Number          int    `json:"number"`
+	UserID          string `json:"userId"`
+	Status          string `json:"status"`
+	TotalAmount     Money  `json:"totalAmount"`
+	DeliveryAddress string `json:"deliveryAddress"`
+	PaymentMethod   string `json:"paymentMethod"`
+	CreatedAt       string `json:"createdAt"`
+}
 type Order struct {
 	ID                string      `json:"id"`
 	Number            int         `json:"number"`

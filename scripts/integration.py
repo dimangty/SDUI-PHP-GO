@@ -53,8 +53,8 @@ def main():
     registered = call('POST', '/api/v1/auth/register', {'email': email, 'password': password, 'fullName': 'Task4 Buyer', 'phone': '+79991234567'}, want=201)
     logged = call('POST', '/api/v1/auth/login', {'email': email, 'password': password})
     assert registered['userId'] == logged['userId']
-    jwt = logged['accessToken']
-    call('POST', '/api/v1/auth/pin', {'deviceId': device, 'deviceName': 'Task4 integration', 'pin': '7395'}, jwt, want=201)
+    password_token = logged['accessToken']
+    call('POST', '/api/v1/auth/pin', {'deviceId': device, 'deviceName': 'Task4 integration', 'pin': '7395'}, password_token, want=201)
     session = call('POST', '/api/v1/auth/pin/login', {'deviceId': device, 'pin': '7395'})
     token = session['accessToken']
     call('GET', '/api/v1/screens/home?deviceId=' + device, token=token)

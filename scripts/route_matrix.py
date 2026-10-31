@@ -105,7 +105,7 @@ def document():
            '| --- | --- | --- | --- | --- | --- | --- | --- |']
     for i, ((name, method, path, access), row) in enumerate(zip(go, php), 1):
         verb, ppath, service, operation, policy = row
-        extra = {'Auth': 'auth, signed_oidc, security, throttling', 'Credential': 'integration, concurrency',
+        extra = {'Auth': 'auth, local_auth, security, throttling', 'Credential': 'integration, concurrency',
                  'Catalog': 'search, integration', 'Profile': 'integration, address_race', 'Avatar': 'security',
                  'Commerce': 'integration, concurrency, address_race', 'Payment': 'security, concurrency, adapters, deadlines'}[service]
         negative = {'Auth': 'auth.wrong-password', 'Credential': 'bio.replay' if 'Biometric' in name or 'biometric' in name else 'pin.wrong',

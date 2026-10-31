@@ -131,7 +131,7 @@ independently validated. To deliberately regenerate after a reviewed wire change
 UPDATE_FIXTURES=1 go test ./internal/bff -run TestPublished
 ```
 
-### Live Yii/Keycloak/SQL journey
+### Live Yii/local-auth/SQL journey
 
 Requires the already-running **disposable** Task1 stack at 58088. The test
 registers/logs in random valid emails through PHP, then uses native opaque

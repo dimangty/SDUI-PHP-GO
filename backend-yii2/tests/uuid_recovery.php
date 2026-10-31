@@ -1,79 +1,42 @@
 <?php
 declare(strict_types=1);
 require __DIR__.'/harness.php';
-require __DIR__.'/SessionProviderFixture.php';
-use Shop\application\{PasswordSessionRecovery,RecoveryService,SessionService};
+require __DIR__.'/LocalAuthFixture.php';
+use Shop\application\RecoveryService;
 use Shop\domain\Ids;
-use Shop\infrastructure\{Database,Env,HttpClient,Keycloak};
-use Shop\repositories\ShopRepository;
-function uuidRecoveryDb(): Database {return new Database(Env::get('DATABASE_URL'));}
-function uuidRecoveryJob(Database $db): array {
-    $user=Ids::uuid();$id=Ids::uuid();
-    $db->execute("INSERT INTO users(id,email,password_hash,full_name,phone,sessions_blocked) VALUES(?,?,'','UUID Recovery','+79991234567',true)",[$user,$user.'@uuid.test']);
-    $db->execute("INSERT INTO password_session_operations(id,user_id,security_version,state) VALUES(?,?,0,'REVOKE_PENDING')",[$id,$user]);return [$id,$user];
-}
+
 foreach(['upper','mixed'] as $case){
-    test("UUID $case application and console recoveries share the worker advisory lock",function()use($case){
-        $db=uuidRecoveryDb();$blocker=uuidRecoveryDb();[$id,$user]=uuidRecoveryJob($db);$scope='password-session-recovery:'.$id;
-        $wire=$case==='upper'?strtoupper($id):strtoupper(substr($id,0,18)).substr($id,18);
-        $fixture=new SessionProviderFixture('success',$user);$provider=new Keycloak(new HttpClient(.5));
-        $sessions=new SessionService($db,new ShopRepository($db));
+    test('UUID '.$case.' legacy resolution cannot bypass the manual local migration fence',function()use($case){
+        [$db,$sessions]=localServices();$u=localUser($db);$id=Ids::uuid();$wire=$case==='upper'?strtoupper($id):strtoupper(substr($id,0,18)).substr($id,18);
+        $db->execute('UPDATE users SET sessions_blocked=true WHERE id=?',[$u]);$db->execute("INSERT INTO password_session_operations(id,user_id,security_version,state) VALUES(?,?,0,'REVOKE_PENDING')",[$id,$u]);
         try{
-            $blocker->one('SELECT pg_advisory_lock(hashtextextended(?,0))',[$scope]);
-            errorCode('IDENTITY_PROVIDER_UNAVAILABLE',fn()=>(new PasswordSessionRecovery($db,$sessions,$provider))->recover($wire));
-            errorCode('IDENTITY_PROVIDER_UNAVAILABLE',fn()=>(new RecoveryService($db,$provider))->recoverSession($wire,true,'SEC-201'));
-            same('REVOKE_PENDING',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$id])['state']);
-        }finally{$blocker->one('SELECT pg_advisory_unlock(hashtextextended(?,0))',[$scope]);}
-        try{
-            (new RecoveryService($db,$provider))->recoverSession($wire,true,'SEC-201');
-            same('COMPLETE',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$id])['state']);
+            $before=$db->one('SELECT * FROM password_session_operations WHERE id=?',[$id]);$worker=new RecoveryService($db);
+            errorCode('BAD_REQUEST',fn()=>$worker->recoverSession($wire,true,'SEC-201'));$worker->run();
+            same($before,$db->one('SELECT * FROM password_session_operations WHERE id=?',[$id]));errorCode('PASSWORD_CHANGED',fn()=>$sessions->issue($u));
             same(0,$db->one("SELECT count(*) AS n FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory'")['n']);
-            truth($blocker->one('SELECT pg_try_advisory_lock(hashtextextended(?,0)) AS ok',[$scope])['ok']);
-        }finally{$blocker->one('SELECT pg_advisory_unlock_all()');$fixture->close();}
+        }finally{$db->execute('DELETE FROM users WHERE id=?',[$u]);}
     });
 }
-test('old recovery completing across real HTTP cannot clear the next security generation fence',function(){
-    $db=uuidRecoveryDb();[$id,$user]=uuidRecoveryJob($db);$fixture=new SessionProviderFixture('next-generation',$user);
+test('historical completion cannot clear a newer security-generation fence',function(){
+    [$db,$sessions]=localServices();$u=localUser($db);$id=Ids::uuid();$next=Ids::uuid();
+    $db->execute('UPDATE users SET sessions_blocked=true,session_security_version=1 WHERE id=?',[$u]);
+    $db->execute("INSERT INTO password_session_operations(id,user_id,security_version,state) VALUES(?,?,0,'COMPLETE'),(?,?,1,'RESET_PENDING')",[$id,$u,$next,$u]);
     try{
-        $sessions=new SessionService($db,new ShopRepository($db));
-        (new PasswordSessionRecovery($db,$sessions,new Keycloak(new HttpClient(.5))))->recover($id);
-        same('COMPLETE',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$id])['state']);
-        same(1,$db->one('SELECT session_security_version FROM users WHERE id=?',[$user])['session_security_version']);
-        truth($db->one('SELECT sessions_blocked FROM users WHERE id=?',[$user])['sessions_blocked']);
-        errorCode('PASSWORD_CHANGED',fn()=>$sessions->issue($user));
-    }finally{$fixture->close();}
+        $worker=new RecoveryService($db);errorCode('BAD_REQUEST',fn()=>$worker->recoverSession(strtoupper($id),true,'SEC-202'));$worker->run();
+        same(['sessions_blocked'=>true,'session_security_version'=>1],$db->one('SELECT sessions_blocked,session_security_version FROM users WHERE id=?',[$u]));
+        same('RESET_PENDING',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$next])['state']);errorCode('PASSWORD_CHANGED',fn()=>$sessions->issue($u));
+    }finally{$db->execute('DELETE FROM users WHERE id=?',[$u]);}
 });
 foreach([false,true] as $consoleFirst){
-    test('live worker and uppercase console serialize over HTTP, owner='.($consoleFirst?'console':'worker'),function()use($consoleFirst){
-        $db=uuidRecoveryDb();[$id,$user]=uuidRecoveryJob($db);$fixture=new SessionProviderFixture('uuid-barrier',$user);$process=null;$pipes=[];
-        $db->execute('CREATE TABLE IF NOT EXISTS uuid_recovery_barrier(user_id uuid PRIMARY KEY,entered bool NOT NULL DEFAULT false,released bool NOT NULL DEFAULT false,calls int NOT NULL DEFAULT 0,open_transactions int NOT NULL DEFAULT 0)');
-        $db->execute('INSERT INTO uuid_recovery_barrier(user_id) VALUES(?)',[$user]);
-        $db->execute("UPDATE password_session_operations SET next_retry_at=clock_timestamp()-interval '1 day' WHERE id=?",[$id]);
+    test('live worker and uppercase legacy console preserve rows regardless of start order '.(int)$consoleFirst,function()use($consoleFirst){
+        [$db]=localServices();$u=localUser($db);$id=Ids::uuid();$db->execute('UPDATE users SET sessions_blocked=true WHERE id=?',[$u]);
+        $db->execute("INSERT INTO password_session_operations(id,user_id,security_version,state) VALUES(?,?,0,'RESET_PENDING')",[$id,$u]);$workers=[];
         try{
-            $env=getenv();$env['PGAPPNAME']='uuid-recovery-'.$user;
-            $cmd=[PHP_BINARY,'/app/yii',...($consoleFirst?['maintenance/session-recover',strtoupper($id),'independently-confirmed','SEC-202']:['maintenance/recover'])];
-            $process=proc_open($cmd,[0=>['file','/dev/null','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,null,$env);
-            $deadline=microtime(true)+4;
-            while(!$db->one('SELECT entered FROM uuid_recovery_barrier WHERE user_id=?',[$user])['entered']){if(microtime(true)>$deadline){throw new RuntimeException('owner did not reach HTTP barrier');}usleep(10000);}
-            $provider=new Keycloak(new HttpClient(.5));$r=new RecoveryService($db,$provider);
-            errorCode('IDENTITY_PROVIDER_UNAVAILABLE',fn()=>$r->recoverSession(strtoupper($id),true,'SEC-203'));
-            same(0,$r->run()['sessionsCompleted']);
-            same('REVOKE_PENDING',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$id])['state']);
-            $sessions=new SessionService($db,new ShopRepository($db));$sessions->logout($user);
-            same(1,$db->one('SELECT session_security_version FROM users WHERE id=?',[$user])['session_security_version']);
-            $db->execute('UPDATE uuid_recovery_barrier SET released=true WHERE user_id=?',[$user]);
-            $output=stream_get_contents($pipes[1]);$errors=stream_get_contents($pipes[2]);foreach($pipes as $pipe){fclose($pipe);}$pipes=[];
-            same(0,proc_close($process));$process=null;same('',$errors);
-            same('COMPLETE',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$id])['state']);
-            same(false,$db->one('SELECT sessions_blocked FROM users WHERE id=?',[$user])['sessions_blocked']);
-            same($user,$sessions->issue($user)['userId']);
-            same(['calls'=>1,'open_transactions'=>0],$db->one('SELECT calls,open_transactions FROM uuid_recovery_barrier WHERE user_id=?',[$user]));
-            same(0,$db->one("SELECT count(*) AS n FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory'")['n']);
-        }finally{
-            $db->execute('UPDATE uuid_recovery_barrier SET released=true WHERE user_id=?',[$user]);
-            if(is_resource($process)){foreach($pipes as $pipe){fclose($pipe);}proc_terminate($process);proc_close($process);}
-            $fixture->close();$db->execute('DELETE FROM uuid_recovery_barrier WHERE user_id=?',[$user]);
-        }
+            $before=$db->one('SELECT * FROM password_session_operations WHERE id=?',[$id]);$commands=[['maintenance/recover'],['maintenance/session-recover',strtoupper($id),'independently-confirmed','SEC-203']];if($consoleFirst){$commands=array_reverse($commands);}
+            foreach($commands as $args){$p=proc_open([PHP_BINARY,'/app/yii',...$args],[0=>['file','/dev/null','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes);$workers[]=[$p,$pipes,$args[0]];}
+            foreach($workers as [$p,$pipes,$command]){$out=stream_get_contents($pipes[1]);$err=stream_get_contents($pipes[2]);foreach($pipes as $pipe){fclose($pipe);}$exit=proc_close($p);if($command==='maintenance/recover'){same(0,$exit);same(0,json_decode($out,true,32,JSON_THROW_ON_ERROR)['sessionsCompleted']);}else{truth($exit!==0);truth(str_contains($out.$err,'auth/'));}}
+            same($before,$db->one('SELECT * FROM password_session_operations WHERE id=?',[$id]));truth($db->one('SELECT sessions_blocked FROM users WHERE id=?',[$u])['sessions_blocked']);
+        }finally{$db->execute('DELETE FROM users WHERE id=?',[$u]);}
     });
 }
 runTests();

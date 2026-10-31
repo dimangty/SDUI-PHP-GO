@@ -161,9 +161,6 @@ test('OpenSearch empty projected page retains marker and pagination',function()u
     finally{putenv('OPENSEARCH_URL=');$server->close();}
 });
 test('healthy readiness advertises catalog card capability',function()use($db){
-    putenv('KEYCLOAK_CLIENT_SECRET=fixture');
-    $server=new Round3HttpFixture();$old=getenv('KEYCLOAK_ISSUER');putenv('KEYCLOAK_ISSUER='.$server->origin.'/realms/round3');
-    try{$result=(new \Shop\infrastructure\ApiKernel($db))->handle('GET','/health/ready',[],'','127.0.0.1');same(200,$result['status']);same(['catalog-cards-v1'],$result['data']['capabilities']??null);}
-    finally{putenv($old===false?'KEYCLOAK_ISSUER':'KEYCLOAK_ISSUER='.$old);$server->close();}
+    $result=(new \Shop\infrastructure\ApiKernel($db))->handle('GET','/health/ready',[],'','127.0.0.1');same(200,$result['status']);same(['catalog-cards-v1'],$result['data']['capabilities']??null);
 });
 runTests();

@@ -6,7 +6,7 @@ use Shop\infrastructure\{ApiKernel,Database,Env,Network,RateLimiter};
 use Shop\repositories\ShopRepository;
 use Shop\application\AvatarService;
 $db=new Database(Env::get('DATABASE_URL'));$kernel=new ApiKernel($db);
-test('wrong opaque-token kind is rejected locally rather than sent to Keycloak',function()use($kernel){
+test('wrong opaque-token kind is rejected locally',function()use($kernel){
     $r=$kernel->handle('POST','/api/v1/auth/refresh',['content-type'=>'application/json'],json_encode(['refreshToken'=>'app_access_'.Ids::opaque()]),'192.0.2.91');
     same(401,$r['status']);same('INVALID_REFRESH_TOKEN',$r['data']['error']['code']);
 });

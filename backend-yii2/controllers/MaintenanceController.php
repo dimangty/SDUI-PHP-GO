@@ -2,7 +2,7 @@
 declare(strict_types=1);
 namespace Shop\controllers;
 
-use Shop\infrastructure\{Database,Env,OpenSearch,Keycloak,HttpClient};
+use Shop\infrastructure\{Database,Env,OpenSearch};
 use Shop\repositories\ShopRepository;
 use Shop\application\{MaintenanceService,CommerceService,PaymentOperations,RecoveryService,CredentialService,SessionService};
 
@@ -27,20 +27,25 @@ final class MaintenanceController extends \yii\console\Controller
         $count=(new MaintenanceService($db,$repo,new CommerceService($db,$repo)))->run();
         $this->stdout("Expired orders cancelled: $count\n");return 0;
     }
-    public function actionReindex(): int
+    public function actionSearchBootstrap(int $limit=100000,int|float $seconds=900): int
     {
-        $db=new Database(Env::get('DATABASE_URL'));$count=(new OpenSearch($db,new ShopRepository($db)))->reindex();
+        $db=new Database(Env::get('DATABASE_URL'));
+        $this->stdout(json_encode((new OpenSearch($db,new ShopRepository($db)))->bootstrap($limit,$seconds),JSON_THROW_ON_ERROR)."\n");return 0;
+    }
+    public function actionReindex(int $limit=100000,int|float $seconds=900): int
+    {
+        $db=new Database(Env::get('DATABASE_URL'));$count=(new OpenSearch($db,new ShopRepository($db)))->reindex($limit,$seconds);
         $this->stdout("SQL products reconciled: $count\n");return 0;
     }
-    public function actionSearchInventory(int $limit=100000): int
+    public function actionSearchInventory(int $limit=100000,int|float $seconds=120): int
     {
         $db=new Database(Env::get('DATABASE_URL'));
-        $this->stdout(json_encode((new OpenSearch($db,new ShopRepository($db)))->inventory($limit),JSON_THROW_ON_ERROR)."\n");return 0;
+        $this->stdout(json_encode((new OpenSearch($db,new ShopRepository($db)))->inventory($limit,$seconds),JSON_THROW_ON_ERROR)."\n");return 0;
     }
-    public function actionSearchStage(string $target,int $limit=100000): int
+    public function actionSearchStage(string $target,int $limit=100000,int|float $seconds=900): int
     {
         $db=new Database(Env::get('DATABASE_URL'));
-        $this->stdout(json_encode((new OpenSearch($db,new ShopRepository($db)))->stage($target,$limit),JSON_THROW_ON_ERROR)."\n");return 0;
+        $this->stdout(json_encode((new OpenSearch($db,new ShopRepository($db)))->stage($target,$limit,$seconds),JSON_THROW_ON_ERROR)."\n");return 0;
     }
     public function actionPayments(): int
     {
@@ -50,13 +55,13 @@ final class MaintenanceController extends \yii\console\Controller
     }
     public function actionRecover(): int
     {
-        $report=(new RecoveryService(new Database(Env::get('DATABASE_URL')),new Keycloak(new HttpClient())))->run();
+        $report=(new RecoveryService(new Database(Env::get('DATABASE_URL'))))->run();
         $this->stdout(json_encode($report,JSON_THROW_ON_ERROR)."\n");return 0;
     }
     public function actionSessionRecover(string $operation,string $confirmation,string $evidence): int
     {
-        (new RecoveryService(new Database(Env::get('DATABASE_URL')),new Keycloak(new HttpClient())))->recoverSession($operation,$confirmation==='independently-confirmed',$evidence);
-        $this->stdout("Session revocation completed; operator ticket recorded.\n");return 0;
+        (new RecoveryService(new Database(Env::get('DATABASE_URL'))))->recoverSession($operation,$confirmation==='independently-confirmed',$evidence);
+        return 0;
     }
     public function actionPaymentReconcile(string $operation,string $outcome,string $transaction,string $evidence): int
     {

@@ -7,6 +7,7 @@ return [
         'migrate'=>['class'=>\yii\console\controllers\MigrateController::class,'migrationPath'=>'@app/migrations','migrationTable'=>'yii2_migration_history'],
         'maintenance'=>\Shop\controllers\MaintenanceController::class,
         'development-seed'=>\Shop\controllers\DevelopmentSeedController::class,
+        'auth'=>\Shop\controllers\AuthController::class,
     ],
     'components'=>['db'=>[
         'class'=>\yii\db\Connection::class,

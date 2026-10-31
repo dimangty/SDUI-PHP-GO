@@ -1,6 +1,9 @@
 cluster.name: shopkmp
 network.host: 0.0.0.0
 discovery.type: single-node
+# Product indices are created only by explicit, verified maintenance builds.
+# A document PUT after index removal must not create an unmarked dynamic index.
+action.auto_create_index: "-shopkmp-products*,+*"
 plugins.security.allow_unsafe_democertificates: false
 plugins.security.allow_default_init_securityindex: true
 plugins.security.ssl.http.enabled: true

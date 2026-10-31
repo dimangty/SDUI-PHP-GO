@@ -75,7 +75,7 @@ func partial(d *sdui.Screen, section string, dest sdui.Destination) sdui.Node {
 	ref := action(d, sdui.Action{ID: section + ".retry", Type: "Retry", Destination: &dest})
 	return sdui.N(section+".error", "Error", sdui.StatusProps{Title: "Раздел недоступен", Message: "Попробуйте обновить экран", RetryAction: ref})
 }
-func orderCard(d *sdui.Screen, o model.Order) sdui.Node {
+func orderCard(d *sdui.Screen, o model.OrderSummary) sdui.Node {
 	ref := action(d, sdui.Action{ID: "order." + o.ID + ".open", Type: "OpenOrder", OrderID: o.ID})
 	return sdui.N("order."+o.ID, "OrderCard", sdui.OrderProps{OrderID: o.ID, Number: o.Number, Status: o.Status, Total: o.TotalAmount, DeliveryAddress: o.DeliveryAddress, PaymentMethod: o.PaymentMethod, CreatedAt: o.CreatedAt, OpenAction: ref})
 }

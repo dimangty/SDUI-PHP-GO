@@ -32,8 +32,8 @@ def main():
     run('req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '3', '-subj', '/CN=Task4 disposable test CA',
         '-keyout', path / 'ca.key', '-out', path / 'ca.crt', '-addext', 'basicConstraints=critical,CA:TRUE',
         '-addext', 'keyUsage=critical,keyCertSign,cRLSign')
-    for name, host in [('api', 'api.shopkmp.test'), ('postgres', 'postgres'), ('keycloak-postgres', 'keycloak-postgres'),
-                       ('keycloak', 'keycloak'), ('opensearch', 'opensearch'), ('provider', 'localhost')]:
+    for name, host in [('api', 'api.shopkmp.test'), ('postgres', 'postgres'),
+                       ('opensearch', 'opensearch'), ('provider', 'localhost')]:
         run('req', '-newkey', 'rsa:2048', '-nodes', '-subj', '/CN=' + host,
             '-keyout', path / (name + '.key'), '-out', path / (name + '.csr'))
         ext = path / (name + '.ext')
@@ -49,10 +49,8 @@ def main():
                   YII_FPM_SUBNET=str(fpm_subnet), YII_FPM_HTTP_IP=str(fpm_subnet[3]),
                   YII_FPM_DYNAMIC_RANGE=str(list(fpm_subnet.subnets(prefixlen_diff=1))[1]),
                   PUBLIC_API_HOST='api.shopkmp.test', TLS_CERT_DIR=str(path), CA_BUNDLE_FILE=str(path / 'ca.crt'),
-                  PAYMENT_GATEWAY_URL='https://localhost:18443', PAYMENT_WEBHOOK_ALLOWED_CIDRS='192.0.2.16/28',
-                  ADMIN_EMAILS='admin@shopkmp.test')
-    for key in ('POSTGRES_PASSWORD', 'KEYCLOAK_DB_PASSWORD', 'KEYCLOAK_ADMIN_PASSWORD', 'KEYCLOAK_CLIENT_SECRET',
-                'OPENSEARCH_ADMIN_PASSWORD', 'PAYMENT_WEBHOOK_SECRET', 'ADMIN_BOOTSTRAP_TOKEN', 'PAYMENT_GATEWAY_API_KEY'):
+                  PAYMENT_GATEWAY_URL='https://localhost:18443', PAYMENT_WEBHOOK_ALLOWED_CIDRS='192.0.2.16/28')
+    for key in ('POSTGRES_PASSWORD', 'OPENSEARCH_ADMIN_PASSWORD', 'PAYMENT_WEBHOOK_SECRET', 'PAYMENT_GATEWAY_API_KEY'):
         values[key] = secrets.token_urlsafe(36)
     env = path / 'test.env'
     env.write_text('\n'.join(k + '=' + v for k, v in values.items()) + '\n')

@@ -69,7 +69,7 @@ def tests(production_env):
                 'prod-app': [('up', ['yii2', 'yii2-http', 'sdui'])],
                 'prod-workers': [('up', ['maintenance', 'reconcile', 'payment-recovery'])],
                 'prod-edge': [('up', ['edge'])],
-                'prod-infra': [('up', ['postgres', 'keycloak-postgres', 'keycloak', 'opensearch'])],
+                'prod-infra': [('up', ['postgres', 'opensearch'])],
             }
             model = json.loads(subprocess.check_output(command(production_env, prod=True) + ['config', '--format', 'json']))
             for target, expected in stages.items():

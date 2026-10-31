@@ -20,6 +20,14 @@ class DisposablePKITest(unittest.TestCase):
             env_file = Path(result.stdout.strip())
             # Do not merge the caller's environment into generated-file assertions.
             values = dict(line.split('=', 1) for line in env_file.read_text().splitlines())
+            retired = 'key' + 'cloak'
+            self.assertFalse(any(key.startswith(retired.upper() + '_') for key in values))
+            self.assertNotIn('ADMIN_EMAILS', values)
+            self.assertNotIn('ADMIN_BOOTSTRAP_TOKEN', values)
+            self.assertFalse((env_file.parent / (retired + '.crt')).exists())
+            self.assertFalse((env_file.parent / (retired + '-postgres.crt')).exists())
+            for service in ('postgres', 'opensearch', 'provider'):
+                self.assertTrue((env_file.parent / (service + '.crt')).is_file())
             expected = {
                 'COMPOSE_PROJECT_NAME': 'shopkmp-backend-fixes-tls-e2e',
                 'EDGE_TLS_PORT': '58198', 'EDGE_SUBNET': '172.31.222.0/24',

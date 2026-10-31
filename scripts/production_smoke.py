@@ -63,13 +63,13 @@ def main():
     compose = command(args.env, prod=True)
     sql_probe = 'require "/app/vendor/autoload.php"; $d=new \\Shop\\infrastructure\\Database(getenv("DATABASE_URL")); if(!$d->one("SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()")["ssl"]){exit(1);} print "PHP PDO verify-full connection uses TLS\\n";'
     subprocess.run(compose + ['exec', '-T', 'yii2', 'php', '-r', sql_probe], cwd=ROOT, check=True)
-    for service in ('postgres', 'keycloak-postgres'):
+    for service in ('postgres',):
         subprocess.run(compose + ['exec', '-T', service, 'sh', '-ec',
             'export PGPASSWORD="$POSTGRES_PASSWORD"; if psql "host=' + service + ' user=$POSTGRES_USER dbname=$POSTGRES_DB sslmode=disable" -c "SELECT 1"; then exit 1; fi'], cwd=ROOT, check=True)
     output = ROOT / 'deploy/evidence/tls-smoke.json'
     output.parent.mkdir(exist_ok=True)
-    output.write_text(json.dumps({'domain': host, 'steps': steps, 'dbTLS': 'verified; both DBs reject plaintext'}, indent=2) + '\n')
-    print('PASS disposable TLS stack: trusted single-domain HTTPS, private issuer password/JWKS/profile, operational routes hidden, both PostgreSQL plaintext connections rejected')
+    output.write_text(json.dumps({'domain': host, 'steps': steps, 'dbTLS': 'verified; business DB rejects plaintext'}, indent=2) + '\n')
+    print('PASS disposable TLS stack: trusted single-domain HTTPS, local password/session/profile, operational routes hidden, PostgreSQL plaintext connections rejected')
 
 
 if __name__ == '__main__':

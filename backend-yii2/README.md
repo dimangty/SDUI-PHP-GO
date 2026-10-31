@@ -2,8 +2,8 @@
 
 Independent PHP 8.3 / Yii2 application using the original PostgreSQL schema.
 Business requests execute PHP application services and SQL repositories.
-Keycloak owns passwords/JWTs; PIN and biometric sessions use hashed opaque
-application tokens. No Go service is called by this application.
+PHP owns passwords and account state; password, PIN and biometric sessions use
+hashed opaque application tokens. No Go service is called by this application.
 
 ## Contract and layout
 
@@ -23,7 +23,7 @@ reference server is needed for current checks.
 * `repositories/ShopRepository.php`: canonical SQL reads, DTO conversion,
   aggregate locks and compatible JSONB replay envelopes.
 * `domain/`: integer money, compatible Argon2id hashes, IDs and validation rules.
-* `infrastructure/`: PDO, bounded Keycloak/JWKS, gateway and OpenSearch adapters.
+* `infrastructure/`: PDO, bounded gateway and OpenSearch adapters.
 
 Additional routes: `GET /health`, `/health/live`, `/health/ready`; protected
 `/uploads/users/{userID}/{fileID}`; catalog-backed `/images/products/*` and
@@ -49,14 +49,16 @@ required. `cp .env.example .env` followed by `make run` starts the full applicat
 
 The image includes Composer and `pdo_pgsql`, `intl`, `mbstring`, `sodium`,
 `openssl`, `gd`, `curl`, plus `pcntl` for concurrency tests. Dependencies are locked:
-Yii2 2.0.55, firebase/php-jwt 7.2.1. Browser assets, Yii debug/Gii and a frontend
+Yii2 2.0.55; the release lockfile is authoritative. Browser assets, Yii debug/Gii and a frontend
 template are not required. `vendor/` and runtime artifacts are ignored.
 
 Supply environment variables with `docker run --env-file ...`. The repository's
 `.env.example` supplies development configuration; `.env` is not implicitly loaded
 by the PHP process when running the image directly.
-There is no local-password auth fallback. The app requires its canonical SQL
-schema and the configured Keycloak realm for password flows.
+The app requires its canonical SQL schema and reviewed local identity state.
+Registration always creates ordinary users; trusted console operations manage
+reviewed administrator/disabled state. Existing users need an explicit identity
+review/reset, not a seeded default password. See the [V6 design](../docs/backend-fixes/round-5-local-auth/ADR.md).
 
 PHP-FPM listens on **9000**, entry script **`/app/web/index.php`**. An internal
 HTTP edge can use `config/nginx.conf` (upstream DNS alias **`yii2`**, port 9000;
@@ -82,15 +84,16 @@ public edge, TLS, internal-only operational endpoints and production orchestrati
 3. Run `php yii migrate --interactive=0` in the PHP container. It uses the
    separate **`yii2_migration_history`** table. There are currently no additional
    Yii-managed business migrations; 012–014 belong to the independent SQL runner.
-4. Run `php yii maintenance/reindex` to reconcile the existing catalog to
-   `shopkmp-products`, then start PHP-FPM and check `/health/ready`.
+4. Explicitly run `php yii maintenance/search-bootstrap` for initial search
+   construction/verification. PHP-FPM/general readiness waits on SQL, not search;
+   missing/unready search is a search capability failure.
 5. Schedule `php yii maintenance/run` every minute,
    `php yii maintenance/reindex` every five minutes, and
    **`php yii maintenance/recover` every 30 seconds**. Compose provides separate
    `maintenance`, search `reconcile`, and `payment-recovery` services. Maintenance expires pending
    reservations and cleans expired sessions, replay entries, challenges and
-   rate-limit records. Recovery dispatches unsent payment intents and safely
-   retries stored-user revocation; uncertain sends/resets require manual review.
+    rate-limit records. Recovery dispatches unsent payment intents; uncertain
+    financial effects and historical identity decisions require manual review.
    Commands coordinate through PostgreSQL and support multiple worker replicas.
 
    Scheduled maintenance commits retention first (up to 1,000 expired rows per
@@ -116,18 +119,14 @@ cutover, then validate normalized data/status. The test fixture scripts are
 * Cookie/session authentication and CSRF middleware are disabled. Only a verified
   `Authorization: Bearer` identifies the caller; forwarded identity/role headers
   are ignored. Native clients require no CORS origin.
-* OIDC verifies RS256 signatures, JWKS, issuer, audience, payload `typ=Bearer`,
-  `azp`, expiration and subject/profile binding. JWKS discovery URLs must remain
-  on the configured issuer origin. TLS verification is enabled; redirects are
-  not followed. JWKS are cached for five minutes and refreshed for key rotation.
 * Opaque values have `app_access_` / `app_refresh_` prefixes. Only binary SHA256
   hashes of the full values are stored. Refresh consumption is atomic and stays
   in the same server-derived credential family. Credential deletion/terminal
-  lockout revokes that credential's descendants. Password change fences and
-  revokes all prior opaque families before remote effects; pending provider
-  recovery keeps new issuance blocked. Logout revokes local sessions even when
-  provider cleanup fails. Already-issued offline-verified JWTs retain their
-  separate expiry boundary; see [sessions](../docs/backend-fixes/SESSIONS.md).
+  lockout revokes that credential's descendants. Password change updates the
+  local hash and revokes prior families in one SQL transaction. Logout revokes
+  all families for the authenticated user. Disabled/unreviewed/recovery-blocked
+  identities cannot bypass policy via fast login or refresh; see
+  [sessions](../docs/backend-fixes/SESSIONS.md).
 * Failed protected authentication consumes the unverified /24 IPv4 or /64 IPv6
   network budget. Only verified users receive the authenticated multiplier;
   per-user budgets are applied before admin rejection. Auth, refresh, checkout,
@@ -152,8 +151,8 @@ cutover, then validate normalized data/status. The test fixture scripts are
   guard. Recovery dispatches unsent intents; `SENT`/`UNKNOWN` effects are never
   blindly replayed. The development provider uses real SQL order
   and payment records and a secret-bound local demo-payment capability.
-* Protected resources enforce owner identity. Every admin route checks verified
-  realm roles or the persisted admin flag.
+* Protected resources enforce owner identity. Every admin route checks the
+  persisted reviewed admin flag; caller claims/headers cannot grant roles.
 * Curl enforces a whole-request deadline across DNS/connect/TLS, uploads, response
   headers and body. Responses and headers are bounded, redirects disabled and
   mutations single-attempt. Durations such as `500ms` retain their real unit.
@@ -163,15 +162,19 @@ cutover, then validate normalized data/status. The test fixture scripts are
 Composer commands inside the PHP image:
 
 ```sh
-composer test                 # unit / wire / manifest / fixed compatibility hash vector
-composer test:integration     # real PostgreSQL, requires DATABASE_URL
+composer test                 # offline unit / wire / manifest / search protocol / hash vector
+composer test:integration     # PostgreSQL integration + local_auth_core; requires DATABASE_URL
 composer lint
 composer test:all             # all suites below, requires isolated services
 ```
 
-`tests/all.php` runs unit, SQL integration, real Keycloak, security, process-level
+`tests/all.php` runs unit, local identity SQL integration, security, process-level
 concurrency, HTTP API, real OpenSearch and bounded-provider protocol tests.
 It includes the focused session/logout/upgrade and original-client/rate suites.
+The Composer `test:all` script runs `tests/local_auth_core.php` and
+`tests/round5_search_protocol.php` through `tests/all.php`. The local-auth core suite uses real PostgreSQL
+and is deliberately registered only in `test:integration` and `test:all`;
+`composer test` remains usable with `--network none`.
 `scripts/verify.py` additionally runs `scripts/backend_fixes.py` for the isolated
 payment provider, real payment HTTP, payment migration and recovery suites.
 Its gateway settings apply only to those child commands, preserving the ordinary
@@ -180,7 +183,7 @@ runs this focused phase on an already migrated disposable stack; it mounts SQL
 read-only at `/migrations`, pauses running payment/maintenance schedulers so they
 cannot consume fault-injection intents, and restores their prior running state
 after stopping fixtures on success or failure. The shared verification wrapper
-also pauses those workers around the SQL/Keycloak PHP suites.
+also pauses those workers around the SQL/auth PHP suites.
 The root `make integration-check` supplies `API_ORIGIN=http://edge:8080` and
 `UPSTREAM_FIXTURE_ORIGIN=http://fixture:8080` using the disposable verification
 overlay. Its provider fixture and Yii verification-network access do not add a
@@ -188,8 +191,8 @@ business implementation. No reference origin or source mount is needed.
 `throttling.php` exercises default/low policy ceilings at the real kernel;
 `address_race.php` uses SQL barriers and independent connections for both orderings
 of checkout versus deletion. `deadlines.php` sends continuously arriving raw HTTP
-headers. Signed claim/realm-role tests use a cryptographic JWKS fixture and SQL
-profiles. The Go differential and cross-runtime comparison harnesses were removed;
+headers. Opaque bearer and persisted-role tests retain real SQL profiles and
+cross-user authorization checks. The Go differential and cross-runtime comparison harnesses were removed;
 their saved migration evidence remains historical. PHP business/API/concurrency/
 security tests remain active.
 Tests create unique SQL fixtures and real identities; use a **disposable** DB.

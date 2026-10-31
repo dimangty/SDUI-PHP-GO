@@ -3,7 +3,6 @@ x-production-env: &production-env
   APP_ENV: production
   DATABASE_URL: postgres://shopkmp:${POSTGRES_PASSWORD:?required}@postgres:5432/shopkmp?sslmode=verify-full
   PGSSLROOTCERT: /run/tls/ca.crt
-  KEYCLOAK_ISSUER: https://keycloak:8443/realms/shopkmp
   OPENSEARCH_URL: https://admin:${OPENSEARCH_ADMIN_PASSWORD:?required}@opensearch:9200
   PAYMENT_GATEWAY_URL: ${PAYMENT_GATEWAY_URL:?required HTTPS provider}
   PAYMENT_GATEWAY_API_KEY: ${PAYMENT_GATEWAY_API_KEY:?required}
@@ -22,14 +21,6 @@ services:
       - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
       - ${TLS_CERT_DIR}/postgres.crt:/run/tls/server.crt:ro
       - ${TLS_CERT_DIR}/postgres.key:/run/tls/server.key:ro
-      - ./deploy/pg_hba.conf:/run/tls/pg_hba.conf:ro
-  keycloak-postgres:
-    entrypoint: [/bin/sh, /opt/postgres-tls.sh]
-    volumes:
-      - ./deploy/postgres-tls.sh:/opt/postgres-tls.sh:ro
-      - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
-      - ${TLS_CERT_DIR}/keycloak-postgres.crt:/run/tls/server.crt:ro
-      - ${TLS_CERT_DIR}/keycloak-postgres.key:/run/tls/server.key:ro
       - ./deploy/pg_hba.conf:/run/tls/pg_hba.conf:ro
   migrate:
     environment:
@@ -65,22 +56,6 @@ services:
   seed:
     environment: *production-env
     volumes: *production-volumes
-  keycloak:
-    command: [start, --import-realm]
-    environment:
-      KC_HOSTNAME: https://keycloak:8443
-      KC_HTTP_ENABLED: "false"
-      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak?sslmode=verify-full&sslrootcert=/opt/keycloak/conf/ca.crt
-      KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/conf/tls.crt
-      KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/conf/tls.key
-      # 26.8 honors the development override; explicitly inherit public TLS.
-      KC_HTTP_MANAGEMENT_SCHEME: inherited
-      HEALTHCHECK_URL: https://keycloak:9000/health/ready
-      SSL_CERT_FILE: /opt/keycloak/conf/ca.crt
-    volumes:
-      - ${TLS_CERT_DIR}/ca.crt:/opt/keycloak/conf/ca.crt:ro
-      - ${TLS_CERT_DIR}/keycloak.crt:/opt/keycloak/conf/tls.crt:ro
-      - ${TLS_CERT_DIR}/keycloak.key:/opt/keycloak/conf/tls.key:ro
   opensearch:
     environment:
       DISABLE_SECURITY_PLUGIN: !reset null

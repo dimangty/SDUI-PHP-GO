@@ -8,7 +8,7 @@ use Shop\repositories\ShopRepository;
 use Shop\domain\Ids;
 paymentTestSchema();
 function paymentToken(string $user,bool $admin=false): string {
-    $db=paymentDb();if($admin){$db->execute('UPDATE users SET is_admin=true WHERE id=?',[$user]);}
+    $db=paymentDb();$db->execute('UPDATE users SET local_identity_ready=true WHERE id=?',[$user]);if($admin){$db->execute('UPDATE users SET is_admin=true WHERE id=?',[$user]);}
     return (new SessionService($db,new ShopRepository($db)))->issue($user)['accessToken'];
 }
 function paymentHttp(string $method,string $path,?string $token=null): array {

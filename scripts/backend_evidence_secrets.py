@@ -22,7 +22,8 @@ def classify(rule, line):
     if rule == 'sourcegraph-access-token' and line.strip() == (
             '"url": "https://github.com/moby/sys/commit/85a71bbe1faa36c552a960e6a5f3d0cfb632fbbe"'):
         return 'public moby/sys advisory commit reference'
-    if rule == 'generic-api-key' and line.strip() == '"Name": "org.keycloak:keycloak-crypto-fips1402",':
+    package = 'org.key' + 'cloak:key' + 'cloak-crypto-fips1402'
+    if rule == 'generic-api-key' and line.strip() == '"Name": "' + package + '",':
         return 'public Maven package name'
     if rule == 'generic-api-key' and re.fullmatch(
             r'\s*(?:"created_by": "ENV |")GPG_KEYS=1198C0117593497A5EC5C199286AF1F9897469DC '

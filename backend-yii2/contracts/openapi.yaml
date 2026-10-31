@@ -28,7 +28,7 @@ paths:
     post:
       tags: [Auth]
       operationId: logout
-      description: Local opaque families are revoked first. Empty or opaque refresh input is local-only logout. Provider refresh input additionally requests authenticated-user online/offline provider cleanup. IDENTITY_PROVIDER_ERROR (502) or IDENTITY_PROVIDER_UNAVAILABLE (503) confirms local cleanup committed while remote completion is unconfirmed; a database failure before local commit does not provide that guarantee. Already-issued offline-verified JWTs remain valid until expiry.
+      description: Revokes all local session families of the authenticated user atomically, irrespective of refreshToken input. A supplied token cannot select another user. Success is returned only after commit; storage failure does not confirm revocation. Previously issued external-provider tokens are not trusted after local-identity cutover.
       requestBody: {$ref: '#/components/requestBodies/LogoutRequest'}
       responses: {'204': {description: Requested logout scope confirmed}, '401': {$ref: '#/components/responses/Error'}, '502': {$ref: '#/components/responses/Error'}, '503': {$ref: '#/components/responses/Error'}}
   /auth/session:
@@ -132,7 +132,21 @@ paths:
     put: {tags: [Profile], operationId: updateAddress, parameters: [{$ref: '#/components/parameters/AddressId'}], requestBody: {$ref: '#/components/requestBodies/AddressRequest'}, responses: {'200': {$ref: '#/components/responses/Address'}}}
     delete: {tags: [Profile], operationId: deleteAddress, parameters: [{$ref: '#/components/parameters/AddressId'}], responses: {'204': {description: Address deleted}}}
   /orders:
-    get: {tags: [Orders], operationId: orders, parameters: [{name: status, in: query, schema: {type: string, enum: [CREATED, PAID, ASSEMBLING, DELIVERING, COMPLETED, CANCELLED]}}, {$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}], responses: {'200': {$ref: '#/components/responses/OrderPage'}}}
+    get:
+      tags: [Orders]
+      operationId: orders
+      description: Without projection returns complete historical orders. The opt-in sdui-order-summary-v1 returns only card and ownership data, with an exact projection marker even on empty pages. Present unsupported projection values, including an empty value, return INVALID_PROJECTION (400).
+      parameters: [{name: status, in: query, schema: {type: string, enum: [CREATED, PAID, ASSEMBLING, DELIVERING, COMPLETED, CANCELLED]}}, {$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/Size'}, {name: projection, in: query, required: false, schema: {type: string, enum: [sdui-order-summary-v1]}}]
+      responses:
+        '200':
+          description: Full orders by default; marked summaries only when explicitly requested.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - allOf: [{$ref: '#/components/schemas/OrderPage'}, {not: {required: [projection]}}]
+                  - {$ref: '#/components/schemas/OrderSummaryPage'}
+        '400': {$ref: '#/components/responses/Error'}
     post: {tags: [Orders], operationId: createOrder, parameters: [{$ref: '#/components/parameters/IdempotencyKey'}], requestBody: {$ref: '#/components/requestBodies/CreateOrderRequest'}, responses: {'201': {$ref: '#/components/responses/Order'}, '429': {$ref: '#/components/responses/RateLimited'}}}
   /orders/{orderId}:
     get: {tags: [Orders], operationId: order, parameters: [{$ref: '#/components/parameters/OrderId'}], responses: {'200': {$ref: '#/components/responses/Order'}}}
@@ -167,7 +181,7 @@ paths:
     delete: {tags: [Admin], operationId: deleteProduct, parameters: [{$ref: '#/components/parameters/ProductId'}], responses: {'204': {description: Product deleted}}}
 components:
   securitySchemes:
-    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: opaque}
   parameters:
     Page:
       name: page
@@ -674,6 +688,31 @@ components:
         items: {type: array, items: {$ref: '#/components/schemas/Order'}}
         page: {type: integer, minimum: 0}
         size: {type: integer, minimum: 1}
+        totalPages: {type: integer, minimum: 0}
+        totalItems: {type: integer, minimum: 0}
+    OrderSummary:
+      type: object
+      additionalProperties: false
+      description: Historical order card values, without items, comments or payment/address identifiers. Ownership remains explicit.
+      required: [id, number, userId, status, totalAmount, deliveryAddress, paymentMethod, createdAt]
+      properties:
+        id: {type: string, format: uuid}
+        number: {type: integer}
+        userId: {type: string, format: uuid}
+        status: {type: string, enum: [CREATED, PAID, ASSEMBLING, DELIVERING, COMPLETED, CANCELLED]}
+        totalAmount: {$ref: '#/components/schemas/Money'}
+        deliveryAddress: {type: string}
+        paymentMethod: {type: string, enum: [CARD, SBP, ON_DELIVERY]}
+        createdAt: {type: string, format: date-time}
+    OrderSummaryPage:
+      type: object
+      additionalProperties: false
+      required: [projection, items, page, size, totalPages, totalItems]
+      properties:
+        projection: {type: string, const: sdui-order-summary-v1}
+        items: {type: array, items: {$ref: '#/components/schemas/OrderSummary'}}
+        page: {type: integer, minimum: 0}
+        size: {type: integer, minimum: 1, maximum: 100}
         totalPages: {type: integer, minimum: 0}
         totalItems: {type: integer, minimum: 0}
     Payment:

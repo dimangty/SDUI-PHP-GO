@@ -17,7 +17,7 @@ function trustRequest(string $client,string $peer='172.30.95.4',?string $token=n
     return (new ApiKernel($db))->handle('GET','/api/v1/users/me',$headers,'',$peer);
 }
 function trustIdentity(): array {
-    global $db;$id=Ids::uuid();$db->execute('INSERT INTO users(id,email,password_hash,full_name,phone) VALUES(?,?,\'\',\'Trust Buyer\',\'+79991234567\')',[$id,$id.'@trust.example']);
+    global $db;$id=Ids::uuid();$db->execute('INSERT INTO users(id,email,password_hash,full_name,phone,local_identity_ready) VALUES(?,?,\'\',\'Trust Buyer\',\'+79991234567\',true)',[$id,$id.'@trust.example']);
     return $db->transaction(fn()=>(new SessionService($db,new ShopRepository($db)))->issue($id));
 }
 test('separate external networks get independent quotas through both BFF replicas',function(){

@@ -10,9 +10,9 @@ The final two columns name historical paired cases in `deploy/evidence/api-parit
 
 | # | Method | Exact path | Policy | PHP handler | Additional regression suites (`backend-yii2/tests/`) | Matching Go↔Yii2 success case | Negative/access parity evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | POST | `/api/v1/auth/register` | public | `Auth.register` | auth, signed_oidc, security, throttling | `auth.register` | `auth.wrong-password` (group) |
-| 2 | POST | `/api/v1/auth/login` | public | `Auth.login` | auth, signed_oidc, security, throttling | `auth.login` | `auth.wrong-password` (group) |
-| 3 | POST | `/api/v1/auth/refresh` | public | `Auth.refresh` | auth, signed_oidc, security, throttling | `auth.refresh` | `auth.wrong-password` (group) |
+| 1 | POST | `/api/v1/auth/register` | public | `Auth.register` | auth, local_auth, security, throttling | `auth.register` | `auth.wrong-password` (group) |
+| 2 | POST | `/api/v1/auth/login` | public | `Auth.login` | auth, local_auth, security, throttling | `auth.login` | `auth.wrong-password` (group) |
+| 3 | POST | `/api/v1/auth/refresh` | public | `Auth.refresh` | auth, local_auth, security, throttling | `auth.refresh` | `auth.wrong-password` (group) |
 | 4 | POST | `/api/v1/auth/pin/login` | public | `Credential.loginPin` | integration, concurrency | `pin.login` | `pin.wrong` (group) |
 | 5 | POST | `/api/v1/auth/biometric/challenge` | public | `Credential.challenge` | integration, concurrency | `bio.challenge` | `bio.replay` (group) |
 | 6 | POST | `/api/v1/auth/biometric/login` | public | `Credential.loginBiometric` | integration, concurrency | `bio.login` | `bio.replay` (group) |
@@ -26,7 +26,7 @@ The final two columns name historical paired cases in `deploy/evidence/api-parit
 | 14 | GET | `/api/v1/products/{productID}/reviews` | public | `Catalog.reviews` | search, integration | `reviews.page` | `reviews.other-owner` (group) |
 | 15 | POST | `/api/v1/payments/webhook` | public | `Payment.webhook` | security, concurrency, adapters, deadlines | `payment.webhook` | `payment.webhook-replay` (group) |
 | 16 | GET | `/api/v1/auth/session` | protected | `Credential.session` | integration, concurrency | `credentials.session` | `policy.missing.getSession`401; `pin.wrong` (group) |
-| 17 | POST | `/api/v1/auth/logout` | protected | `Auth.logout` | auth, signed_oidc, security, throttling | `auth.logout-opaque` | `policy.missing.logout`401; `auth.wrong-password` (group) |
+| 17 | POST | `/api/v1/auth/logout` | protected | `Auth.logout` | auth, local_auth, security, throttling | `auth.logout-opaque` | `policy.missing.logout`401; `auth.wrong-password` (group) |
 | 18 | POST | `/api/v1/auth/pin` | protected | `Credential.setPin` | integration, concurrency | `pin.set` | `policy.missing.createPin`401; `pin.wrong` (group) |
 | 19 | PUT | `/api/v1/auth/pin` | protected | `Credential.changePin` | integration, concurrency | `pin.change` | `policy.missing.changePin`401; `pin.wrong` (group) |
 | 20 | DELETE | `/api/v1/auth/pin` | protected | `Credential.deletePin` | integration, concurrency | `pin.delete-current` | `policy.missing.deleteCurrentPin`401; `pin.wrong` (group) |
@@ -39,7 +39,7 @@ The final two columns name historical paired cases in `deploy/evidence/api-parit
 | 27 | GET | `/api/v1/users/me` | protected | `Profile.user` | integration, address_race | `profile.initial` | `policy.missing.getCurrentUser`401; `profile.email-immutable` (group) |
 | 28 | PUT | `/api/v1/users/me` | protected | `Profile.update` | integration, address_race | `profile.update-null` | `policy.missing.updateCurrentUser`401; `profile.email-immutable` (group) |
 | 29 | PUT | `/api/v1/users/me/avatar` | protected | `Avatar.update` | security | `profile.avatar-null` | `policy.missing.updateCurrentUserAvatar`401; `profile.email-immutable` (group) |
-| 30 | POST | `/api/v1/users/me/change-password` | protected | `Auth.changePassword` | auth, signed_oidc, security, throttling | `password.change` | `policy.missing.changePassword`401; `auth.wrong-password` (group) |
+| 30 | POST | `/api/v1/users/me/change-password` | protected | `Auth.changePassword` | auth, local_auth, security, throttling | `password.change` | `policy.missing.changePassword`401; `auth.wrong-password` (group) |
 | 31 | GET | `/api/v1/cart` | protected | `Commerce.cart` | integration, concurrency, address_race | `cart.initial` | `policy.missing.getCart`401; `cart.key-conflict` (group) |
 | 32 | POST | `/api/v1/cart/items` | protected | `Commerce.addCart` | integration, concurrency, address_race | `cart.add` | `policy.missing.addCartItem`401; `cart.key-conflict` (group) |
 | 33 | PATCH | `/api/v1/cart/items/{productID}` | protected | `Commerce.updateCart` | integration, concurrency, address_race | `cart.patch` | `policy.missing.updateCartItem`401; `cart.key-conflict` (group) |

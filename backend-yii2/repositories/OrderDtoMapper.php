@@ -7,6 +7,16 @@ use Shop\domain\{Ids,Money};
 /** Pure historical snapshot conversion; no current-product lookup. */
 final class OrderDtoMapper
 {
+    /** List read model, using only stored historical order values. */
+    public static function summary(array $order): array
+    {
+        return [
+            'id'=>$order['id'],'number'=>$order['number'],'userId'=>$order['user_id'],
+            'status'=>$order['status'],'totalAmount'=>Money::format(Money::parse($order['total_amount'])),
+            'deliveryAddress'=>$order['delivery_address'],'paymentMethod'=>$order['payment_method'],
+            'createdAt'=>Ids::timestamp($order['created_at']),
+        ];
+    }
     public static function map(array $order, array $preloadedItems): array
     {
         $items = array_map(static fn(array $item): array => [

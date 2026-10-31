@@ -17,7 +17,7 @@ $commerce = new CommerceService($db, $repo);
 function fixture(): array {
     global $db;
     $u=Ids::uuid(); $a=Ids::uuid(); $p=Ids::uuid(); $c=Ids::uuid();
-    $db->execute('INSERT INTO users(id,email,password_hash,full_name,phone) VALUES(?,?,\'\',\'Test Buyer\',\'+79991234567\')', [$u,"$u@test.example"]);
+    $db->execute('INSERT INTO users(id,email,password_hash,full_name,phone,local_identity_ready) VALUES(?,?,\'\',\'Test Buyer\',\'+79991234567\',true)', [$u,"$u@test.example"]);
     $db->execute('INSERT INTO categories(id,name) VALUES(?,\'Test category\')',[$c]);
     $db->execute('INSERT INTO products(id,category_id,name,price,stock) VALUES(?,?,\'Exact product\',\'0.10\',10)',[$p,$c]);
     $db->execute('INSERT INTO addresses(id,user_id,city,street,house) VALUES(?,?,\'Moscow\',\'Test\',\'1\')',[$a,$u]);

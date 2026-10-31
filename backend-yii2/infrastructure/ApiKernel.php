@@ -3,7 +3,7 @@ declare(strict_types=1);
 namespace Shop\infrastructure;
 
 use Shop\application\{AuthService,AvatarService,CatalogService,CommerceService,CredentialService,PaymentService,ProfileService,SessionService};
-use Shop\domain\{ApiError,Ids,Rules};
+use Shop\domain\{ApiError,Ids,Rules,PasswordHasher};
 use Shop\repositories\ShopRepository;
 
 /** HTTP boundary. Routing/auth/DTO validation only; business mutations live in application services. */
@@ -20,13 +20,15 @@ final class ApiKernel
     public function __construct(private Database $db)
     {
         $this->routes=require dirname(__DIR__).'/config/routes.php';$repo=new ShopRepository($db);$sessions=new SessionService($db,$repo);
-        $this->auth=new AuthService($db,$repo,$sessions);$this->avatar=new AvatarService($db,$repo);$this->catalog=new CatalogService($db,$repo);
+        $hasher=new PasswordHasher(null,static fn(string $stage,float $seconds)=>AuthMetrics::hash($stage,$seconds));
+        $this->auth=new AuthService($db,$repo,$sessions,$hasher);$this->avatar=new AvatarService($db,$repo);$this->catalog=new CatalogService($db,$repo);
         $this->commerce=new CommerceService($db,$repo);$this->credentials=new CredentialService($db,$repo,$sessions);
         $this->payments=new PaymentService($db,$repo,$this->commerce);$this->profile=new ProfileService($db,$repo);
         foreach($this->routes as $r){if(!method_exists('Shop\\application\\'.$r[1].'Service',$r[2])){throw new \LogicException('Missing route operation '.$r[0]);}}
     }
     public function handle(string $method,string $uri,array $headers,string $body,string $remote): array
     {
+        $started=hrtime(true);
         $headers=array_change_key_case($headers,CASE_LOWER);$trace=$headers['x-request-id']??'';
         if(!preg_match('/^[A-Za-z0-9._-]{1,128}$/D',$trace)){$trace=Ids::uuid();}
         $outHeaders=['content-type'=>'application/json; charset=utf-8','x-request-id'=>$trace,'x-content-type-options'=>'nosniff','cache-control'=>'no-store'];
@@ -94,6 +96,7 @@ final class ApiKernel
                 $etag='"'.hash('sha256',json_encode($value,JSON_THROW_ON_ERROR)).'"';$outHeaders['etag']=$etag;$outHeaders['cache-control']='public, max-age=0, must-revalidate';
                 if(($headers['if-none-match']??'')===$etag){return $this->result(304,null,$outHeaders);}
             }
+            AuthMetrics::request($route[1].'.'.$route[2],'ok',(hrtime(true)-$started)/1e9);
             return $this->result($status,$value,$outHeaders);
         }catch(\Throwable $e){
             if(!$e instanceof ApiError){
@@ -105,7 +108,9 @@ final class ApiKernel
                 $e=$database?new ApiError('DATABASE_UNAVAILABLE','database operation failed'):new ApiError('INTERNAL_ERROR','internal server error');
             }
             $error=['code'=>$e->errorCode,'message'=>$e->getMessage(),'traceId'=>$trace];if($e->details!==[]){$error['details']=$e->details;}
+            if(isset($route)){AuthMetrics::request($route[1].'.'.$route[2],$e->errorCode,(hrtime(true)-$started)/1e9);}
             if($e->status()===429){$outHeaders['retry-after']=(string)max(1,(int)ceil(Env::duration('RATE_LIMIT_WINDOW',60)));}
+            if($e->errorCode==='ACCOUNT_LOCKED'){$outHeaders['retry-after']='900';}
             return $this->result($e->status(),['error'=>$error],$outHeaders);
         }
     }
@@ -188,22 +193,27 @@ final class ApiKernel
         try{
             Network::cidrs(Env::get('PAYMENT_WEBHOOK_ALLOWED_CIDRS'));
             $this->db->one('SELECT 1 FROM users LIMIT 1');$this->db->one('SELECT 1 FROM biometric_challenges LIMIT 1');
-            // Old writers/schema are incompatible with durable effects and token
-            // revocation. Check the complete 012-014 shape before serving traffic.
+            // Old writers/schema are incompatible with durable effects and local
+            // identity. Verify the additive schema before serving traffic.
             $this->db->all('SELECT id,stock_restored_at FROM orders LIMIT 0');
             $this->db->all('SELECT id,cancel_requested_at,refund_requested_at FROM payments LIMIT 0');
             $this->db->all('SELECT id,payment_id,kind,operation_key,state,lease_token,lease_until,sent_at FROM payment_operations LIMIT 0');
             $this->db->all('SELECT operation_id,lease_token,observed_at,result FROM payment_operation_observations LIMIT 0');
             $this->db->all('SELECT transaction_id,payment_id FROM payment_transaction_links LIMIT 0');
             $this->db->all('SELECT operation_id,payment_id,transaction_id,status,resolved_at FROM payment_callback_inbox LIMIT 0');
-            $this->db->all('SELECT session_security_version,sessions_blocked FROM users LIMIT 0');
-            $this->db->all('SELECT id,user_id,security_version,credential_kind,credential_id,revoked_at FROM session_families LIMIT 0');
+            $this->db->all('SELECT session_security_version,sessions_blocked,account_disabled,local_identity_ready,password_changed_at FROM users LIMIT 0');
+            $this->db->all('SELECT id,user_id,security_version,credential_kind,credential_id,revoked_at,expires_at FROM session_families LIMIT 0');
             foreach(['access_sessions','refresh_sessions'] as $table){$this->db->all('SELECT family_id FROM '.$table.' LIMIT 0');}
             $this->db->all('SELECT id,user_id,state,recovery_attempts,next_retry_at,recovery_claim_until,operator_evidence_ref,operator_confirmed_at FROM password_session_operations LIMIT 0');
             $legacy=$this->db->one('SELECT value FROM repository_metadata WHERE key=\'legacy_import_status\'');
             if(($legacy['value']??'')==='required'){throw new \RuntimeException('Explicit legacy import required');}$components['postgres']='up';
-            (new Keycloak())->verifier()->ready();$components['keycloak']='up';
-            if(Env::get('OPENSEARCH_URL')!==''){(new OpenSearch($this->db,new ShopRepository($this->db)))->ready();$components['opensearch']='up';}
+            $components['local-auth']='up';
+            // Search is an optional capability: its outage must not take identity
+            // or financial operations out of general readiness.
+            if(Env::get('OPENSEARCH_URL')!==''){
+                try{(new OpenSearch($this->db,new ShopRepository($this->db)))->ready();$components['opensearch']='up';}
+                catch(\Throwable){$components['opensearch']='down';}
+            }
             if(Env::production() && (Env::get('PAYMENT_GATEWAY_URL')==='' || Env::get('PAYMENT_GATEWAY_API_KEY')==='' || Env::get('PAYMENT_WEBHOOK_SECRET')==='' || Env::get('PAYMENT_WEBHOOK_ALLOWED_CIDRS')==='')){throw new \RuntimeException('Production payment configuration missing');}
             return $this->result(200,['status'=>'ok','components'=>$components,'capabilities'=>['catalog-cards-v1']],$headers);
         }catch(\Throwable){error_log('Readiness dependency unavailable');$components['dependency']='down';return $this->result(503,['status'=>'unavailable','components'=>$components],$headers);}

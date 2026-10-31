@@ -296,7 +296,7 @@ func (s *Application) orders(ctx context.Context, id model.Identity, u *model.Us
 	if err != nil {
 		return d, err
 	}
-	page, err := s.accountReads.Orders(ctx, id, query)
+	page, err := s.accountReads.OrderSummaries(ctx, id, query)
 	if err != nil {
 		return d, err
 	}
@@ -336,7 +336,7 @@ func (s *Application) order(ctx context.Context, id model.Identity, u *model.Use
 		return d, &model.Failure{Kind: "resource_mismatch"}
 	}
 	refresh(&d, sdui.Destination{Screen: "order", ID: oid})
-	nodes := []sdui.Node{text("order.title", fmt.Sprintf("Заказ №%d", o.Number), "ScreenTitle"), orderCard(&d, o), text("order.address", o.DeliveryAddress, "Body"), text("order.payment", paymentLabel(o.PaymentMethod), "Secondary")}
+	nodes := []sdui.Node{text("order.title", fmt.Sprintf("Заказ №%d", o.Number), "ScreenTitle"), orderCard(&d, model.OrderSummary{ID: o.ID, Number: o.Number, UserID: o.UserID, Status: o.Status, TotalAmount: o.TotalAmount, DeliveryAddress: o.DeliveryAddress, PaymentMethod: o.PaymentMethod, CreatedAt: o.CreatedAt}), text("order.address", o.DeliveryAddress, "Body"), text("order.payment", paymentLabel(o.PaymentMethod), "Secondary")}
 	items, err := orderItemNodes(o.Items)
 	if err != nil {
 		return d, err

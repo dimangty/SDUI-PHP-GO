@@ -4,11 +4,11 @@ require __DIR__.'/harness.php';
 require __DIR__.'/payment-fixture.php';
 use Shop\application\{MaintenanceService,PaymentOperations,RecoveryService,SessionService};
 use Shop\domain\Ids;
-use Shop\infrastructure\{Database,Env,HttpClient,Keycloak};
+use Shop\infrastructure\{Database,Env};
 use Shop\repositories\ShopRepository;
 
 function schedulingDiagnosticText(string $text): string {
-    foreach(['DATABASE_URL','KEYCLOAK_CLIENT_SECRET','KEYCLOAK_ADMIN_TOKEN','PAYMENT_GATEWAY_API_KEY','PAYMENT_WEBHOOK_SECRET'] as $key){
+    foreach(['DATABASE_URL','PAYMENT_GATEWAY_API_KEY','PAYMENT_WEBHOOK_SECRET'] as $key){
         $value=getenv($key);if($value!==false && $value!==''){$text=str_replace($value,'[redacted]',$text);}
     }
     return $text;
@@ -36,15 +36,14 @@ function schedulingBackend(Database $observer,int $pid): ?array {
 // supplied disposable database. The HTTP fixtures journal only our payment/user IDs.
 function schedulingSchema(): array {
     [$db,$schema]=paymentLegacySchema();applyPaymentMigration($db);
-    foreach([13,14] as $n){$file=glob('/migrations/'.sprintf('%03d',$n).'_*.up.sql');same(1,count($file));$db->transaction(fn()=>$db->pdo()->exec(file_get_contents($file[0])));}
+    foreach([13,14,15] as $n){$file=glob('/migrations/'.sprintf('%03d',$n).'_*.up.sql');same(1,count($file));$db->transaction(fn()=>$db->pdo()->exec(file_get_contents($file[0])));}
     $db->pdo()->setAttribute(PDO::ATTR_STATEMENT_CLASS,[SchedulingStatement::class]);
     return [$db,$schema];
 }
 function schedulingSession(Database $db,int $code=204,int $delay=0): array {
     $u=Ids::uuid();$id=Ids::uuid();
-    $db->execute("INSERT INTO users(id,email,password_hash,full_name,phone,sessions_blocked) VALUES(?,?,'','Scheduling','+79991234567',true)",[$u,$u.'@scheduling.test']);
+    $db->execute("INSERT INTO users(id,email,password_hash,full_name,phone,sessions_blocked,local_identity_ready) VALUES(?,?,'','Scheduling','+79991234567',true,true)",[$u,$u.'@scheduling.test']);
     $db->execute("INSERT INTO password_session_operations(id,user_id,security_version,state) VALUES(?,?,0,'REVOKE_PENDING')",[$id,$u]);
-    paymentDb()->execute('INSERT INTO recovery_test_provider(user_id,response_code,delay_ms) VALUES(?,?,?)',[$u,$code,$delay]);
     return [$id,$u];
 }
 function schedulingPayment(Database $db,int $delay=0): array {
@@ -52,29 +51,23 @@ function schedulingPayment(Database $db,int $delay=0): array {
     $db->execute("INSERT INTO payment_operations(id,payment_id,kind,operation_key,state) VALUES(?,?,'authorize',?,'READY')",[$id,$o['paymentId'],$o['paymentId'].':authorize']);
     return [$u,$o,$id];
 }
-function schedulingWorker(Database $db): RecoveryService {return new RecoveryService($db,new Keycloak(new HttpClient(2)));}
+function schedulingWorker(Database $db): RecoveryService {return new RecoveryService($db);}
 function schedulingCleanup(Database $db,string $schema): void {
-    paymentDb()->execute('DELETE FROM recovery_test_provider WHERE user_id IN (SELECT id FROM '.$schema.'.users)');
     $ids=$db->all('SELECT id FROM payments');
     foreach($ids as $row){paymentDb()->execute('DELETE FROM payment_test_journal WHERE payment_id=?',[$row['id']]);paymentDb()->execute('DELETE FROM payment_test_scenarios WHERE payment_id=?',[$row['id']]);}
     dropPaymentLegacySchema($db,$schema);
 }
-paymentTestSchema();paymentDb()->execute('CREATE TABLE IF NOT EXISTS recovery_test_provider(user_id uuid PRIMARY KEY,response_code int,delay_ms int,calls int NOT NULL DEFAULT 0,open_transactions int NOT NULL DEFAULT 0)');
-$socket=stream_socket_server('tcp://0.0.0.0:0',$errno,$error);$address=stream_socket_get_name($socket,false);fclose($socket);
-$provider=proc_open([PHP_BINARY,'-S',$address,__DIR__.'/recovery-scheduling-provider.php'],[0=>['file','/dev/null','r'],1=>['file','/dev/null','w'],2=>['file','/dev/null','w']],$pipes);
-$owner=getmypid();register_shutdown_function(function()use($provider,$owner){if(getmypid()===$owner){proc_terminate($provider);proc_close($provider);}});
-for($i=0;$i<100;$i++){$s=@stream_socket_client('tcp://127.0.0.1:'.explode(':',$address)[1],$errno,$error,.02);if($s){fclose($s);break;}usleep(10000);}
-putenv('KEYCLOAK_ISSUER=http://127.0.0.1:'.explode(':',$address)[1].'/realms/worker');putenv('KEYCLOAK_ADMIN_TOKEN=');putenv('KEYCLOAK_CLIENT_ID=shopkmp-backend');putenv('KEYCLOAK_CLIENT_SECRET=fixture-secret');
+paymentTestSchema();
 
-test('session backlog is capped while a safe payment still progresses in the same scan',function(){
+test('historical identity backlog stays manual while a safe payment progresses in the same scan',function(){
     [$db,$schema]=schedulingSchema();
     try{
         for($i=0;$i<6;$i++){schedulingSession($db,204,100);}
         [, $order]=schedulingPayment($db);$r=schedulingWorker($db)->run();
-        same(1,$db->one("SELECT count(*) AS n FROM password_session_operations WHERE state='COMPLETE'")['n']);
-        same(5,$db->one("SELECT count(*) AS n FROM password_session_operations WHERE state='REVOKE_PENDING'")['n']);
+        same(0,$db->one("SELECT count(*) AS n FROM password_session_operations WHERE state='COMPLETE'")['n']);
+        same(6,$db->one("SELECT count(*) AS n FROM password_session_operations WHERE state='REVOKE_PENDING'")['n']);same(6,$r['sessionsManual']);
         same('AUTHORIZED',$db->one('SELECT status FROM payments WHERE id=?',[$order['paymentId']])['status']);same(1,journal($order['paymentId'])[0]['attempts']);
-        same(1,$r['sessionsCompleted']);same(1,$r['paymentsDispatched']);
+        same(0,$r['sessionsCompleted']);same(1,$r['paymentsDispatched']);
     }finally{schedulingCleanup($db,$schema);}
 });
 test('bounded payment scan leaves chained compensation durable and preserves default recovery API',function(){
@@ -91,12 +84,12 @@ test('bounded payment scan leaves chained compensation durable and preserves def
         $r=$ops->recover();same(1,count($r['review']));same($p,$r['review'][0]['payment_id']);same(1,journal($p)[1]['attempts']);
     }finally{schedulingCleanup($db,$schema);}
 });
-test('SQL contention remains bounded and failed local session completion retains the fence',function(){
+test('SQL user contention cannot block count-only identity inventory or clear its fence',function(){
     [$db,$schema]=schedulingSchema();$blocker=paymentSchemaConnection($schema);
     try{
         [$id,$u]=schedulingSession($db);$settings=$db->one("SELECT current_setting('statement_timeout') AS statement,current_setting('lock_timeout') AS lock,current_setting('transaction_timeout') AS transaction");
         $blocker->pdo()->beginTransaction();$blocker->one('SELECT id FROM users WHERE id=? FOR UPDATE',[$u]);$start=hrtime(true);
-        $r=schedulingWorker($db)->run();$elapsed=(hrtime(true)-$start)/1e9;truth($elapsed<3);same(1,$r['sessionsFailed']);
+        $r=schedulingWorker($db)->run();$elapsed=(hrtime(true)-$start)/1e9;truth($elapsed<3);same(0,$r['sessionsFailed']);same(1,$r['sessionsManual']);
         same('REVOKE_PENDING',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$id])['state']);truth($db->one('SELECT sessions_blocked FROM users WHERE id=?',[$u])['sessions_blocked']);
         same($settings,$db->one("SELECT current_setting('statement_timeout') AS statement,current_setting('lock_timeout') AS lock,current_setting('transaction_timeout') AS transaction"));
     }finally{if($blocker->pdo()->inTransaction()){$blocker->pdo()->rollBack();}schedulingCleanup($db,$schema);}
@@ -129,7 +122,7 @@ test('a long multi-statement payment apply is bounded without replaying its unce
         $db=paymentSchemaConnection($schema);
         same(0,$db->one('SELECT count(*) AS n FROM pg_stat_activity WHERE pid=?',[$pid])['n']);
         print 'Bounded apply observation: '.json_encode(['elapsedSeconds'=>round($elapsed,3),'connectionTerminated'=>true],JSON_THROW_ON_ERROR)."\n";
-        same('COMPLETE',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$session])['state']);
+        same('REVOKE_PENDING',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$session])['state']);
         same('CAPTURED',$db->one('SELECT status FROM payments WHERE id=?',[$p])['status']);same(8,$db->one('SELECT stock FROM products WHERE id=?',[$product])['stock']);
         same('SENT',$db->one("SELECT state FROM payment_operations WHERE payment_id=? AND kind='refund'",[$p])['state']);
         same(1,$db->one("SELECT count(*) AS n FROM payment_operation_observations o JOIN payment_operations op ON op.id=o.operation_id WHERE op.payment_id=? AND op.kind='refund'",[$p])['n']);
@@ -144,10 +137,10 @@ test('empty scheduler budget keeps the default and undersized budgets cannot cla
         [$id]=schedulingSession($db);putenv('SCHEDULER_JOB_TIMEOUT_SECONDS=89');
         try{schedulingWorker($db)->run();throw new RuntimeException('undersized recovery budget accepted');}catch(InvalidArgumentException){}
         same(0,$db->one('SELECT recovery_attempts FROM password_session_operations WHERE id=?',[$id])['recovery_attempts']);
-        putenv('SCHEDULER_JOB_TIMEOUT_SECONDS=');schedulingWorker($db)->run();same('COMPLETE',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$id])['state']);
+        putenv('SCHEDULER_JOB_TIMEOUT_SECONDS=');same(1,schedulingWorker($db)->run()['sessionsManual']);same('REVOKE_PENDING',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$id])['state']);
     }finally{putenv($prior===false?'SCHEDULER_JOB_TIMEOUT_SECONDS':'SCHEDULER_JOB_TIMEOUT_SECONDS='.$prior);schedulingCleanup($db,$schema);}
 });
-test('real scheduler completes sessions and payments across bounded ticks despite a delayed payment backlog',function(){
+test('real scheduler preserves manual sessions and progresses payments across bounded ticks despite backlog',function(){
     [$db,$schema]=schedulingSchema();$scheduler=null;$pipes=[];$budget=90;
     try{
         [$failed,$blocked]=schedulingSession($db,503);[$healthy,$user]=schedulingSession($db);
@@ -170,15 +163,15 @@ test('real scheduler completes sessions and payments across bounded ticks despit
             usleep(100000);$output.=stream_get_contents($pipes[1]);$errors.=stream_get_contents($pipes[2]);
             if(is_file('/app/runtime/scheduler-state.json')){$state=json_decode(file_get_contents('/app/runtime/scheduler-state.json'),true,32,JSON_THROW_ON_ERROR);}
             if(($state['lastResult']??null)==='timeout' || ($state['lastResult']??null)==='failed'){break;}
-            $complete=$db->one('SELECT state FROM password_session_operations WHERE id=?',[$healthy])['state']==='COMPLETE';
+            $complete=$db->one('SELECT state FROM password_session_operations WHERE id=?',[$healthy])['state']==='REVOKE_PENDING';
             $sent=$db->one("SELECT count(*) AS n FROM payment_operations WHERE state='SUCCEEDED'")['n'];
             if($complete && $sent>=4 && ($state['lastResult']??null)==='success'){break;}
         }while((hrtime(true)-$start)/1e9<$budget+8);
         $elapsed=(hrtime(true)-$start)/1e9;
         print 'Scheduler observation: '.json_encode(['state'=>$state,'elapsedSeconds'=>round($elapsed,3),'healthySession'=>$db->one('SELECT state,recovery_attempts FROM password_session_operations WHERE id=?',[$healthy]),'stdout'=>schedulingDiagnosticText(trim($output)),'stderr'=>schedulingDiagnosticText(trim($errors))],JSON_THROW_ON_ERROR)."\n";
         same('success',$state['lastResult']??null);same(0,$state['lastExitCode']);truth($elapsed<$budget-5);
-        same('COMPLETE',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$healthy])['state']);
-        same(1,paymentDb()->one('SELECT calls FROM recovery_test_provider WHERE user_id=?',[$user])['calls']);
+        same('REVOKE_PENDING',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$healthy])['state']);
+        same(0,$db->one('SELECT recovery_attempts FROM password_session_operations WHERE id=?',[$healthy])['recovery_attempts']);
         same('REVOKE_PENDING',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$failed])['state']);truth($db->one('SELECT sessions_blocked FROM users WHERE id=?',[$blocked])['sessions_blocked']);
         errorCode('PASSWORD_CHANGED',fn()=>(new SessionService($db,new ShopRepository($db)))->issue($blocked));
         truth($db->one("SELECT count(*) AS n FROM payment_operations WHERE state='READY'")['n']>=45);
@@ -191,7 +184,7 @@ test('real scheduler completes sessions and payments across bounded ticks despit
         schedulingCleanup($db,$schema);
     }
 });
-test('F2 two replicas skip an advisory-busy head across three scans without consuming its attempts',function(){
+test('F2 two replicas count manual identity backlog without acquiring locks or consuming attempts',function(){
     [$db,$schema]=schedulingSchema();$blocker=paymentSchemaConnection($schema);
     try{
         [$head,$blocked]=schedulingSession($db);$scope='password-session-recovery:'.$head;
@@ -209,9 +202,9 @@ test('F2 two replicas skip an advisory-busy head across three scans without cons
                 $output=stream_get_contents($pipes[1]);$errors=stream_get_contents($pipes[2]);foreach($pipes as $pipe){fclose($pipe);}same(0,proc_close($process));same('',$errors);
                 $report=json_decode($output,true,32,JSON_THROW_ON_ERROR);truth($report['sessionsCompleted']+$report['sessionsFailed']<=1);$done+=$report['sessionsCompleted'];
             }
-            truth((hrtime(true)-$start)/1e9<5);truth($done>=1);
+            truth((hrtime(true)-$start)/1e9<5);same(0,$done);
             same($before,$db->one('SELECT * FROM password_session_operations WHERE id=?',[$head]));
-            same(0,paymentDb()->one('SELECT calls FROM recovery_test_provider WHERE user_id=?',[$blocked])['calls']);
+            same(0,$db->one('SELECT recovery_attempts FROM password_session_operations WHERE id=?',[$head])['recovery_attempts']);
             truth($db->one('SELECT sessions_blocked FROM users WHERE id=?',[$blocked])['sessions_blocked']);
             errorCode('PASSWORD_CHANGED',fn()=>(new SessionService($db,new ShopRepository($db)))->issue($blocked));
             // No SELECT side effect may leave locks on other candidates behind.
@@ -220,7 +213,7 @@ test('F2 two replicas skip an advisory-busy head across three scans without cons
                 truth($blocker->one('SELECT pg_try_advisory_lock(hashtextextended(?,0)) AS acquired',[$lock])['acquired']);
                 $blocker->one('SELECT pg_advisory_unlock(hashtextextended(?,0))',[$lock]);
                 $job=$db->one('SELECT state,recovery_attempts FROM password_session_operations WHERE id=?',[$id]);
-                same($job['state']==='COMPLETE'?1:0,$job['recovery_attempts']);
+                same('REVOKE_PENDING',$job['state']);same(0,$job['recovery_attempts']);
                 same($job['state']!=='COMPLETE',$db->one('SELECT sessions_blocked FROM users WHERE id=?',[$user])['sessions_blocked']);
             }
         }
@@ -236,7 +229,7 @@ test('F1 combined worker keeps a verified no-effect refund in its manual count w
         same(1,schedulingWorker($db)->run()['paymentsManual']);same(1,schedulingWorker($db)->run()['paymentsManual']);same(1,journal($p)[1]['attempts']);same('CAPTURED',$repo->payment($p)['status']);
     }finally{schedulingCleanup($db,$schema);}
 });
-test('F2 the busy candidate window is bounded and leaves no advisory locks on a reused worker connection',function(){
+test('F2 busy historical identity locks never affect counts or leak locks on a reused worker',function(){
     [$db,$schema]=schedulingSchema();$blocker=paymentSchemaConnection($schema);
     try{
         $heads=[];for($i=0;$i<25;$i++){
@@ -245,8 +238,8 @@ test('F2 the busy candidate window is bounded and leaves no advisory locks on a 
         }
         [$later]=schedulingSession($db);$start=hrtime(true);same(0,schedulingWorker($db)->run()['sessionsCompleted']);truth((hrtime(true)-$start)/1e9<3);
         same(0,$db->one('SELECT sum(recovery_attempts)::int AS n FROM password_session_operations')['n']);
-        $blocker->one('SELECT pg_advisory_unlock_all()');same(1,schedulingWorker($db)->run()['sessionsCompleted']);
-        same(1,$db->one('SELECT sum(recovery_attempts)::int AS n FROM password_session_operations')['n']);
+        $blocker->one('SELECT pg_advisory_unlock_all()');same(26,schedulingWorker($db)->run()['sessionsManual']);
+        same(0,$db->one('SELECT sum(recovery_attempts)::int AS n FROM password_session_operations')['n']);
         same(0,$db->one("SELECT count(*) AS n FROM pg_locks WHERE pid=pg_backend_pid() AND locktype='advisory'")['n']);
         same('REVOKE_PENDING',$db->one('SELECT state FROM password_session_operations WHERE id=?',[$later])['state']);
     }finally{$blocker->one('SELECT pg_advisory_unlock_all()');schedulingCleanup($db,$schema);}
@@ -295,7 +288,7 @@ test('F3 real maintenance scheduler retains cleanup progress and queues expiry w
             $db->execute("UPDATE orders SET status='PAID' WHERE id=?",[$order['id']]);
             $db->execute("UPDATE payment_operations SET state=?,lease_until=clock_timestamp()+interval '10 minutes' WHERE payment_id=?",[$state,$p]);$uncertain[]=$p;
         }
-        [$user]=paymentFixture('ON_DELIVERY','AUTHORIZED',[],$db);$session=new SessionService($db,$repo);$old=$session->issue($user);$live=$session->issue($user);
+        [$user]=paymentFixture('ON_DELIVERY','AUTHORIZED',[],$db);$db->execute('UPDATE users SET local_identity_ready=true WHERE id=?',[$user]);$session=new SessionService($db,$repo);$old=$session->issue($user);$live=$session->issue($user);
         foreach(['access','refresh'] as $kind){$db->execute('UPDATE '.$kind.'_sessions SET expires_at=now()-interval \'1 day\' WHERE token_hash=decode(?,\'hex\')',[hash('sha256',$old[$kind.'Token'])]);}
         $db->execute("INSERT INTO idempotency_keys(user_id,endpoint,key,response,created_at) SELECT ?,'retention',g::text,'{}',now()-interval '2 days' FROM generate_series(1,1001) g",[$user]);
         $db->execute("INSERT INTO idempotency_keys(user_id,endpoint,key,response) VALUES(?,'retention','live','{}')",[$user]);

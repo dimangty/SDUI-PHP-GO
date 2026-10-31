@@ -220,7 +220,9 @@ def runtime_tests(image):
                 foreach (['/app/yii', '/app/tests/run.php', '/app/tests/integration.php', '/app/tests/lint.php'] as $file) {
                     if (!is_readable($file)) { fwrite(STDERR, "Missing CLI/fixture: $file\n"); exit(1); }
                 }
-                if (!class_exists('yii\\base\\Application') || !class_exists('Firebase\\JWT\\JWT')) { exit(1); }
+                foreach (['yii\\base\\Application', 'Shop\\application\\AuthService', 'Shop\\application\\SessionService'] as $class) {
+                    if (!class_exists($class)) { exit(1); }
+                }
             ''')
             self.run_image('php', '-r', r'''
                 foreach (['/var/lib/apt/lists', '/var/cache/apk', '/etc/apk/cache'] as $path) {

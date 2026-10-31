@@ -1,4 +1,4 @@
-.PHONY: run up down logs seed migrate reindex integration-up integration-check test-php test-infra test-scheduler prod-up prod-config prod-build prod-infra prod-drain prod-migrate prod-reindex prod-app prod-workers prod-edge prod-rollback-stop prod-down prod-logs compose-config test test-race vet coverage check build e2e frontend-unit frontend-test frontend-lint frontend-build frontend-ios frontend-check check-offline check-all
+.PHONY: run up down logs seed migrate reindex integration-up integration-check test-php test-infra test-scheduler test-runtime-graph prod-up prod-config prod-build prod-infra prod-drain prod-migrate prod-reindex prod-app prod-workers prod-edge prod-rollback-stop prod-down prod-logs compose-config test test-race vet coverage check build e2e frontend-unit frontend-test frontend-lint frontend-build frontend-ios frontend-check check-offline check-all
 
 ENV_FILE ?= .env
 PROD_ENV_FILE ?= .env.prod
@@ -74,6 +74,11 @@ test-infra:
 	python3 scripts/test_infrastructure.py --production-env "$(PRODUCTION_TEST_ENV)"
 	python3 scripts/test_deployment_commands.py --production-env "$(PRODUCTION_TEST_ENV)"
 
+test-runtime-graph:
+	python3 scripts/test_runtime_graph_guard.py
+	python3 scripts/test_runtime_checks.py
+	python3 scripts/runtime_graph_guard.py
+
 test-scheduler:
 	docker build -t "$(SCHEDULER_TEST_IMAGE)" backend-yii2
 	python3 scripts/test_scheduler.py --image "$(SCHEDULER_TEST_IMAGE)"
@@ -88,7 +93,7 @@ prod-build:
 	$(PROD_COMPOSE) build
 
 prod-infra:
-	$(PROD_COMPOSE) up -d --build --wait --wait-timeout $(WAIT_TIMEOUT) postgres keycloak-postgres keycloak opensearch
+	$(PROD_COMPOSE) up -d --build --wait --wait-timeout $(WAIT_TIMEOUT) postgres opensearch
 
 prod-drain:
 	$(PROD_COMPOSE) stop edge
@@ -139,7 +144,7 @@ coverage:
 		go -C backend-sdui test -coverprofile="$$coverage_profile" ./...; \
 		go -C backend-sdui tool cover -func="$$coverage_profile"
 
-check: test test-race vet compose-config
+check: test test-race vet compose-config test-runtime-graph
 
 build:
 	$(COMPOSE) build

@@ -84,8 +84,8 @@ final class CommerceService
     }
     public function orders(string $user,array $query): array
     {
-        [$page,$size]=Rules::page($query);$status=$query['status']??'';
-        return (new OrderReadRepository($this->db))->page($user,$status,$page,$size);
+        $summary=OrderReadRepository::projected($query);[$page,$size]=Rules::page($query);$status=$query['status']??'';
+        return (new OrderReadRepository($this->db))->page($user,$status,$page,$size,$summary);
     }
     public function order(string $user,string $id): array {return $this->repo->order($id,$user);}
     public function transition(string $id,array $input): array

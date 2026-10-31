@@ -10,8 +10,8 @@ import sys
 import time
 from compose import command, ROOT
 
-REQUIRED_SERVICES = ('yii2', 'sdui', 'migrate', 'postgres', 'keycloak', 'opensearch', 'edge',
-                     'yii2-http', 'keycloak-postgres', 'maintenance', 'reconcile', 'payment-recovery', 'yii-migrate', 'reindex')
+REQUIRED_SERVICES = ('yii2', 'sdui', 'migrate', 'postgres', 'opensearch', 'edge',
+                     'yii2-http', 'maintenance', 'reconcile', 'payment-recovery', 'yii-migrate', 'reindex')
 INIT_SERVICES = {'migrate', 'yii-migrate', 'reindex'}
 SOURCE_PATHS = ('backend-yii2', 'backend-sdui', 'tools/ops', 'deploy', 'scripts',
                 'Makefile', 'docker-compose.yml', 'docker-compose.prod.yml', '.github/workflows/ci.yml', '.env.example')

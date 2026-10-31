@@ -34,7 +34,7 @@ def main():
                        '-e', 'PAYMENT_GATEWAY_API_KEY=payment-fixture-key',
                        '-e', 'PAYMENT_WEBHOOK_SECRET=payment-test-secret',
                        '-e', 'PAYMENT_TEST_HTTP_ORIGIN=http://payment-fixture-http:8080']
-        for suite in ('payment-migration.php', 'payments.php', 'payment-http.php', 'uuid_identity.php', 'uuid_recovery.php', 'recovery.php', 'recovery-scheduling.php'):
+        for suite in ('local_auth_concurrency.php', 'local_recovery.php', 'payment-migration.php', 'payments.php', 'payment-http.php', 'uuid_identity.php', 'uuid_recovery.php', 'recovery.php', 'recovery-scheduling.php'):
             print('Focused backend suite: ' + suite, flush=True)
             subprocess.run(compose + ['run', '--rm', '--no-deps', *payment_env,
                                       'yii2', 'php', 'tests/' + suite], cwd=ROOT, env=env, check=True)

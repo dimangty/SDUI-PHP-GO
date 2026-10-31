@@ -26,7 +26,7 @@ function request(string $method,string $path,?array $body=null,?string $token=nu
 function apiFixture(bool $admin=false): array {
     global $db,$sessions;
     $u=Ids::uuid();$c=Ids::uuid();
-    $db->execute('INSERT INTO users(id,email,password_hash,full_name,phone,is_admin) VALUES(?,?,\'\',\'API Buyer\',\'+79991234567\',?)',[$u,"$u@test.example",$admin]);
+    $db->execute('INSERT INTO users(id,email,password_hash,full_name,phone,is_admin,local_identity_ready) VALUES(?,?,\'\',\'API Buyer\',\'+79991234567\',?,true)',[$u,"$u@test.example",$admin]);
     $db->execute('INSERT INTO categories(id,name) VALUES(?,\'API Category\')',[$c]);
     $t=$db->transaction(fn()=>$sessions->issue($u));return [$u,$c,$t['accessToken']];
 }

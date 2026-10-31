@@ -34,6 +34,7 @@ def main():
         print(f'{label}: PASS ({evidence / (label + ".log")})', flush=True)
 
     run('route-matrix', [sys.executable, 'scripts/route_matrix.py', '--check'])
+    run('runtime-graph', [sys.executable, 'scripts/runtime_graph_guard.py'])
     run('scheduler-regression', [sys.executable, 'scripts/test_scheduler.py', '--image', args.project + '-yii2'])
     run('seed-preservation', compose + ['exec', '-T', 'yii2', 'php', 'tests/development_seed.php'])
     # SQL regression suites intentionally insert fixtures without catalog APIs.
@@ -49,21 +50,37 @@ def main():
          'ROUND3_EDGE_EVIDENCE': str(evidence / 'round3-edge')}, ROOT / 'backend-sdui')
     run('ops-tests', ['go', 'test', './...', '-count=1'], cwd=ROOT / 'tools/ops')
     run('ops-vet', ['go', 'vet', './...'], cwd=ROOT / 'tools/ops')
-    sql_workers = ['maintenance', 'payment-recovery']
+    sql_workers = ['maintenance', 'payment-recovery', 'reconcile']
+    primary_failure = None
     try:
         run('php-workers-pause', compose + ['stop', *sql_workers])
         run('provider-fixture', verify + ['--profile', 'verification', 'up', '-d', '--no-deps', 'fixture'])
         run('php-all', verify + ['run', '--rm', '--no-deps',
-            '-e', 'ADMIN_EMAILS=admin@test.example',
             '-e', 'API_ORIGIN=http://edge:8080',
+            '-e', 'ROUND5_SEARCH_DISPOSABLE=' + args.project,
+            '-e', 'LOCAL_AUTH_DISPOSABLE=' + args.project,
             '-e', 'UPSTREAM_FIXTURE_ORIGIN=http://fixture:8080', 'yii2', 'composer', 'test:all'])
+        run('r9-order-http', verify + ['run', '--rm', '--no-deps',
+            '-e', 'API_ORIGIN=http://edge:8080', '-e', 'ROUND5_SEARCH_DISPOSABLE=' + args.project,
+            'yii2', 'php', 'tests/r9_order_http.php'])
         run('backend-fixes', [sys.executable, 'scripts/backend_fixes.py', '--env', args.env,
-                              '--project', args.project, '--disposable'])
+                               '--project', args.project, '--disposable'])
+    except BaseException as error:
+        primary_failure = error
+        raise
     finally:
-        try:
-            subprocess.run(verify + ['--profile', 'verification', 'stop', 'fixture'], cwd=ROOT, env=env, check=True)
-        finally:
-            subprocess.run(compose + ['up', '-d', '--no-deps', *sql_workers], cwd=ROOT, env=env, check=True)
+        cleanup_errors = []
+        for label, cleanup in (
+            ('fixture-stop', verify + ['--profile', 'verification', 'stop', 'fixture']),
+            ('worker-readiness-restore', compose + ['up', '-d', '--no-deps', '--wait', '--wait-timeout', '2100', *sql_workers]),
+        ):
+            try:
+                subprocess.run(cleanup, cwd=ROOT, env=env, check=True)
+            except BaseException as error:
+                cleanup_errors.append(error)
+                print(f'{label}: FAILED ({type(error).__name__}, exit={getattr(error, "returncode", "unknown")})', flush=True)
+        if primary_failure is None and cleanup_errors:
+            raise cleanup_errors[0]
     run('runtime', [sys.executable, 'scripts/runtime_checks.py', '--env', args.env, '--project', args.project,
                     '--url', args.url, '--shutdown'])
     print(f'PASS Task4 disposable verification. Evidence: {evidence}. No mobile or production cutover claim.')

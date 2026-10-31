@@ -27,7 +27,7 @@ if($action==='seed'){
             foreach($images as $order=>$url){$db->execute('INSERT INTO product_images(product_id,url,sort_order) VALUES(?,?,?)',[$id,$url,$order]);}
         }
     });
-    (new OpenSearch($db,$repo,$index))->index($ids[0]);$bulk='';
+    (new OpenSearch($db,$repo,$index))->bootstrap();$bulk='';
     foreach((new CatalogReadRepository($db))->byIds($ids) as $dto){
         $bulk.=json_encode(['index'=>['_id'=>$dto['id']]],JSON_THROW_ON_ERROR)."\n";
         $bulk.=json_encode($dto+['salePriceCents'=>1234,'categoryPath'=>[$category],'createdAt'=>'2026-10-30T00:00:00Z'],JSON_THROW_ON_ERROR)."\n";

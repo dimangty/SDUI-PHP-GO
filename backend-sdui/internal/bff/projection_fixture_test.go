@@ -7,12 +7,16 @@ import (
 	"net/http/httptest"
 )
 
-// projectedFixture serializes the existing full-product fixtures using PHP's
-// new opt-in wire contract. Original assertions, invalid values, required-member
+// projectedFixture serializes the existing full-product/order fixtures using PHP's
+// opt-in wire contracts. Original assertions, invalid values, required-member
 // omissions, statuses and error bytes remain intact. Protocol-specific tests use
 // direct servers instead so no marker/capability can be synthesized for them.
 func projectedFixture(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/orders" && r.URL.Query().Get("projection") == "sdui-order-summary-v1" {
+			projectedOrderFixture(next, w, r)
+			return
+		}
 		if r.URL.Query().Get("projection") != "sdui-card-v1" || (r.URL.Path != "/api/v1/products" && r.URL.Path != "/api/v1/products/search" && r.URL.Path != "/api/v1/products/popular") {
 			next(w, r)
 			return
@@ -52,6 +56,38 @@ func projectedFixture(next http.HandlerFunc) http.HandlerFunc {
 		w.WriteHeader(recorded.Code)
 		w.Write(raw)
 	}
+}
+
+func projectedOrderFixture(next http.HandlerFunc, w http.ResponseWriter, r *http.Request) {
+	recorded := httptest.NewRecorder()
+	next(recorded, r)
+	raw := recorded.Body.Bytes()
+	var page map[string]json.RawMessage
+	if recorded.Code == 200 && json.Unmarshal(raw, &page) == nil && page != nil && page["projection"] == nil {
+		var items []json.RawMessage
+		list := bytes.TrimSpace(page["items"])
+		if len(list) > 0 && list[0] == '[' && json.Unmarshal(list, &items) == nil {
+			for i, item := range items {
+				var order map[string]json.RawMessage
+				if json.Unmarshal(item, &order) == nil && order != nil {
+					for _, key := range []string{"items", "deliveryAddressId", "paymentId", "comment"} {
+						delete(order, key)
+					}
+					items[i], _ = json.Marshal(order)
+				}
+			}
+			page["items"], _ = json.Marshal(items)
+		}
+		page["projection"] = json.RawMessage(`"sdui-order-summary-v1"`)
+		raw, _ = json.Marshal(page)
+	}
+	for key, values := range recorded.Header() {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
+	w.WriteHeader(recorded.Code)
+	w.Write(raw)
 }
 
 func projectFixtureProduct(raw json.RawMessage) json.RawMessage {

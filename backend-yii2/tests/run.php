@@ -31,6 +31,11 @@ test('legacy Argon2id hex encoding interoperates with PHP native verifier', func
     truth(password_verify('7395', $native));
     same(false, Secret::verify('7395', str_replace('m=19456', 'm=9999999', $hash)));
 });
+test('password policy preserves eight Unicode characters and the existing 128-byte ceiling',function(){
+    errorCode('WEAK_PASSWORD',fn()=>Rules::password('Абв12'));
+    errorCode('WEAK_PASSWORD',fn()=>Rules::password('Aa1'.str_repeat('x',126)));
+    Rules::password('Абвгде12');Rules::password('Aa1'.str_repeat('x',125));Rules::password(' Пароль7395 ');
+});
 test('PIN rejects patterns and profile birthday but accepts strong PIN', function () {
     foreach (['1234','9876','1111','1212','1122','2580','2902','2004'] as $pin) {
         errorCode('WEAK_PIN', fn() => Rules::pin($pin, '2004-02-29'));

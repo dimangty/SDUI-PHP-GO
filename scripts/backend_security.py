@@ -22,9 +22,8 @@ from backend_artifacts import inventory, source_snapshot, verify_receipt
 
 TRIVY = 'aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c'
 GOVULNCHECK = 'golang.org/x/vuln/cmd/govulncheck@v1.9.0'
-RUNTIMES = ('yii2', 'sdui', 'migrate', 'postgres', 'keycloak', 'opensearch', 'edge', 'yii2-http', 'keycloak-postgres')
+RUNTIMES = ('yii2', 'sdui', 'migrate', 'postgres', 'opensearch', 'edge', 'yii2-http')
 BINARIES = {'sdui': ('/server', 'go1.27.3'), 'migrate': ('/migrate', 'go1.26.10'),
-            'keycloak': ('/opt/keycloak/bin/shopkmp-healthcheck', 'go1.26.10'),
             'postgres': ('/usr/local/bin/gosu', 'go1.26.10')}
 
 
@@ -213,7 +212,7 @@ def main():
     for service in RUNTIMES:
         def image_scan(service=service):
             artifact = artifacts[service]
-            # Identical runtime artifacts (two nginx / two PostgreSQL services)
+            # Identical runtime artifacts (the two nginx services)
             # still get separate service receipts, referencing the same content.
             archive = output / (service + '.tar')
             scan.run('save-' + service, ['docker', 'image', 'save', '--platform', args.platform, '--output', str(archive), artifact['imageId']])

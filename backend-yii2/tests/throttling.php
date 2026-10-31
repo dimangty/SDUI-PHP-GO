@@ -15,7 +15,7 @@ function limits(Closure $test,array $overrides=[]): void {
 }
 function networkIp(): string {return '198.'.random_int(1,254).'.'.random_int(1,254).'.1';}
 function identity(): array {
-    global $db;$id=Ids::uuid();$db->execute('INSERT INTO users(id,email,password_hash,full_name,phone) VALUES(?,?,\'\',\'Throttle Buyer\',\'+79991234567\')',[$id,$id.'@test.example']);
+    global $db;$id=Ids::uuid();$db->execute('INSERT INTO users(id,email,password_hash,full_name,phone,local_identity_ready) VALUES(?,?,\'\',\'Throttle Buyer\',\'+79991234567\',true)',[$id,$id.'@test.example']);
     $session=new SessionService($db,new ShopRepository($db));return $db->transaction(fn()=>$session->issue($id));
 }
 function boundary(string $method,string $path,string $ip,?string $token=null,string $body='[]'): array {

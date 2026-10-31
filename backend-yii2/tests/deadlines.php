@@ -20,13 +20,13 @@ test('headers and body share one budget rather than separate blocking-read timeo
     try{(new HttpClient(1))->request('GET',$server->origin.'/body');throw new LogicException('Expected timeout');}catch(RuntimeException $e){truth(str_contains(strtolower($e->getMessage()),'timeout'));}
     $elapsed=(hrtime(true)-$start)/1e9;same(1,$server->finish());deadlineEvidence('headers + body',$elapsed,1.35);
 });
-test('500ms readiness budget interrupts slow headers with HTTP 503',function(){
+test('500ms optional search deadline interrupts slow headers without blocking core readiness',function(){
     $server=new SocketUpstream(fn($c)=>SocketUpstream::dripHeaders($c,8,150000));$old=[];
-    foreach(['READINESS_TIMEOUT'=>'500ms','KEYCLOAK_ISSUER'=>$server->origin.'/realms/slow','KEYCLOAK_CLIENT_SECRET'=>'deadline-fixture'] as $key=>$value){$old[$key]=getenv($key);putenv($key.'='.$value);}
+    foreach(['READINESS_TIMEOUT'=>'500ms','OPENSEARCH_URL'=>$server->origin] as $key=>$value){$old[$key]=getenv($key);putenv($key.'='.$value);}
     try{
         $kernel=new ApiKernel(new Database(Env::get('DATABASE_URL')));$start=hrtime(true);$r=$kernel->handle('GET','/health/ready',[],'','192.0.2.50');$elapsed=(hrtime(true)-$start)/1e9;
-        same(503,$r['status']);deadlineEvidence('500ms readiness',$elapsed,0.95);
-    }finally{foreach($old as $key=>$value){putenv($value===false?$key:$key.'='.$value);}$server->finish();}
+        same(200,$r['status']);same('down',$r['data']['components']['opensearch']);deadlineEvidence('500ms optional search readiness',$elapsed,0.95);
+    }finally{foreach($old as $key=>$value){putenv($value===false?$key:$key.'='.$value);}same(1,$server->finish());}
 });
 test('payment slow-header timeout is one provider mutation and retains inherited HTTP 400 mapping',function(){
     $server=new SocketUpstream(fn($c)=>SocketUpstream::dripHeaders($c,20,600000));$old=[];

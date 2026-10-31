@@ -1,10 +1,13 @@
 <?php
 declare(strict_types=1);
+require_once __DIR__.'/SearchFixture.php';
 if(PHP_SAPI==='cli-server'){
     header('Content-Type: application/json');$path=parse_url($_SERVER['REQUEST_URI'],PHP_URL_PATH);
     $origin='http://'.$_SERVER['HTTP_HOST'];
     $hits=json_decode(getenv('ROUND3_SEARCH_HITS')?:'[]',true);
-    print json_encode(str_contains($path,'.well-known')?['issuer'=>$origin.'/realms/round3','jwks_uri'=>$origin.'/keys']:($path==='/keys'?['keys'=>[]]:['hits'=>['total'=>['value'=>count($hits)],'hits'=>$hits]]));return;
+    $reply=SearchFixture::page($hits,count($hits));
+    if(preg_match('~^/(shopkmp-products(?:-[a-z0-9-]+)?)$~D',$path,$m)){$reply=SearchFixture::metadata($m[1]);}
+    print json_encode(str_contains($path,'.well-known')?['issuer'=>$origin.'/realms/round3','jwks_uri'=>$origin.'/keys']:($path==='/keys'?['keys'=>[]]:$reply));return;
 }
 // Separate process deliberately avoids sharing a live PDO socket with fork children.
 final class Round3HttpFixture {

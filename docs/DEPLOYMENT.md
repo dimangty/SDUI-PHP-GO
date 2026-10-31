@@ -4,8 +4,8 @@
 
 Requirements: Docker/Compose 2.24.4+, Python 3.9+; Go 1.26 for host tests and
 OpenSSL CLI for production certificate validation/test PKI. Linux
-OpenSearch needs `vm.max_map_count=262144`; allow enough Docker memory for both
-Keycloak and OpenSearch. PHP/Composer are provided by the independent Yii image.
+OpenSearch needs `vm.max_map_count=262144`; allow enough Docker memory for search
+and image builds. PHP/Composer are provided by the independent Yii image.
 
 ```sh
 cp .env.example .env
@@ -14,7 +14,7 @@ curl --fail http://127.0.0.1:8080/api/v1/screens/home
 ```
 
 `make run` builds and starts, waits for probes, explicitly seeds an empty
-development catalog and explicitly reindexes. `make up` omits the seed. Catalog
+development catalog and explicitly bootstraps search. `make up` omits the seed. Catalog
 seeding is not an entrypoint, migration or HTTP fallback. `make seed` is safe to
 repeat against a populated development catalog: it returns `Catalog already
 populated; no changes`. Production refuses the command. Seed data is ordinary
@@ -32,7 +32,7 @@ Docker is invoked. Production commands use the explicit `prod-*` targets and
 The wrapper also rejects custom production-marked/TLS environment files without
 `--prod`; raw Docker Compose remains the operator's responsibility.
 
-Only edge is published. Keycloak, both DBs, OpenSearch, FPM, internal Yii HTTP
+Only edge is published. PostgreSQL, OpenSearch, FPM, internal Yii HTTP
 and BFF have no host mappings. Inspect privately with
 `python3 scripts/compose.py exec -T yii2 curl -fsS http://yii2-http:8080/health/ready`
 or `python3 scripts/compose.py exec -T yii2-http wget -q -O - http://sdui:9090/health/ready`.
@@ -65,7 +65,7 @@ preservation, explicit initial reindex, CARD capture, all eight BFF schemas/six
 commands and live BFF races/vet, ops tests/vet, and `composer test:all`. The PHP
 suites retain native canonical checkout, replay/same-key and different-key HTTP
 races, all 39 protected (including 7 admin) access policies, spoofing/body/header/
-timeout boundaries, all 54 business operations, SQL, Keycloak, search, security
+timeout boundaries, all 54 business operations, SQL, local identity, search, security
 and bounded-provider protocol checks. This does not test every possible input/
 interleaving or launch a mobile app. Historical Go/Yii comparisons and their
 recorded counts remain in the [parity report](API_PARITY_REPORT.md); their removed
@@ -112,8 +112,6 @@ Compose output containing secrets. The root ignore rules already exclude it.
 | --- | --- |
 | `api.crt`, `api.key` | exact PUBLIC_API_HOST; full served certificate chain |
 | `postgres.crt`, `postgres.key` | postgres |
-| `keycloak-postgres.crt`, `keycloak-postgres.key` | keycloak-postgres |
-| `keycloak.crt`, `keycloak.key` | keycloak |
 | `opensearch.crt`, `opensearch.key` | opensearch; subject CN=opensearch; server/client TLS EKUs; PKCS#8 key |
 | `ca.crt` | trusted CA chain(s) for those identities |
 
@@ -121,10 +119,10 @@ Compose output containing secrets. The root ignore rules already exclude it.
 payment provider's trusted CA roots** (plus public roots if needed). It is mounted
 as `/run/tls/ca-bundle.crt`, referenced by both PHP `curl.cainfo` and
 `openssl.cafile`. PHP adapter verification is never disabled. DB clients use
-`PGSSLROOTCERT=/run/tls/ca.crt` with verify-full; JDBC also verifies hostname/CA.
+`PGSSLROOTCERT=/run/tls/ca.crt` with verify-full.
 The DB wrapper installs private keys with postgres ownership/mode0600 and rejects
-all network plaintext connections. Provision Keycloak/search key files readable
-by their service UIDs (Keycloak1000, OpenSearch1000), through restricted host
+all network plaintext connections. Provision search key files readable
+by its service UID (OpenSearch1000), through restricted host
 directories/ACLs; do not give other host users access. Keep CA signing keys offline,
 outside TLS_CERT_DIR; only service leaf keys and trusted public roots belong there.
 
@@ -147,24 +145,32 @@ Production has exactly the same services as development, no reference server.
 Only edge HTTPS is mapped (`EDGE_TLS_PORT=443` by default). Unknown SNI is rejected,
 HTTP is not published, and `/health*`, `/metrics*`, `/swagger*` and all other
 nonapplication paths are hidden. Bind PUBLIC_API_HOST to the edge using the
-deployment's real DNS; the private Keycloak name does not become a public IDP URL.
+deployment's real DNS; identity endpoints remain canonical PHP business routes.
 
-### Private issuer, proxy chain and search security
+### Local identity, proxy chain and search security
 
-CMP uses PHP password flows, not browser redirects to Keycloak. Therefore the
-issuer is consistently `https://keycloak:8443/realms/shopkmp`; Keycloak hostname,
-JWT `iss`, discovery and JWKS all agree. PHP's verified same-origin JWKS constraint
-is preserved. The unchanged realm/client secret placeholder is expanded by
-Keycloak import; import ignores an existing realm, so changing the environment
-secret does **not** rotate an existing realm client. Rotate it through private
-Keycloak administration and update PHP together. Admin management remains private.
-Keycloak26.8.1 requires the production management scheme override `inherited`
-(development explicitly uses `http`); its port9000 probe uses HTTPS and CA trust.
-`https` is not a valid scheme-option value. Minor upgrades require all old nodes
-stopped and a rehearsed identity-DB backup/restore; do not start 26.3 against a
-26.8-migrated schema. See [runtime upgrade/security evidence](backend-fixes/A1_RUNTIME_RESULTS.md)
-and [identity/search upgrade constraints](backend-fixes/JAVA_RUNTIME_REMEDIATION.md).
-The current runtime release/push gate remains blocked on vendor Java findings.
+CMP uses unchanged PHP password/PIN/biometric routes and opaque token DTOs. PHP
+stores local password verifiers, disabled/review state and reviewed roles in the
+business database; registration never grants administrator privileges. No
+registration-admin secret or email-based role bootstrap is configured. Trusted
+console identity operations must be individually reviewed and audited.
+
+For existing accounts, preserve user UUIDs and business links, export/review
+effective historical disabled/role state, and perform explicit per-user
+attestation/reset through the coordinator's console workflow. An empty historical
+password hash is not a usable local password. Never seed defaults, bulk-clear
+fences, or infer admin from archived role definitions. See the
+[V6 decision](backend-fixes/round-5-local-auth/ADR.md) and
+[current execution evidence](backend-fixes/round-5-local-auth/RUNTIME_RESULTS.md).
+The old identity volume is not mounted by this release and must remain physically
+preserved with the immutable prior deployment and verified backups. Do not use
+volume-prune or destructive Compose teardown during migration.
+
+`make test-runtime-graph` verifies the source graph and exact, content-hashed
+historical exceptions. Live application/config/test dependencies cannot be
+allowlisted. Reports under the new V6 directory are current and are not exempt.
+Fresh remaining-image security scans, including OpenSearch Java/SBOM and Composer
+checks, remain mandatory; historical scanner results are not a V6 PASS.
 
 The edge reconstructs headers; only its fixed address can set client IP at Yii
 HTTP. Go accepts original-client context only from the exact edge, and PHP
@@ -181,12 +187,15 @@ node certificate. `search-start.sh` builds an admin hash for **fresh** security
 index initialization and removes all demo users. An existing security index is
 not overwritten by startup; rotate its password using its authenticated security
 API/private administrator procedure, update `.env.prod`, then verify readiness.
-Search data is reconstructible from SQL. Initial reindex must succeed before FPM
-starts. Full reconciliation is scheduled every five minutes, separately from the
+Search data is reconstructible from SQL. The retained `reindex` one-shot explicitly
+runs `maintenance/search-bootstrap`; its search/SQL dependencies remain enforced.
+FPM starts after SQL migrations and does not depend on that job or search health.
+Missing/unready search fails its own capability, not general auth/payment readiness.
+Full reconciliation (`maintenance/reindex`) is scheduled every five minutes, separately from the
 one-minute reservation/session maintenance worker and 30-second
 `payment-recovery` worker. The latter runs `maintenance/recover`, dispatches
-unsent payment intents and retries only safe stored-user session revocation.
-Uncertain payment sends and password resets remain manual work; see
+unsent payment intents. Uncertain financial sends and historical identity
+decisions remain explicit manual work; see
 [recovery/rollout](backend-fixes/MIGRATION_ROLLBACK.md). Large-volume throughput and
 search disaster recovery are not established by small-fixture tests.
 
@@ -216,7 +225,7 @@ Operator inputs in both env templates:
 | --- | ---: | --- |
 | MAINTENANCE_JOB_TIMEOUT_SECONDS |120 | Maximum maintenance attempt runtime |
 | REINDEX_JOB_TIMEOUT_SECONDS |1800 | Maximum reconciliation attempt runtime |
-| RECOVERY_JOB_TIMEOUT_SECONDS |120 | Maximum payment/session recovery scan runtime |
+| RECOVERY_JOB_TIMEOUT_SECONDS |120 | Maximum payment recovery scan runtime |
 | MAINTENANCE_SUCCESS_MAX_AGE_SECONDS |blank →185 |60s cadence +120s runtime +5s |
 | REINDEX_SUCCESS_MAX_AGE_SECONDS |blank →2105 |300s cadence +1800s runtime +5s |
 | RECOVERY_SUCCESS_MAX_AGE_SECONDS |blank →155 |30s cadence +120s runtime +5s |
@@ -278,9 +287,9 @@ python3 scripts/production_smoke.py --env "$TEST_ENV" --disposable
 
 This uses project `shopkmp-migrated-tls-e2e`, independent volumes/network and
 loopback58096 with DNS/SNI `api.shopkmp.test`; the smoke driver resolves it locally
-while verifying its real certificate. It verifies private-issuer registration/
-login/JWKS/profile, blocked operational paths, spoofed webhook source rejection,
-actual PDO TLS and both DB plaintext rejections. It does not call a real provider
+while verifying its real certificate. It verifies local registration/login/profile,
+blocked operational paths, spoofed webhook source rejection,
+actual PDO TLS and business DB plaintext rejection. It does not call a real provider
 or seed production-mode catalog data. `deploy/tls-probe.php` separately exercises
 the **actual production HttpClient** with trusted, wrong-host and untrusted-CA
 HTTPS fixtures; [verification report](VERIFICATION_REPORT.md) gives its exact run.
@@ -292,14 +301,14 @@ The test certificates expire after three days. Never reuse this PKI for deployme
 ## Migration, backup, rollout and rollback
 
 1. Retain an **immutable prior release outside this checkout**, its deployment
-   configuration and verified business/identity database backups for actual
-   rollback. The user-authorized source/archive removal is complete after
-   extracting contracts, all 22 SQL files, checksum migrator/probe and realm;
-   see [preserved artifacts](LEGACY_REMOVAL.md). The current checkout cannot
+   configuration and verified business/retired-identity database backups for actual
+   rollback. Original realm policy/checksum is archived in
+   `docs/backend-fixes/local-auth/history/` for review, never mounted as a live input.
+   See [historical preserved artifacts](LEGACY_REMOVAL.md). The current checkout cannot
    rebuild or start the retired business implementation.
 2. Rehearse on a restored disposable backup. Record existing `schema_migrations`
    versions/checksums and metadata, row counts and representative read contracts.
-   For a real deployment, take/verify a business DB backup plus Keycloak DB/realm
+   For a real deployment, take/verify a business DB backup plus retired identity DB/policy
    backup and retain deployment secrets/certificates. Example business dump via
    the private container: `... exec -T postgres pg_dump -U shopkmp -Fc shopkmp`;
    stream to the operator's protected backup destination. Test restoring elsewhere.
@@ -314,32 +323,36 @@ The test certificates expire after three days. Never reuse this PKI for deployme
    Go snapshot importer. Use a separately retained immutable release and its
    controlled offline import procedure on a restored copy first; confirm the
    resulting normalized schema, import status and data before cutover.
-   The current SQL release includes 012–014: payment outbox/correlation, session
+   Retained SQL migrations 012–014 cover payment outbox/correlation, session
    families/revocation, and bounded recovery scheduling. Migration 013 deletes
    unlinked legacy opaque tokens and requires reauthentication. Old binaries
    cannot safely write alongside this schema. Readiness checks the combined
-   shape. See [migration and rollback details](backend-fixes/MIGRATION_ROLLBACK.md).
-4. Start infrastructure/jobs, require initial reindex and internal readiness, run
+   shape. Apply the additive V6 local-identity migration as well; preserve the
+   existing checksum baseline and prior history. See
+   [migration and rollback details](backend-fixes/MIGRATION_ROLLBACK.md).
+4. Start infrastructure/jobs, run explicit search bootstrap and internal readiness, run
    read-only contract/data checks and provider/TLS checks. Shift the one edge to
    Yii/BFF as a **single-writer** staged switch; do not distribute writes across
    releases on the same production DB. Keep the prior release available offline.
 5. Monitor errors/locks, failed auth/network budgets, reservation expiry, search
    reconciliation and provider outcomes using private operational access/logs.
    Access logs omit query strings, bearer tokens and demo capability tokens.
-6. To roll back, drain/stop Yii business writes and workers first, reconcile any
-   in-flight provider outcomes, confirm schema/data compatibility, then restore
-   the externally retained prior routing/release as sole writer. Retain additive
-   tables and history;
-   do not drop customer/commerce data or silently restore over newer writes.
-   Backup restore/PITR is an explicit incident procedure, not `migrate down`.
+ 6. Drain/stop business writes and workers and reconcile in-flight payment outcomes.
+    After local identity cutover, **do not restore a provider-dependent prior
+    binary or its trust policy**. Local registrations, password writes, session
+    revocations and reviewed role/ban decisions require roll-forward to a repaired
+    compatible local-identity runtime. A return to an older identity mechanism
+    requires a separately approved remigration preserving every newer decision;
+    SQL shape compatibility alone is insufficient. Retain additive tables, backups
+    and history. Backup/PITR is an explicit incident procedure, not `migrate down`.
 
 ### Exact production-aware stages
 
-First map/restore the **existing** business and identity volumes in the approved
+First map/restore the **existing** business volume in the approved
 release configuration and rehearse on a restored disposable copy. Project-scoped
 default volumes are for fresh installs; these commands do not discover or import
-an existing installation and do not authorize switching to a new empty identity
-database. Preserve verified backups and the external immutable prior release
+an existing installation and do not authorize replacing account history.
+Preserve retired identity volumes/backups outside the new graph and the external immutable prior release
 before real writes.
 
 For the root production model, execute stages in order (not parallel Make goals):
@@ -361,11 +374,14 @@ make prod-edge PROD_ENV_FILE=.env.prod
 Every `prod-*` target selects `--prod`. `prod-drain` first gracefully stops edge,
 then BFF/internal HTTP/workers/FPM. `prod-migrate` explicitly runs the extracted
 checksum job then the separate Yii history job; `prod-reindex` explicitly runs
-initial reconciliation. These jobs use `run --rm --no-deps` and the production
+initial verified search bootstrap. These jobs use `run --rm --no-deps` and the production
 TLS/CA environment. `prod-app`, `prod-workers` and `prod-edge` use `--no-deps` so
 the operator's staged sequence cannot implicitly relaunch migration jobs or a
-writer that was deliberately drained. `prod-infra` selects only the two DBs,
-private Keycloak and search. Advance only after each prior command succeeds.
+writer that was deliberately drained. `prod-infra` selects only PostgreSQL and
+search. Advance only after each prior command succeeds. A failed search bootstrap
+keeps the search rollout gate RED; the application itself does not depend on that
+job, so auth/payment availability can be assessed independently without claiming
+a successful full search deployment.
 
 Equivalent explicit job/drain commands are:
 
@@ -392,11 +408,12 @@ make prod-rollback-stop PROD_ENV_FILE=.env.prod
 python3 scripts/compose.py --env .env.prod --prod ps --all
 ```
 
-Then reconcile provider outcomes, verify schema/data compatibility and restore
-the external immutable prior routing/release as sole writer through its original
-deployment, using verified backups/PITR if required by the incident procedure.
-Do not start the old writer until the new writer/workers are stopped. This target
-does not reverse SQL or restore over later writes. `prod-down` retains volumes;
+Then reconcile payment outcomes and select a **compatible local-identity repair
+release** as sole writer. The stop target does not authorize restoring a pre-cutover
+identity runtime, obsolete passwords, revoked families, or superseded admin/ban
+state. Follow [the identity rollback boundary](backend-fixes/local-auth/ROLLOUT_ROLLBACK.md)
+and the search post-write fresh-target rebuild procedure. This target does not
+reverse SQL or restore over later writes. `prod-down` retains volumes;
 `prod-logs` selects production for inspection. Backup/restore/real rollback remains
 a release gate, not a claim established by command-boundary tests.
 

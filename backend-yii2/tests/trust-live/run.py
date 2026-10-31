@@ -8,6 +8,7 @@ Always tears down only its own Compose project. No host ports are published.
 import hashlib
 import hmac
 import base64
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -169,6 +170,15 @@ def check_webhook():
 
 def check_fpm():
     reset()
+    # The external DB network also contains the main stack's `yii2` alias.
+    # Select this fixture's actual interface, not a round-robin shared DNS name.
+    container = compose("ps", "-q", "yii2").strip()
+    networks = json.loads(run(["docker", "inspect", "--format", "{{json .NetworkSettings.Networks}}", container]))
+    network = os.getenv("TRUST_DB_NETWORK", "shopkmp-backend-fixes-20261026")
+    try:
+        target = str(ipaddress.IPv4Address(networks.get(network, {}).get("IPAddress", "")))
+    except ipaddress.AddressValueError as error:
+        raise RuntimeError("Selected FastCGI fixture has no valid shared-network address") from error
     # A same-network container can send FastCGI, including a forged REMOTE_ADDR.
     # FPM must reject its actual TCP source before accepting those parameters.
     params = {"SCRIPT_FILENAME": "/app/web/index.php", "SCRIPT_NAME": "/index.php", "REQUEST_METHOD": "GET", "REQUEST_URI": "/api/v1/users/me", "SERVER_PROTOCOL": "HTTP/1.1", "SERVER_NAME": "yii2", "SERVER_PORT": "8080", "REMOTE_ADDR": "10.247.249.4", "HTTP_X_SHOP_RATE_CLIENT_IP": "203.0.113.1", "HTTP_AUTHORIZATION": "Bearer app_access_forged"}
@@ -176,7 +186,7 @@ def check_fpm():
         return struct.pack("!BBHHBB", 1, kind, 1, len(body), 0, 0) + body
     encoded = b"".join(bytes([len(key), len(value)]) + key.encode() + value.encode() for key, value in params.items())
     payload = record(1, b"\x00\x01" + b"\x00" * 6) + record(4, encoded) + record(4, b"") + record(5, b"")
-    code = "$s=stream_socket_client('tcp://yii2:9000',$errno,$error,3); if(!$s){throw new RuntimeException($error);} stream_set_timeout($s,3); @fwrite($s,base64_decode('" + base64.b64encode(payload).decode() + "')); $reply=@stream_get_contents($s); print json_encode(['bytes'=>strlen($reply===false?'':$reply),'timeout'=>stream_get_meta_data($s)['timed_out']]);"
+    code = "$s=stream_socket_client('tcp://" + target + ":9000',$errno,$error,3); if(!$s){throw new RuntimeException($error);} stream_set_timeout($s,3); @fwrite($s,base64_decode('" + base64.b64encode(payload).decode() + "')); $reply=@stream_get_contents($s); print json_encode(['bytes'=>strlen($reply===false?'':$reply),'timeout'=>stream_get_meta_data($s)['timed_out']]);"
     result = json.loads(compose("exec", "-T", "untrusted", "php", "-r", code))
     assert result == {"bytes": 0, "timeout": False}, result
     assert buckets() == [], buckets()

@@ -3,17 +3,12 @@ name: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}
 x-yii-env: &yii-env
   APP_ENV: development
   DATABASE_URL: postgres://shopkmp:${POSTGRES_PASSWORD:?required}@postgres:5432/shopkmp?sslmode=disable
-  KEYCLOAK_ISSUER: http://keycloak:8080/realms/shopkmp
-  KEYCLOAK_CLIENT_ID: shopkmp-backend
-  KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?required}
   OPENSEARCH_URL: http://opensearch:9200
   OPENSEARCH_PRODUCTS_INDEX: ${OPENSEARCH_PRODUCTS_INDEX:-shopkmp-products}
   PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:?required}
   PAYMENT_GATEWAY_URL: ${PAYMENT_GATEWAY_URL:-}
   PAYMENT_GATEWAY_API_KEY: ${PAYMENT_GATEWAY_API_KEY:-}
   PAYMENT_WEBHOOK_ALLOWED_CIDRS: ${PAYMENT_WEBHOOK_ALLOWED_CIDRS:-}
-  ADMIN_BOOTSTRAP_TOKEN: ${ADMIN_BOOTSTRAP_TOKEN:?required}
-  ADMIN_EMAILS: ${ADMIN_EMAILS:-}
   CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
   TRUSTED_BFF_IPS: ${TRUSTED_BFF_IPS:?comma-separated exact BFF ingress IPs required}
   READINESS_TIMEOUT: 2s
@@ -69,59 +64,6 @@ services:
       migrate: {condition: service_completed_successfully}
     restart: "no"
 
-  keycloak-postgres:
-    build:
-      context: .
-      dockerfile: deploy/postgres.Dockerfile
-    image: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}-postgres
-    environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?required}
-    volumes: [keycloak_data:/var/lib/postgresql/data]
-    networks: [data]
-    healthcheck:
-      test: [CMD-SHELL, 'pg_isready -U keycloak -d keycloak']
-      interval: 5s
-      timeout: 3s
-      retries: 30
-      start_period: 10s
-    restart: unless-stopped
-    stop_grace_period: 60s
-
-  keycloak:
-    build:
-      context: ./tools/ops
-      dockerfile: ../../deploy/keycloak/Dockerfile
-    command: [start-dev, --import-realm]
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?required}
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?required}
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?required}
-      KC_HEALTH_ENABLED: "true"
-      KC_METRICS_ENABLED: "true"
-      KC_HTTP_MANAGEMENT_SCHEME: http
-      HEALTHCHECK_URL: http://127.0.0.1:9000/health/ready
-      KC_HOSTNAME: http://keycloak:8080
-    volumes:
-      - ./deploy/keycloak/shopkmp-realm.json:/opt/keycloak/data/import/shopkmp-realm.json:ro
-    networks: [application, data]
-    depends_on:
-      keycloak-postgres: {condition: service_healthy}
-    healthcheck:
-      test: [CMD, /opt/keycloak/bin/shopkmp-healthcheck]
-      interval: 10s
-      timeout: 5s
-      retries: 40
-      start_period: 60s
-    restart: unless-stopped
-    stop_grace_period: 45s
-    mem_limit: 1g
-
   opensearch:
     build:
       context: .
@@ -129,6 +71,7 @@ services:
     environment:
       discovery.type: single-node
       DISABLE_SECURITY_PLUGIN: "true"
+      action.auto_create_index: "-shopkmp-products*,+*"
       OPENSEARCH_JAVA_OPTS: ${OPENSEARCH_JAVA_OPTS:--Xms512m -Xmx512m}
     volumes: [search_data:/usr/share/opensearch/data]
     networks: [application]
@@ -144,7 +87,7 @@ services:
 
   reindex:
     <<: *yii
-    command: [php, yii, maintenance/reindex]
+    command: [php, yii, maintenance/search-bootstrap]
     depends_on:
       yii-migrate: {condition: service_completed_successfully}
       opensearch: {condition: service_healthy}
@@ -165,8 +108,6 @@ services:
       - ./deploy/php/fpm-health.php:/opt/probes/fpm-health.php:ro
     depends_on:
       yii-migrate: {condition: service_completed_successfully}
-      reindex: {condition: service_completed_successfully}
-      keycloak: {condition: service_healthy}
     healthcheck:
       test: [CMD, php, /opt/probes/fpm-health.php]
       interval: 10s
@@ -255,6 +196,7 @@ services:
     volumes: [./deploy/php:/opt/scheduler:ro]
     depends_on:
       yii2-http: {condition: service_healthy}
+      reindex: {condition: service_completed_successfully}
     stop_signal: SIGTERM
     restart: unless-stopped
     healthcheck:
@@ -332,5 +274,4 @@ networks:
     internal: true
 volumes:
   postgres_data:
-  keycloak_data:
   search_data:

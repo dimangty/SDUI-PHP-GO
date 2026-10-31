@@ -26,6 +26,9 @@ final class MaintenanceService
                 ['idempotency_keys','created_at<now()-?*interval \'1 second\'',[$retention]],
                 ['processed_webhooks','processed_at<now()-?*interval \'1 second\'',[$retention]],
                 ['access_sessions','expires_at<=now()',[]],['refresh_sessions','expires_at<=now()',[]],
+                // Remove token rows in their own slices first. A family DELETE
+                // must not cascade through an unbounded rotation history.
+                ['session_families','(expires_at<=now() OR revoked_at<now()-?*interval \'1 second\') AND NOT EXISTS (SELECT 1 FROM access_sessions a WHERE a.family_id=session_families.id) AND NOT EXISTS (SELECT 1 FROM refresh_sessions r WHERE r.family_id=session_families.id)',[$retention]],
                 ['biometric_challenges','used OR expires_at<=now()',[]],
                 ['rate_limit_hits','occurred_at<=now()-?*interval \'1 second\'',[Env::duration('RATE_LIMIT_WINDOW',60)]],
                 ['login_attempts','last_attempt<now()-?*interval \'1 second\' AND (locked_until IS NULL OR locked_until<now())',[$retention]],

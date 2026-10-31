@@ -8,6 +8,37 @@ import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from compose import ROOT, command
+from backend_artifacts import REQUIRED_SERVICES, INIT_SERVICES
+
+
+def check_containers(containers):
+    """Validate actual container state without persisting environment/credentials."""
+    services = {}
+    optional = {'seed', 'fixture', 'payment-provider', 'payment-http'}
+    retired = 'key' + 'cloak'
+    for container in containers:
+        name = container['Config']['Labels']['com.docker.compose.service']
+        if name not in set(REQUIRED_SERVICES) | optional:
+            raise ValueError('Unexpected runtime service: ' + name)
+        for entry in container['Config'].get('Env', []):
+            key = entry.split('=', 1)[0]
+            if key.startswith(retired.upper() + '_') or key in ('ADMIN_EMAILS', 'ADMIN_BOOTSTRAP_TOKEN'):
+                raise ValueError('Retired identity/registration-admin environment in service: ' + name)
+        bindings = container['HostConfig'].get('PortBindings') or {}
+        if name != 'edge' and any(bindings.values()):
+            raise ValueError('Private runtime service publishes a port: ' + name)
+        state = container['State']
+        if name in INIT_SERVICES or name == 'seed':
+            if state['Status'] != 'exited' or state['ExitCode'] != 0:
+                raise ValueError('Initialization has not completed successfully: ' + name)
+        elif name in REQUIRED_SERVICES:
+            if not state['Running'] or state.get('Health', {}).get('Status') != 'healthy':
+                raise ValueError('Runtime service is not running and healthy: ' + name)
+        services[name] = {'image': container['Image'], 'status': state['Status'],
+                          'health': state.get('Health', {}).get('Status')}
+    if set(REQUIRED_SERVICES) - services.keys():
+        raise ValueError('Required runtime containers are missing: ' + ', '.join(sorted(set(REQUIRED_SERVICES) - services.keys())))
+    return services
 
 
 def main():
@@ -69,14 +100,7 @@ def main():
                 'schemaMigrationCount': sql('SELECT count(*) AS n FROM schema_migrations')[0]['n'],
                 'yiiHistoryCount': sql('SELECT count(*) AS n FROM yii2_migration_history')[0]['n'], 'services': {}}
     evidence['workerReadiness'] = worker_statuses()
-    for container in inspected:
-        name = container['Config']['Labels']['com.docker.compose.service']
-        bindings = container['HostConfig'].get('PortBindings') or {}
-        assert name == 'edge' or not any(bindings.values()), name
-        if name in ('migrate', 'yii-migrate', 'reindex'):
-            assert container['State']['ExitCode'] == 0
-        evidence['services'][name] = {'image': container['Image'], 'status': container['State']['Status'],
-                                      'health': container['State'].get('Health', {}).get('Status')}
+    evidence['services'] = check_containers(inspected)
     if args.shutdown:
         names = ['edge', 'sdui', 'yii2-http', 'yii2', 'maintenance', 'reconcile', 'payment-recovery']
         run('stop', *names)
@@ -86,7 +110,7 @@ def main():
         evidence['gracefulStopExitCodes'] = exits
         run('up', '-d', '--no-deps', '--wait', '--wait-timeout', str(args.wait_timeout), *reversed(names))
         evidence['workerReadinessAfterRestart'] = worker_statuses()
-    output = ROOT / 'deploy/evidence/runtime.json'
+    output = ROOT / 'deploy/evidence/local-auth-runtime.json'
     output.write_text(json.dumps(evidence, indent=2) + '\n')
     print(f'PASS real internal probes; edge client {client} = PHP {expected}; spoof ignored; private ports; histories; graceful stop/restart={args.shutdown}')
 

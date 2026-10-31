@@ -7,7 +7,7 @@ use Shop\infrastructure\{ApiKernel,Database,Env};
 use Shop\repositories\ShopRepository;
 $db=new Database(Env::get('DATABASE_URL'));$repo=new ShopRepository($db);$sessions=new SessionService($db,$repo);$credentials=new CredentialService($db,$repo,$sessions);
 putenv('READ_RATE_LIMIT=10000');putenv('MUTATION_RATE_LIMIT=10000');
-function deviceUser(): string {global $db;$u=Ids::uuid();$db->execute("INSERT INTO users(id,email,password_hash,full_name,phone) VALUES(?,?,'','Device Buyer','+79991234567')",[$u,$u.'@test.example']);return $u;}
+function deviceUser(): string {global $db;$u=Ids::uuid();$db->execute("INSERT INTO users(id,email,password_hash,full_name,phone,local_identity_ready) VALUES(?,?,'','Device Buyer','+79991234567',true)",[$u,$u.'@test.example']);return $u;}
 function bioInput(string $device): array {return ['deviceId'=>$device,'deviceName'=>'Device','keyAlgorithm'=>'EdDSA','publicKey'=>base64_encode(hex2bin('302a300506032b6570032100').sodium_crypto_sign_publickey(sodium_crypto_sign_keypair()))];}
 function legacyDevice(string $user,string $kind,string $device): string {
     global $db;$id=Ids::uuid();
