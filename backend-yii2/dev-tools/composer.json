@@ -1,0 +1,21 @@
+{
+  "name": "shopkmp/business-api-dev-tools",
+  "description": "Isolated analysis and unit-test tools for the ShopKMP business API",
+  "type": "project",
+  "license": "proprietary",
+  "require": {
+    "php": ">=8.4.1"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "2.3.4",
+    "phpunit/phpunit": "13.4.5"
+  },
+  "config": {
+    "allow-plugins": false,
+    "sort-packages": true
+  },
+  "scripts": {
+    "analyse": "phpstan analyse --configuration=phpstan.neon --no-progress",
+    "test": "phpunit --configuration=phpunit.xml --do-not-record-test-run-history --do-not-cache-test-index"
+  }
+}

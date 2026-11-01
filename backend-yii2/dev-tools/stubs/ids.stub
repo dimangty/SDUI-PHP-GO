@@ -1,0 +1,11 @@
+<?php
+
+namespace Shop\domain;
+
+final class Ids
+{
+    // timestamp(null) is the only normal path returning null. Non-null input
+    // returns a UTC string or throws DateTime's exception; now() passes 'now'.
+    /** @return ($value is null ? null : string) */
+    public static function timestamp(?string $value): ?string {}
+}

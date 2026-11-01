@@ -18,6 +18,7 @@ type Config struct {
 	AdminAddr         string
 	Yii               yii.Config
 	RequestTimeout    time.Duration
+	ReadinessTimeout  time.Duration
 	ReadHeaderTimeout time.Duration
 	ReadTimeout       time.Duration
 	WriteTimeout      time.Duration
@@ -27,8 +28,11 @@ type Config struct {
 	Tracing           observe.TraceConfig
 }
 
+// Matches the mandatory PHP allocation (core + queue + HTTP + serialization).
+const minimumReadinessTimeout = 2 * time.Second
+
 func Defaults() Config {
-	return Config{ListenAddr: ":8080", AdminAddr: ":9090", Yii: yii.Config{Origin: "http://yii2-http:8080", Timeout: 3 * time.Second, MaxBody: 2 << 20, Backoff: 50 * time.Millisecond}, RequestTimeout: 8 * time.Second, ReadHeaderTimeout: 3 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 12 * time.Second, IdleTimeout: 30 * time.Second, ShutdownTimeout: 10 * time.Second, Tracing: observe.TraceDefaults()}
+	return Config{ListenAddr: ":8080", AdminAddr: ":9090", Yii: yii.Config{Origin: "http://yii2-http:8080", Timeout: 3 * time.Second, MaxBody: 2 << 20, Backoff: 50 * time.Millisecond}, RequestTimeout: 8 * time.Second, ReadinessTimeout: minimumReadinessTimeout, ReadHeaderTimeout: 3 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 12 * time.Second, IdleTimeout: 30 * time.Second, ShutdownTimeout: 10 * time.Second, Tracing: observe.TraceDefaults()}
 }
 func Load() (Config, error) {
 	c := Defaults()
@@ -47,7 +51,7 @@ func Load() (Config, error) {
 			c.TrustedEdgeIPs = append(c.TrustedEdgeIPs, peer.Unmap())
 		}
 	}
-	durations := map[string]*time.Duration{"UPSTREAM_TIMEOUT": &c.Yii.Timeout, "UPSTREAM_RETRY_BACKOFF": &c.Yii.Backoff, "REQUEST_TIMEOUT": &c.RequestTimeout, "READ_HEADER_TIMEOUT": &c.ReadHeaderTimeout, "READ_TIMEOUT": &c.ReadTimeout, "WRITE_TIMEOUT": &c.WriteTimeout, "IDLE_TIMEOUT": &c.IdleTimeout, "SHUTDOWN_TIMEOUT": &c.ShutdownTimeout}
+	durations := map[string]*time.Duration{"READINESS_TIMEOUT": &c.ReadinessTimeout, "UPSTREAM_TIMEOUT": &c.Yii.Timeout, "UPSTREAM_RETRY_BACKOFF": &c.Yii.Backoff, "REQUEST_TIMEOUT": &c.RequestTimeout, "READ_HEADER_TIMEOUT": &c.ReadHeaderTimeout, "READ_TIMEOUT": &c.ReadTimeout, "WRITE_TIMEOUT": &c.WriteTimeout, "IDLE_TIMEOUT": &c.IdleTimeout, "SHUTDOWN_TIMEOUT": &c.ShutdownTimeout}
 	for key, dest := range durations {
 		if v, ok := os.LookupEnv(key); ok {
 			parsed, err := time.ParseDuration(v)
@@ -106,6 +110,9 @@ func Load() (Config, error) {
 	}
 	if c.Yii.Timeout >= c.RequestTimeout || c.RequestTimeout >= c.WriteTimeout || c.ReadHeaderTimeout > c.ReadTimeout {
 		return c, fmt.Errorf("require upstream < request < write and read-header <= read timeouts")
+	}
+	if c.ReadinessTimeout < minimumReadinessTimeout || c.ReadinessTimeout > c.Yii.Timeout {
+		return c, fmt.Errorf("require readiness >= PHP allocation (2s) and readiness <= upstream timeout")
 	}
 	if _, err := yii.New(c.Yii); err != nil {
 		return c, err

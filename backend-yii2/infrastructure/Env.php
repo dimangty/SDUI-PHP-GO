@@ -14,4 +14,17 @@ final class Env
         return $seconds===floor($seconds)?(int)$seconds:$seconds;
     }
     public static function production(): bool { return self::get('APP_ENV','development')==='production'; }
+    /** Bootstrap only: CLI workers do not inherit the HTTP payment requirements. */
+    public static function requireRoleConfig(string $role): void
+    {
+        if(!self::production()){return;}
+        $required=match($role){
+            'runtime'=>['PAYMENT_GATEWAY_URL','PAYMENT_GATEWAY_API_KEY','PAYMENT_WEBHOOK_SECRET','PAYMENT_WEBHOOK_ALLOWED_CIDRS'],
+            'search','indexer'=>['OPENSEARCH_URL'],
+            'recovery'=>['PAYMENT_GATEWAY_URL','PAYMENT_GATEWAY_API_KEY'],
+            'owner','operator','maintenance'=>[],
+            default=>throw new \RuntimeException('DATABASE_ROLE_REQUIRED'),
+        };
+        foreach($required as $key){if(self::get($key)===''){throw new \RuntimeException('SERVICE_CONFIG_REQUIRED: '.$key);}}
+    }
 }

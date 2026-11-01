@@ -1,0 +1,17 @@
+parameters:
+    level: max
+    phpVersion: 80300
+    paths:
+        - ../infrastructure/ReadinessBudget.php
+        - ../infrastructure/ReadinessPolicy.php
+        - ../infrastructure/ReadinessAdmission.php
+        - ../infrastructure/CoreReadinessProbe.php
+        - ../infrastructure/ReadinessSql.php
+        - ../application/PaymentService.php
+        - ../domain/Ids.php
+    bootstrapFiles:
+        - bootstrap.php
+    stubFiles:
+        - stubs/payment.stub
+        - stubs/ids.stub
+    tmpDir: /tmp/shopkmp-phpstan

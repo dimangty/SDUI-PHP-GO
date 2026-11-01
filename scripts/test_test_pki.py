@@ -28,6 +28,13 @@ class DisposablePKITest(unittest.TestCase):
             self.assertFalse((env_file.parent / (retired + '-postgres.crt')).exists())
             for service in ('postgres', 'opensearch', 'provider'):
                 self.assertTrue((env_file.parent / (service + '.crt')).is_file())
+            operator = env_file.parent / 'search-admin.crt'
+            self.assertTrue(operator.is_file(), 'independent search operator certificate')
+            subject = subprocess.check_output(['openssl', 'x509', '-in', str(operator),
+                                               '-subject', '-noout', '-nameopt', 'RFC2253'])
+            self.assertEqual(subject.strip(), b'subject=CN=shopkmp-security-admin')
+            for role in ('RUNTIME', 'RECONCILE', 'INDEXER'):
+                self.assertIn('OPENSEARCH_' + role + '_PASSWORD', values)
             expected = {
                 'COMPOSE_PROJECT_NAME': 'shopkmp-backend-fixes-tls-e2e',
                 'EDGE_TLS_PORT': '58198', 'EDGE_SUBNET': '172.31.222.0/24',

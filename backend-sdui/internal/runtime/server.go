@@ -22,7 +22,14 @@ func Health(up *yii.Client) http.Handler {
 }
 
 func Operations(up *yii.Client, observer *observe.Recorder) http.Handler {
+	return operations(up, observer, Defaults().ReadinessTimeout)
+}
+
+func operations(up *yii.Client, observer *observe.Recorder, readinessTimeout time.Duration) http.Handler {
 	mux := http.NewServeMux()
+	// Per BFF process, at most two upstream calls. PHP's shared admission also
+	// bounds actual work after client cancellation, which FPM may not observe.
+	probes := make(chan struct{}, 2)
 	mux.HandleFunc("GET /health/live", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		defer func() {
@@ -37,10 +44,19 @@ func Operations(up *yii.Client, observer *observe.Recorder) http.Handler {
 		defer func() {
 			observer.Record(r.Context(), observe.Event{Kind: "probe", Operation: "ready", Status: status, Duration: time.Since(start)})
 		}()
-		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), readinessTimeout)
 		defer cancel()
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
+		select {
+		case probes <- struct{}{}:
+			defer func() { <-probes }()
+		default:
+			status = 503
+			w.WriteHeader(status)
+			fmt.Fprint(w, `{"status":"unavailable"}`)
+			return
+		}
 		if err := up.Ready(ctx); err != nil {
 			status = 503
 			w.WriteHeader(503)
@@ -82,7 +98,7 @@ func Run(ctx context.Context, c Config) error {
 	defer admin.Close()
 	logger.Info("sdui_started", "public", public.Addr().String(), "internal", admin.Addr().String())
 	app := application.New(up, up, up, up, up)
-	err = serve(ctx, c, public, admin, bff.NewHandler(app, bff.Config{RequestTimeout: c.RequestTimeout, Observer: observer, Tracing: tracing, TrustedEdgeIPs: c.TrustedEdgeIPs}), Operations(up, observer), tracing)
+	err = serve(ctx, c, public, admin, bff.NewHandler(app, bff.Config{RequestTimeout: c.RequestTimeout, Observer: observer, Tracing: tracing, TrustedEdgeIPs: c.TrustedEdgeIPs}), operations(up, observer, c.ReadinessTimeout), tracing)
 	logger.Info("sdui_stopped", "graceful", err == nil)
 	return err
 }

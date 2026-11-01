@@ -6,6 +6,8 @@
   "require": {
     "php": ">=8.3",
     "ext-pdo_pgsql": "*",
+    "ext-pgsql": "*",
+    "ext-sockets": "*",
     "ext-intl": "*",
     "ext-mbstring": "*",
     "ext-sodium": "*",

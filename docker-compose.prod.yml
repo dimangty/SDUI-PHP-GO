@@ -1,13 +1,7 @@
 # Docker Compose >=2.24.4 (!override). Only the edge's TLS port is published.
 x-production-env: &production-env
   APP_ENV: production
-  DATABASE_URL: postgres://shopkmp_runtime:${POSTGRES_RUNTIME_PASSWORD:?runtime secret required}@postgres:5432/shopkmp?sslmode=verify-full
-  DATABASE_ROLE: runtime
   PGSSLROOTCERT: /run/tls/ca.crt
-  OPENSEARCH_URL: https://admin:${OPENSEARCH_ADMIN_PASSWORD:?required}@opensearch:9200
-  PAYMENT_GATEWAY_URL: ${PAYMENT_GATEWAY_URL:?required HTTPS provider}
-  PAYMENT_GATEWAY_API_KEY: ${PAYMENT_GATEWAY_API_KEY:?required}
-  PAYMENT_WEBHOOK_ALLOWED_CIDRS: ${PAYMENT_WEBHOOK_ALLOWED_CIDRS:?required}
 
 x-production-volumes: &production-volumes
   - ${TLS_CERT_DIR:?required}/ca.crt:/run/tls/ca.crt:ro
@@ -35,13 +29,24 @@ services:
       DATABASE_ROLE: owner
     volumes: *production-volumes
   reindex:
+    # Remains in config for the required SQL-role/artifact gates; only an explicit
+    # `compose run reindex` starts this one-shot privileged indexer in production.
+    scale: 0
     environment:
       <<: *production-env
       DATABASE_URL: postgres://shopkmp_indexer:${POSTGRES_INDEXER_PASSWORD:?index bootstrap secret required}@postgres:5432/shopkmp?sslmode=verify-full
       DATABASE_ROLE: indexer
+      OPENSEARCH_URL: https://shopkmp_indexer:${OPENSEARCH_INDEXER_PASSWORD:?index lifecycle secret required}@opensearch:9200
     volumes: *production-volumes
   yii2:
-    environment: *production-env
+    environment:
+      <<: *production-env
+      DATABASE_URL: postgres://shopkmp_runtime:${POSTGRES_RUNTIME_PASSWORD:?runtime secret required}@postgres:5432/shopkmp?sslmode=verify-full
+      DATABASE_ROLE: runtime
+      OPENSEARCH_URL: https://shopkmp_runtime:${OPENSEARCH_RUNTIME_PASSWORD:?runtime search secret required}@opensearch:9200
+      PAYMENT_GATEWAY_URL: ${PAYMENT_GATEWAY_URL:?required HTTPS provider}
+      PAYMENT_GATEWAY_API_KEY: ${PAYMENT_GATEWAY_API_KEY:?required}
+      PAYMENT_WEBHOOK_ALLOWED_CIDRS: ${PAYMENT_WEBHOOK_ALLOWED_CIDRS:?required}
     volumes:
       - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
       - ${CA_BUNDLE_FILE}:/run/tls/ca-bundle.crt:ro
@@ -56,10 +61,13 @@ services:
       - ${CA_BUNDLE_FILE}:/run/tls/ca-bundle.crt:ro
       - ./deploy/php/tls.ini:/usr/local/etc/php/conf.d/zz-tls.ini:ro
   reconcile:
+    depends_on: !override
+      yii2-http: {condition: service_healthy}
     environment:
       <<: *production-env
       DATABASE_URL: postgres://shopkmp_search:${POSTGRES_SEARCH_PASSWORD:?search worker secret required}@postgres:5432/shopkmp?sslmode=verify-full
       DATABASE_ROLE: search
+      OPENSEARCH_URL: https://shopkmp_reconcile:${OPENSEARCH_RECONCILE_PASSWORD:?reconciliation secret required}@opensearch:9200
     volumes:
       - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
       - ${CA_BUNDLE_FILE}:/run/tls/ca-bundle.crt:ro
@@ -69,10 +77,13 @@ services:
       <<: *production-env
       DATABASE_URL: postgres://shopkmp_recovery:${POSTGRES_RECOVERY_PASSWORD:?payment recovery secret required}@postgres:5432/shopkmp?sslmode=verify-full
       DATABASE_ROLE: recovery
+      PAYMENT_GATEWAY_URL: ${PAYMENT_GATEWAY_URL:?required HTTPS provider}
+      PAYMENT_GATEWAY_API_KEY: ${PAYMENT_GATEWAY_API_KEY:?required}
     volumes: *production-volumes
   seed:
-    environment: *production-env
-    volumes: *production-volumes
+    profiles: !override [development-only]
+    environment: !override
+      APP_ENV: production
   identity-operator:
     build: ./backend-yii2
     image: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}-yii2
@@ -113,7 +124,6 @@ services:
     environment:
       DISABLE_SECURITY_PLUGIN: !reset null
       DISABLE_INSTALL_DEMO_CONFIG: "true"
-      OPENSEARCH_ADMIN_PASSWORD: ${OPENSEARCH_ADMIN_PASSWORD:?required}
     entrypoint: [bash, /opt/search-start.sh]
     volumes:
       - ./deploy/search-start.sh:/opt/search-start.sh:ro
@@ -122,7 +132,46 @@ services:
       - ${TLS_CERT_DIR}/opensearch.crt:/usr/share/opensearch/config/certs/opensearch.crt:ro
       - ${TLS_CERT_DIR}/opensearch.key:/usr/share/opensearch/config/certs/opensearch.key:ro
     healthcheck:
-      test: [CMD-SHELL, 'curl -fsS --max-time 4 --cacert config/certs/ca.crt -u "admin:$$OPENSEARCH_ADMIN_PASSWORD" "https://opensearch:9200/_cluster/health?wait_for_status=yellow" >/dev/null']
+      # TLS + initialized authentication, with no password or operator key on node.
+      test: [CMD-SHELL, 'test "$$(curl -sS --max-time 4 --cacert config/certs/ca.crt -o /dev/null -w "%{http_code}" https://opensearch:9200/)" = 401']
+  search-security-bootstrap:
+    build:
+      context: .
+      dockerfile: deploy/opensearch.Dockerfile
+    image: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}-opensearch
+    profiles: [search-admin]
+    entrypoint: [bash, /opt/search-security-bootstrap.sh]
+    volumes:
+      - ./deploy/search-security-bootstrap.sh:/opt/search-security-bootstrap.sh:ro
+      - ./deploy/search-security:/opt/search-security:ro
+      - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
+      - ${TLS_CERT_DIR}/search-admin.crt:/run/tls/search-admin.crt:ro
+      - ${TLS_CERT_DIR}/search-admin.key:/run/tls/search-admin.key:ro
+    networks: [application]
+    restart: "no"
+    mem_limit: 512m
+    security_opt: [no-new-privileges:true]
+  search-security-provision:
+    build: ./backend-yii2
+    image: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}-yii2
+    profiles: [search-admin]
+    entrypoint: [php, /opt/search-security-provision.php]
+    command: [check]
+    environment:
+      OPENSEARCH_PRODUCTS_INDEX: ${OPENSEARCH_PRODUCTS_INDEX:-shopkmp-products}
+      OPENSEARCH_RUNTIME_PASSWORD: ${OPENSEARCH_RUNTIME_PASSWORD:?runtime search secret required}
+      OPENSEARCH_RECONCILE_PASSWORD: ${OPENSEARCH_RECONCILE_PASSWORD:?reconciliation secret required}
+      OPENSEARCH_INDEXER_PASSWORD: ${OPENSEARCH_INDEXER_PASSWORD:?index lifecycle secret required}
+    volumes:
+      - ./deploy/search-security-provision.php:/opt/search-security-provision.php:ro
+      - ./deploy/search-roles.php:/opt/search-roles.php:ro
+      - ${TLS_CERT_DIR}/ca.crt:/run/tls/ca.crt:ro
+      - ${TLS_CERT_DIR}/search-admin.crt:/run/tls/search-admin.crt:ro
+      - ${TLS_CERT_DIR}/search-admin.key:/run/tls/search-admin.key:ro
+    networks: [application]
+    restart: "no"
+    mem_limit: 128m
+    security_opt: [no-new-privileges:true]
   edge:
     environment:
       PUBLIC_API_HOST: ${PUBLIC_API_HOST:?required}

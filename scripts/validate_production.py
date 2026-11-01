@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 def validate_model(model):
     """Inspect Docker's fully merged model; never log its credential values."""
     services = model['services']
-    expected = {name: ('shopkmp_runtime', 'runtime') for name in ('yii2', 'seed')}
+    expected = {'yii2': ('shopkmp_runtime', 'runtime')}
     expected.update({'maintenance':('shopkmp_maintenance','maintenance'),
                      'reconcile':('shopkmp_search','search'),
                      'payment-recovery':('shopkmp_recovery','recovery'),
@@ -18,7 +18,7 @@ def validate_model(model):
                      'identity-operator': ('shopkmp_identity_operator', 'operator')})
     for name, (user, capability) in expected.items():
         if name not in services:
-            if name in ('seed', 'identity-operator'):
+            if name == 'identity-operator':
                 continue  # disabled CLI profiles are not runtime services
             raise ValueError('Production database service missing: '+name)
         env = services[name].get('environment', {})
@@ -35,16 +35,79 @@ def validate_model(model):
     url = urlsplit(migrate.get('DATABASE_URL', ''))
     if url.username != 'shopkmp_owner' or not migrate.get('PGPASSWORD') or 'sslmode=verify-full' not in url.query:
         raise ValueError('migrate: explicit owner TLS credentials required')
+    external = {'OPENSEARCH_URL', 'PAYMENT_GATEWAY_URL', 'PAYMENT_GATEWAY_API_KEY',
+                'PAYMENT_WEBHOOK_SECRET', 'PAYMENT_WEBHOOK_ALLOWED_CIDRS'}
+    provider = {'PAYMENT_GATEWAY_URL', 'PAYMENT_GATEWAY_API_KEY'}
+    capabilities = {'yii2': external, 'reconcile': {'OPENSEARCH_URL'},
+                    'reindex': {'OPENSEARCH_URL'}, 'payment-recovery': provider}
+    search_users = {'yii2': 'shopkmp_runtime', 'reconcile': 'shopkmp_reconcile', 'reindex': 'shopkmp_indexer'}
+    search_passwords = []
+    administrators = {'search-security-bootstrap', 'search-security-provision'}
+    for name, service in services.items():
+        env = service.get('environment', {})
+        actual = set(env) & external
+        if actual != capabilities.get(name, set()) or any(not env[k] for k in actual):
+            raise ValueError(name+': external configuration capability mismatch')
+        if name in search_users:
+            url = urlsplit(env.get('OPENSEARCH_URL', ''))
+            if (url.scheme != 'https' or url.hostname != 'opensearch' or url.port != 9200
+                    or url.username != search_users[name] or not url.password
+                    or url.path or url.query or url.fragment):
+                raise ValueError(name+': scoped TLS search credentials required')
+            search_passwords.append(url.password)
+        password_keys = {key for key in env if key.startswith('OPENSEARCH_') and key.endswith('_PASSWORD')}
+        allowed = {'OPENSEARCH_RUNTIME_PASSWORD', 'OPENSEARCH_RECONCILE_PASSWORD', 'OPENSEARCH_INDEXER_PASSWORD'} if name == 'search-security-provision' else set()
+        if password_keys != allowed:
+            raise ValueError(name+': unexpected search password distribution')
+        operator_files = {'search-admin.crt', 'search-admin.key'}
+        operator_mount = any(Path(v.get('source', '')).name in operator_files
+                             or Path(v.get('target', '')).name in operator_files
+                             for v in service.get('volumes', []))
+        if operator_mount != (name in administrators):
+            raise ValueError(name+': unexpected search operator TLS mount')
+        if name in administrators and (service.get('profiles') != ['search-admin']
+                                       or set(service.get('networks', {})) != {'application'}
+                                       or 'DATABASE_URL' in env):
+            raise ValueError(name+': search administration must be explicit and isolated')
+    if len(set(search_passwords)) != len(search_passwords):
+        raise ValueError('Search service secrets must be distinct')
+    if 'seed' in services and (services['seed'].get('profiles') != ['development-only']
+                               or services['seed'].get('environment') != {'APP_ENV': 'production'}):
+        raise ValueError('seed: development-only, no production credentials')
+    if services['reindex'].get('scale') != 0:
+        raise ValueError('reindex: zero ordinary replicas; explicit one-shot run required')
+    # Docker omits inactive profiled services from this model. Operator material
+    # is not an ordinary lifecycle prerequisite, even when it is kept offline.
+    for name in administrators & services.keys():
+        validate_search_operator(services[name])
 
 
 def openssl(*args):
     return subprocess.check_output(['openssl', *map(str, args)], stderr=subprocess.STDOUT)
 
 
+def validate_search_operator(service):
+    mounts = {v.get('target'): Path(v['source']) for v in service.get('volumes', [])
+              if v.get('type') == 'bind'}
+    try:
+        ca, cert, key = (mounts['/run/tls/' + name] for name in
+                         ('ca.crt', 'search-admin.crt', 'search-admin.key'))
+    except KeyError:
+        raise ValueError('Search administration requires explicit CA/certificate/key mounts') from None
+    openssl('verify', '-CAfile', ca, '-purpose', 'sslclient', cert)
+    openssl('x509', '-in', cert, '-noout', '-checkend', '86400')
+    if openssl('x509', '-in', cert, '-subject', '-noout', '-nameopt', 'RFC2253').strip() != b'subject=CN=shopkmp-security-admin':
+        raise ValueError('Search operator subject must match CN=shopkmp-security-admin')
+    if (not key.read_bytes().startswith(b'-----BEGIN PRIVATE KEY-----')
+            or openssl('x509', '-in', cert, '-pubkey', '-noout') != openssl('pkey', '-in', key, '-passin', 'pass:', '-pubout')):
+        raise ValueError('Search operator requires matching unencrypted PKCS#8 key')
+
+
 def validate(env):
     keys = ('POSTGRES_PASSWORD', 'POSTGRES_RUNTIME_PASSWORD', 'POSTGRES_OWNER_PASSWORD',
             'POSTGRES_SEARCH_PASSWORD','POSTGRES_INDEXER_PASSWORD','POSTGRES_MAINTENANCE_PASSWORD','POSTGRES_RECOVERY_PASSWORD',
-            'POSTGRES_OPERATOR_PASSWORD', 'OPENSEARCH_ADMIN_PASSWORD', 'PAYMENT_WEBHOOK_SECRET',
+            'POSTGRES_OPERATOR_PASSWORD', 'OPENSEARCH_RUNTIME_PASSWORD',
+            'OPENSEARCH_RECONCILE_PASSWORD', 'OPENSEARCH_INDEXER_PASSWORD', 'PAYMENT_WEBHOOK_SECRET',
             'PAYMENT_GATEWAY_API_KEY')
     secrets = []
     for key in keys:

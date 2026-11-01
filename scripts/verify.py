@@ -8,6 +8,20 @@ import sys
 from compose import command, ROOT
 
 
+def current_images(compose):
+    """Immutable images actually used by this project, never historical test tags."""
+    images = {}
+    for service in ('yii2', 'postgres', 'opensearch'):
+        containers = subprocess.check_output(compose + ['ps', '-a', '-q', service], cwd=ROOT, text=True).split()
+        if len(containers) != 1:
+            raise RuntimeError(service + ' requires exactly one current project container')
+        image = subprocess.check_output(['docker', 'inspect', '--format', '{{.Image}}', containers[0]], cwd=ROOT, text=True).strip()
+        if not image.startswith('sha256:'):
+            raise RuntimeError(service + ' has no immutable image binding')
+        images[service] = image
+    return images
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--env', default='.env.example')
@@ -20,6 +34,7 @@ def main():
         parser.error('The disposable project must end in -e2e')
     env = os.environ | {'COMPOSE_PROJECT_NAME': args.project}
     compose = command((ROOT / args.env).resolve(), args.project)
+    images = current_images(compose)
     verify = command((ROOT / args.env).resolve(), args.project, verify=True)
     evidence = args.evidence_dir.resolve()
     evidence.mkdir(parents=True, exist_ok=True)
@@ -35,8 +50,8 @@ def main():
 
     run('route-matrix', [sys.executable, 'scripts/route_matrix.py', '--check'])
     run('runtime-graph', [sys.executable, 'scripts/runtime_graph_guard.py'])
-    run('php-runtime', [sys.executable, 'scripts/test_php_runtime.py', '--image', args.project + '-yii2'])
-    run('scheduler-regression', [sys.executable, 'scripts/test_scheduler.py', '--image', args.project + '-yii2'])
+    run('php-runtime', [sys.executable, 'scripts/test_php_runtime.py', '--image', images['yii2']])
+    run('scheduler-regression', [sys.executable, 'scripts/test_scheduler.py', '--image', images['yii2']])
     run('seed-preservation', compose + ['exec', '-T', 'yii2', 'php', 'tests/development_seed.php'])
     # SQL regression suites intentionally insert fixtures without catalog APIs.
     # Reconcile explicitly before live search on a reused disposable project.
@@ -84,6 +99,14 @@ def main():
             raise cleanup_errors[0]
     run('runtime', [sys.executable, 'scripts/runtime_checks.py', '--env', args.env, '--project', args.project,
                     '--url', args.url, '--shutdown'])
+    for label, script in (('service-privileges', 'test_service_privileges.py'),
+                          ('service-command-config', 'test_service_command_config.py'),
+                          ('search-schema-protocol', 'test_search_schema_protocol.py')):
+        run(label, [sys.executable, 'scripts/' + script],
+            {'PHP_TEST_IMAGE':images['yii2'], 'SERVICE_PRIVILEGES_PHP_IMAGE':images['yii2']})
+    run('search-privileges-live', [sys.executable, 'scripts/test_search_privileges_live.py', '--run',
+        '--parent', str(evidence), '--php-image', images['yii2'], '--postgres-image', images['postgres'],
+        '--opensearch-image', images['opensearch']])
     print(f'PASS Task4 disposable verification. Evidence: {evidence}. No mobile or production cutover claim.')
 
 

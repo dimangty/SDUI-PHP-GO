@@ -31,7 +31,7 @@ final class OpenSearch
     /** Search capability only. Its failure must not gate identity/payment availability. */
     public function ready(): void
     {
-        $budget=new SearchBudget((float)Env::duration('READINESS_TIMEOUT',2));$this->state($budget);
+        $budget=new SearchBudget((float)Env::duration('SEARCH_PROBE_TIMEOUT',2));$this->state($budget);
         SearchResponse::complete(SearchResponse::decode($this->call('POST','/'.$this->indexName.'/_search?allow_partial_search_results=false',
             ['_source'=>false,'size'=>0,'track_total_hits'=>true],$budget->timeout())));
     }
@@ -108,7 +108,7 @@ final class OpenSearch
             $budget->sql($this->db);$expected=array_column($this->db->all('SELECT id FROM products WHERE is_active ORDER BY id LIMIT ?',[$limit+1]),'id');
             if(count($expected)>$limit){throw new \RuntimeException('Product staging limit exceeded');}
             $meta=['version'=>1,'state'=>'building','build'=>bin2hex(random_bytes(16))];
-            $mapping=['settings'=>['analysis'=>['analyzer'=>['shop_text'=>['type'=>'standard']]]],'mappings'=>['_meta'=>['shopkmp_products'=>$meta],'properties'=>[
+            $mapping=['settings'=>['analysis'=>['analyzer'=>['shop_text'=>['type'=>'standard']]]],'mappings'=>['dynamic'=>false,'_meta'=>['shopkmp_products'=>$meta],'properties'=>[
                 'id'=>['type'=>'text','fields'=>['keyword'=>['type'=>'keyword']]],
                 'name'=>['type'=>'text','analyzer'=>'shop_text','fields'=>['keyword'=>['type'=>'keyword']]],
                 'description'=>['type'=>'text','analyzer'=>'shop_text'],'categoryPath'=>['type'=>'keyword'],'salePriceCents'=>['type'=>'long'],'rating'=>['type'=>'double'],'isActive'=>['type'=>'boolean'],'createdAt'=>['type'=>'date'],

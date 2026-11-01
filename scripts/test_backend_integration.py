@@ -34,10 +34,14 @@ class IntegrationModel(unittest.TestCase):
                             'POSTGRES_OPERATOR_PASSWORD': 'operator-config-only',
                             'POSTGRES_SEARCH_PASSWORD': 'search-config-only',
                             'POSTGRES_INDEXER_PASSWORD': 'indexer-config-only',
+                            'OPENSEARCH_RUNTIME_PASSWORD': 'runtime-search-config-only',
+                            'OPENSEARCH_RECONCILE_PASSWORD': 'reconcile-search-config-only',
+                            'OPENSEARCH_INDEXER_PASSWORD': 'indexer-search-config-only',
                             'POSTGRES_MAINTENANCE_PASSWORD': 'maintenance-config-only',
                             'POSTGRES_RECOVERY_PASSWORD': 'recovery-config-only'}
         return json.loads(subprocess.check_output(command(ROOT / '.env.example', prod=prod, verify=verify) +
-                          ['--profile', 'verification', '--profile', 'tools', '--profile', 'database-admin', 'config', '--format', 'json'], env=env))
+                          ['--profile', 'verification', '--profile', 'tools', '--profile', 'database-admin',
+                           'config', '--format', 'json'], env=env))
 
     def test_exact_transport_boundaries_survive_all_overlays(self):
         for prod, verify in ((False, False), (True, False), (False, True)):
@@ -105,7 +109,11 @@ class IntegrationModel(unittest.TestCase):
             self.assertNotIn('opensearch', services['yii2']['depends_on'])
             self.assertEqual('service_completed_successfully', services['yii2']['depends_on']['yii-migrate']['condition'])
             self.assertEqual('service_healthy', services['reindex']['depends_on']['opensearch']['condition'])
-            self.assertEqual('service_completed_successfully', services['reconcile']['depends_on']['reindex']['condition'])
+            if prod:
+                self.assertEqual(0, services['reindex']['scale'])
+                self.assertNotIn('reindex', services['reconcile']['depends_on'])
+            else:
+                self.assertEqual('service_completed_successfully', services['reconcile']['depends_on']['reindex']['condition'])
 
     def test_post_seed_reindex_runs_reconciliation_not_bootstrap_inventory(self):
         for target in ('reindex', 'integration-up'):

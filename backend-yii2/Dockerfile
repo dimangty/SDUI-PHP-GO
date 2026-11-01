@@ -11,9 +11,9 @@ RUN set -eux; \
     apk upgrade --no-cache curl libcurl; \
     apk add --no-cache unzip; \
     apk add --no-cache --virtual .shopkmp-build-deps \
-        $PHPIZE_DEPS pax-utils libpq-dev icu-dev libpng-dev libjpeg-turbo-dev libwebp-dev freetype-dev; \
+        $PHPIZE_DEPS pax-utils linux-headers libpq-dev icu-dev libpng-dev libjpeg-turbo-dev libwebp-dev freetype-dev; \
     docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
-    docker-php-ext-install -j"${PHP_EXTENSION_BUILD_JOBS}" pdo_pgsql intl gd pcntl; \
+    docker-php-ext-install -j"${PHP_EXTENSION_BUILD_JOBS}" pdo_pgsql pgsql sockets intl gd pcntl; \
     docker-php-source delete; \
     # Official docker-library/php discovery: preserve dependencies of PHP, FPM
     # and every extension before removing the entire temporary toolchain.
@@ -32,7 +32,8 @@ COPY composer.json composer.lock ./
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN composer install --no-interaction --prefer-dist --no-dev --no-scripts
 COPY . .
-RUN composer dump-autoload --optimize && mkdir -p runtime && chown -R www-data:www-data runtime
+RUN composer dump-autoload --optimize && mkdir -p runtime && chown -R www-data:www-data runtime \
+    && chmod 0555 infrastructure/readiness-slots && chmod 0444 infrastructure/readiness-slots/*.lock
 COPY config/php.ini /usr/local/etc/php/conf.d/shopkmp.ini
 COPY bin/entrypoint.sh /usr/local/bin/shopkmp-entrypoint
 ENTRYPOINT ["/bin/sh", "/usr/local/bin/shopkmp-entrypoint"]

@@ -3,6 +3,7 @@ declare(strict_types=1);
 require __DIR__.'/harness.php';
 require __DIR__.'/payment-fixture.php';
 require __DIR__.'/LocalAuthFixture.php';
+require __DIR__.'/ReadinessFixture.php';
 use Shop\application\{RecoveryService,SessionService};
 use Shop\domain\Ids;
 use Shop\infrastructure\{Database,Env};
@@ -62,20 +63,23 @@ test('worker dispatches unsent payments and reports UNKNOWN only as counts witho
     foreach(['amount','transactionId','operation_key','evidence'] as $field){truth(!str_contains(json_encode($r),$field));}
 });
 test('readiness requires the combined payment session and recovery schema',function()use($recoverySchema){
-    putenv('OPENSEARCH_URL=');$db=paymentDb();$kernel=new \Shop\infrastructure\ApiKernel($db);
-    same(200,$kernel->handle('GET','/health/ready',[],'','192.0.2.94')['status']);
-    foreach(['ALTER TABLE payment_operations RENAME TO hidden_payment_operations',
-             'ALTER TABLE payment_operation_observations RENAME TO hidden_payment_observations',
-             'ALTER TABLE payments RENAME COLUMN refund_requested_at TO hidden_refund_requested_at',
-             'ALTER TABLE payment_callback_inbox RENAME TO hidden_callback_inbox',
-             'ALTER TABLE payment_transaction_links RENAME TO hidden_transaction_links',
-             'ALTER TABLE session_families RENAME TO hidden_session_families',
-             'ALTER TABLE users RENAME COLUMN sessions_blocked TO hidden_sessions_blocked',
-             'ALTER TABLE password_session_operations RENAME COLUMN recovery_attempts TO hidden_attempts'] as $sql){
-        $db->pdo()->beginTransaction();
-        try{$db->execute('SET LOCAL search_path TO '.$recoverySchema);$db->execute($sql);same(503,$kernel->handle('GET','/health/ready',[],'','192.0.2.94')['status']);}
-        finally{$db->pdo()->rollBack();}
-    }
+    ReadinessFixture::inOwnedDatabase($recoverySchema,function(ReadinessFixture $fixture){
+        $fixture->ready();
+        foreach([
+            ['payment_operations',null],['payment_operation_observations',null],
+            ['payments','refund_requested_at'],['payment_callback_inbox',null],
+            ['payment_transaction_links',null],['session_families',null],
+            ['users','sessions_blocked'],['password_session_operations','recovery_attempts'],
+        ] as [$table,$column]){
+            $break=$column===null?"ALTER TABLE public.$table RENAME TO readiness_hidden_$table":"ALTER TABLE public.$table RENAME COLUMN $column TO readiness_hidden_column";
+            $restore=$column===null?"ALTER TABLE public.readiness_hidden_$table RENAME TO $table":"ALTER TABLE public.$table RENAME COLUMN readiness_hidden_column TO $column";
+            same(false,$fixture->db->pdo()->inTransaction());
+            $fixture->db->execute($break); // Committed: the real native probe must see the absent required schema.
+            try{$fixture->ready(503);}finally{$fixture->db->execute($restore);}
+            $fixture->ready();
+            print 'required durable schema '.$table.($column===null?'':'.'.$column).": 503 -> restored 200\n";
+        }
+    });
 });
 test('migration 014 refuses pending downgrade and preserves completed operations on down up',function(){
     $db=paymentDb();$schema='recovery_upgrade_'.str_replace('-','',Ids::uuid());

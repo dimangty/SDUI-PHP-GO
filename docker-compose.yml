@@ -2,21 +2,14 @@ name: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}
 
 x-yii-env: &yii-env
   APP_ENV: development
-  DATABASE_URL: postgres://shopkmp:${POSTGRES_PASSWORD:?required}@postgres:5432/shopkmp?sslmode=disable
-  OPENSEARCH_URL: http://opensearch:9200
   OPENSEARCH_PRODUCTS_INDEX: ${OPENSEARCH_PRODUCTS_INDEX:-shopkmp-products}
-  PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:?required}
-  PAYMENT_GATEWAY_URL: ${PAYMENT_GATEWAY_URL:-}
-  PAYMENT_GATEWAY_API_KEY: ${PAYMENT_GATEWAY_API_KEY:-}
-  PAYMENT_WEBHOOK_ALLOWED_CIDRS: ${PAYMENT_WEBHOOK_ALLOWED_CIDRS:-}
-  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
-  TRUSTED_BFF_IPS: ${TRUSTED_BFF_IPS:?comma-separated exact BFF ingress IPs required}
-  READINESS_TIMEOUT: 2s
+
+x-development-database: &development-database
+  DATABASE_URL: postgres://shopkmp:${POSTGRES_PASSWORD:?required}@postgres:5432/shopkmp?sslmode=disable
 
 x-yii: &yii
   build: ./backend-yii2
   image: ${COMPOSE_PROJECT_NAME:-shopkmp-migrated}-yii2
-  environment: *yii-env
   networks: [application, data]
   security_opt: [no-new-privileges:true]
   stop_signal: SIGQUIT
@@ -59,6 +52,8 @@ services:
 
   yii-migrate:
     <<: *yii
+    environment:
+      <<: [*yii-env, *development-database]
     command: [php, yii, migrate, --interactive=0]
     depends_on:
       migrate: {condition: service_completed_successfully}
@@ -87,6 +82,9 @@ services:
 
   reindex:
     <<: *yii
+    environment:
+      <<: [*yii-env, *development-database]
+      OPENSEARCH_URL: http://opensearch:9200
     command: [php, yii, maintenance/search-bootstrap]
     depends_on:
       yii-migrate: {condition: service_completed_successfully}
@@ -96,7 +94,14 @@ services:
   yii2:
     <<: *yii
     environment:
-      <<: *yii-env
+      <<: [*yii-env, *development-database]
+      OPENSEARCH_URL: http://opensearch:9200
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:?required}
+      PAYMENT_GATEWAY_URL: ${PAYMENT_GATEWAY_URL:-}
+      PAYMENT_GATEWAY_API_KEY: ${PAYMENT_GATEWAY_API_KEY:-}
+      PAYMENT_WEBHOOK_ALLOWED_CIDRS: ${PAYMENT_WEBHOOK_ALLOWED_CIDRS:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      TRUSTED_BFF_IPS: ${TRUSTED_BFF_IPS:?comma-separated exact BFF ingress IPs required}
       FPM_TRUSTED_NGINX_IPS: "${YII_FPM_HTTP_IP:-172.30.94.3},127.0.0.1"
     networks:
       application:
@@ -146,6 +151,7 @@ services:
     build: ./backend-sdui
     environment:
       YII_ORIGIN: http://yii2-http:8080
+      READINESS_TIMEOUT: 2s
       TRUSTED_EDGE_IPS: ${EDGE_IP:-172.30.95.2}
       SDUI_TRACE_ENABLED: ${SDUI_TRACE_ENABLED:-false}
       SDUI_TRACE_ENDPOINT: ${SDUI_TRACE_ENDPOINT:-}
@@ -171,7 +177,7 @@ services:
     <<: *yii
     command: [php, /opt/scheduler/scheduler.php, maintenance/run, '60']
     environment:
-      <<: *yii-env
+      <<: [*yii-env, *development-database]
       SCHEDULER_JOB_TIMEOUT_SECONDS: ${MAINTENANCE_JOB_TIMEOUT_SECONDS:-120}
       SCHEDULER_SUCCESS_MAX_AGE_SECONDS: ${MAINTENANCE_SUCCESS_MAX_AGE_SECONDS:-}
     volumes: [./deploy/php:/opt/scheduler:ro]
@@ -190,7 +196,8 @@ services:
     <<: *yii
     command: [php, /opt/scheduler/scheduler.php, maintenance/reindex, '300']
     environment:
-      <<: *yii-env
+      <<: [*yii-env, *development-database]
+      OPENSEARCH_URL: http://opensearch:9200
       SCHEDULER_JOB_TIMEOUT_SECONDS: ${REINDEX_JOB_TIMEOUT_SECONDS:-1800}
       SCHEDULER_SUCCESS_MAX_AGE_SECONDS: ${REINDEX_SUCCESS_MAX_AGE_SECONDS:-}
     volumes: [./deploy/php:/opt/scheduler:ro]
@@ -210,7 +217,9 @@ services:
     <<: *yii
     command: [php, /opt/scheduler/scheduler.php, maintenance/recover, '30']
     environment:
-      <<: *yii-env
+      <<: [*yii-env, *development-database]
+      PAYMENT_GATEWAY_URL: ${PAYMENT_GATEWAY_URL:-}
+      PAYMENT_GATEWAY_API_KEY: ${PAYMENT_GATEWAY_API_KEY:-}
       SCHEDULER_JOB_TIMEOUT_SECONDS: ${RECOVERY_JOB_TIMEOUT_SECONDS:-120}
       SCHEDULER_SUCCESS_MAX_AGE_SECONDS: ${RECOVERY_SUCCESS_MAX_AGE_SECONDS:-}
     volumes: [./deploy/php:/opt/scheduler:ro]
@@ -254,6 +263,8 @@ services:
 
   seed:
     <<: *yii
+    environment:
+      <<: [*yii-env, *development-database]
     profiles: [tools]
     command: [php, yii, development-seed/run]
     depends_on:

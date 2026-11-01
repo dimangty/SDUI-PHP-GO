@@ -1,0 +1,26 @@
+<?php
+
+namespace Shop\repositories {
+    /**
+     * Only the columns consumed by PaymentService are narrowed. SELECT * also
+     * returns other columns; the open shape deliberately makes no claim for them.
+     * Source: ShopRepository::payment()/paymentDto(), canonical payments schema.
+     *
+     * @phpstan-type PaymentRow array{id: string, status: string, gateway_url: string|null, ...}
+     * @phpstan-type PaymentDto array{id: string, orderId: string, method: string, status: string, amount: string, transactionId: string|null}
+     */
+    final class ShopRepository
+    {
+        /** @return PaymentRow */
+        public function payment(string $id, ?string $user = null): array {}
+
+        /**
+         * @param array<string, mixed> $p
+         * @return PaymentDto
+         */
+        public function paymentDto(array $p): array {}
+
+        /** @return array<string, mixed> */
+        public function order(string $id, ?string $user = null): array {}
+    }
+}

@@ -5,6 +5,9 @@ PROD_ENV_FILE ?= .env.prod
 WAIT_TIMEOUT ?= 2100
 SCHEDULER_TEST_IMAGE ?= shopkmp-task4-scheduler-tests
 PHP_TEST_IMAGE ?= shopkmp-php-tests
+export PHP_TEST_IMAGE
+PHP_TOOLS_IMAGE ?= shopkmp-php-dev-tools
+PHP_TOOLS_APPLICATION_IMAGE ?= shopkmp-php-tools-application
 E2E_PROJECT ?= shopkmp-migrated-e2e
 E2E_PORT ?= 58095
 SECURITY_PLATFORM ?= linux/amd64
@@ -69,15 +72,44 @@ security-backend: test-security-policy
 test-php:
 	docker build -t "$(PHP_TEST_IMAGE)" backend-yii2
 	docker run --rm --network none "$(PHP_TEST_IMAGE)" composer test
+	docker run --rm --network none "$(PHP_TEST_IMAGE)" php tests/readiness_policy.php
 	docker run --rm --network none "$(PHP_TEST_IMAGE)" composer lint
 
-test-infra:
+# Uses the explicitly selected, already-built image; never rebuild between
+# canonical functional verification and exact-artifact security verification.
+.PHONY: test-service-contracts
+test-service-contracts:
+	SERVICE_PRIVILEGES_PHP_IMAGE="$(PHP_TEST_IMAGE)" python3 scripts/test_service_privileges.py
+	SERVICE_PRIVILEGES_PHP_IMAGE="$(PHP_TEST_IMAGE)" python3 scripts/test_service_command_config.py
+	SERVICE_PRIVILEGES_PHP_IMAGE="$(PHP_TEST_IMAGE)" python3 scripts/test_search_schema_protocol.py
+
+.PHONY: php-tools-build test-phpunit analyse-php audit-php-tools
+# Always bind the default tools run to application source from this checkout.
+# Dockerfile.tools also accepts PHP_APPLICATION_IMAGE for explicit cached runs.
+php-tools-build:
+	docker build -t "$(PHP_TOOLS_APPLICATION_IMAGE)" backend-yii2
+	docker build --build-context "application=docker-image://$(PHP_TOOLS_APPLICATION_IMAGE)" --build-context dev-tools=./backend-yii2/dev-tools -f backend-yii2/Dockerfile.tools -t "$(PHP_TOOLS_IMAGE)" backend-yii2
+
+test-phpunit: php-tools-build
+	docker run --rm --network none "$(PHP_TOOLS_IMAGE)" composer test
+
+analyse-php: php-tools-build
+	docker run --rm --network none "$(PHP_TOOLS_IMAGE)" composer analyse
+
+audit-php-tools: php-tools-build
+	docker run --rm "$(PHP_TOOLS_IMAGE)" composer audit --locked
+
+test-infra: test-service-contracts
 	$(MAKE) test-scheduler
 	python3 scripts/test_backend_integration.py
 	python3 scripts/test_infrastructure.py --production-env "$(PRODUCTION_TEST_ENV)"
 	python3 scripts/test_deployment_commands.py --production-env "$(PRODUCTION_TEST_ENV)"
 
 test-runtime-graph:
+	python3 scripts/test_privilege_wiring.py
+	python3 scripts/test_verify_lifecycle.py
+	python3 scripts/test_backend_layers.py
+	python3 scripts/backend_layers.py
 	python3 scripts/test_runtime_graph_guard.py
 	python3 scripts/test_runtime_checks.py
 	python3 scripts/runtime_graph_guard.py

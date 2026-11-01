@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1
+# Default: Make builds the unmodified production Dockerfile from this checkout
+# and passes it as the named `application` context. An explicit image override is
+# useful for local tool bootstrap, but does not prove current-source integration.
+ARG PHP_APPLICATION_IMAGE=application
+FROM ${PHP_APPLICATION_IMAGE} AS tools
+USER root
+WORKDIR /app
+
+# The pinned PHP 8.5 application base already supplies these extensions. Fail
+# explicitly if that changes; never add XML packages/toolchains to production.
+RUN php -r 'foreach (["dom", "filter", "json", "libxml", "mbstring", "xml", "xmlwriter"] as $ext) { if (!extension_loaded($ext)) { fwrite(STDERR, "Tools require ext-" . $ext . PHP_EOL); exit(1); } }'
+
+# A separate named context keeps tools available when production .dockerignore
+# excludes dev-tools/. Install the lock before copying frequently changed source.
+WORKDIR /app/dev-tools
+COPY --from=dev-tools composer.json composer.lock ./
+RUN composer install --no-interaction --prefer-dist --no-plugins --no-scripts \
+    && composer validate --strict \
+    && composer check-platform-reqs
+
+# Application source is refreshed even when an explicit cached image is used.
+COPY . /app/
+COPY --from=dev-tools bootstrap.php phpstan.neon phpunit.xml ./
+COPY --from=dev-tools stubs/ ./stubs/
+COPY --from=dev-tools tests/ ./tests/
+
+# Tools run as short-lived CLI containers, without application role/secret setup.
+ENTRYPOINT []
+CMD ["composer", "test"]

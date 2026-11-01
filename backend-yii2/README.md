@@ -296,3 +296,33 @@ The final report distinguishes attributed pre-fix review probes, coordinator
 source-mounted results and the fresh rebuilt full-root exit. An earlier passing
 snapshot is not evidence for a later source wave. Security A1 and the final
 coordinator review remain separate release gates.
+
+## Readiness admission (round-7 final review)
+
+Core readiness admits at most **two actual PHP probes per container**, shared
+across FPM processes. `infrastructure/readiness-slots/{0,1}.lock` are precreated
+application-owned files: the runtime image makes their directory `0555` and the
+files `0444`. PHP opens them `rb` and takes local Linux `flock(LOCK_EX|LOCK_NB)`;
+no runtime file creation, writes, health cache or process-local semaphore is
+involved. Root/CLI probes use the same files without changing permissions.
+Keep these files on the container's local application filesystem, readable by
+FPM; do not replace their inodes while requests are running or move them to a
+network filesystem. Independent replicas each have their own two-slot bound.
+
+Saturation returns **503 before any DB/DNS/search I/O**. Admitted healthy probes
+retain the existing 200/capability response. The lease closes in policy `finally`
+only after the native probe's cleanup finishes, including errors, deadlines and
+client cancellation that FPM has not observed. Liveness bypasses admission and
+all dependencies. Existing 600ms active / 700ms core / 2s BFF budgets are unchanged.
+Native healthy concurrency now checks two admitted callers; arbitrary 8×5
+fan-out is overload and is not promised 200. Tests explicitly check saturation,
+cross-process exclusion, zero transport, release and recovery.
+
+`make test-php` builds `PHP_TEST_IMAGE` and runs policy tests as well as the
+existing native unit/lint commands. `make test-service-contracts
+PHP_TEST_IMAGE=<already-built-image>` requires all three deterministic service
+privilege/configuration/schema runners without rebuilding. Full
+`make integration-check` also requires the disposable live TLS OpenSearch role
+matrix using immutable images from that project's PHP/Postgres/OpenSearch
+containers. The live subharness stops only its own randomly named nodes and
+retains its volumes. See [final review evidence](../docs/backend-fixes/round-7/FINAL_FIXES.md).

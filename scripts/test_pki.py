@@ -33,7 +33,8 @@ def main():
         '-keyout', path / 'ca.key', '-out', path / 'ca.crt', '-addext', 'basicConstraints=critical,CA:TRUE',
         '-addext', 'keyUsage=critical,keyCertSign,cRLSign')
     for name, host in [('api', 'api.shopkmp.test'), ('postgres', 'postgres'),
-                       ('opensearch', 'opensearch'), ('provider', 'localhost')]:
+                       ('opensearch', 'opensearch'), ('provider', 'localhost'),
+                       ('search-admin', 'shopkmp-security-admin')]:
         run('req', '-newkey', 'rsa:2048', '-nodes', '-subj', '/CN=' + host,
             '-keyout', path / (name + '.key'), '-out', path / (name + '.csr'))
         ext = path / (name + '.ext')
@@ -52,7 +53,9 @@ def main():
                   PAYMENT_GATEWAY_URL='https://localhost:18443', PAYMENT_WEBHOOK_ALLOWED_CIDRS='192.0.2.16/28')
     for key in ('POSTGRES_PASSWORD', 'POSTGRES_RUNTIME_PASSWORD', 'POSTGRES_OWNER_PASSWORD',
                 'POSTGRES_SEARCH_PASSWORD','POSTGRES_INDEXER_PASSWORD','POSTGRES_MAINTENANCE_PASSWORD','POSTGRES_RECOVERY_PASSWORD',
-                'POSTGRES_OPERATOR_PASSWORD', 'OPENSEARCH_ADMIN_PASSWORD', 'PAYMENT_WEBHOOK_SECRET', 'PAYMENT_GATEWAY_API_KEY'):
+                'POSTGRES_OPERATOR_PASSWORD', 'OPENSEARCH_ADMIN_PASSWORD',
+                'OPENSEARCH_RUNTIME_PASSWORD', 'OPENSEARCH_RECONCILE_PASSWORD', 'OPENSEARCH_INDEXER_PASSWORD',
+                'PAYMENT_WEBHOOK_SECRET', 'PAYMENT_GATEWAY_API_KEY'):
         values[key] = secrets.token_urlsafe(36)
     env = path / 'test.env'
     env.write_text('\n'.join(k + '=' + v for k, v in values.items()) + '\n')

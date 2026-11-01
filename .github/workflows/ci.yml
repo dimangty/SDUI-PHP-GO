@@ -39,12 +39,18 @@ jobs:
 
   php:
     runs-on: ubuntu-latest
+    env:
+      PHP_TEST_IMAGE: shopkmp-php-tests
     steps:
       - uses: actions/checkout@v4
       - name: Build standalone PHP image and run unit tests and lint
         run: make test-php
+      - name: Require service privileges, command configuration and search schema protocol
+        run: make test-service-contracts
       - name: Verify PHP extensions, TLS, runtime pruning and FPM
         run: python3 scripts/test_php_runtime.py --image shopkmp-php-tests
+      - name: Run isolated PHP unit tests, strict scoped analysis and tools audit
+        run: make test-phpunit analyse-php audit-php-tools PHP_TOOLS_APPLICATION_IMAGE=shopkmp-php-tests
 
   contracts:
     runs-on: ubuntu-latest

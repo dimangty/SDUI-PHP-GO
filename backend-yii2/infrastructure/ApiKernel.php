@@ -189,35 +189,15 @@ final class ApiKernel
     }
     private function ready(array $headers): array
     {
-        $components=[];
-        try{
-            Network::cidrs(Env::get('PAYMENT_WEBHOOK_ALLOWED_CIDRS'));
-            if (Env::production()) { DatabaseRole::identity($this->db, 'runtime'); }
-            $this->db->one('SELECT 1 FROM users LIMIT 1');$this->db->one('SELECT 1 FROM biometric_challenges LIMIT 1');
-            // Old writers/schema are incompatible with durable effects and local
-            // identity. Verify the additive schema before serving traffic.
-            $this->db->all('SELECT id,stock_restored_at FROM orders LIMIT 0');
-            $this->db->all('SELECT id,cancel_requested_at,refund_requested_at FROM payments LIMIT 0');
-            $this->db->all('SELECT id,payment_id,kind,operation_key,state,lease_token,lease_until,sent_at FROM payment_operations LIMIT 0');
-            $this->db->all('SELECT operation_id,lease_token,observed_at,result FROM payment_operation_observations LIMIT 0');
-            $this->db->all('SELECT transaction_id,payment_id FROM payment_transaction_links LIMIT 0');
-            $this->db->all('SELECT operation_id,payment_id,transaction_id,status,resolved_at FROM payment_callback_inbox LIMIT 0');
-            $this->db->all('SELECT session_security_version,sessions_blocked,account_disabled,local_identity_ready,password_changed_at FROM users LIMIT 0');
-            $this->db->all('SELECT id,user_id,security_version,credential_kind,credential_id,revoked_at,expires_at FROM session_families LIMIT 0');
-            foreach(['access_sessions','refresh_sessions'] as $table){$this->db->all('SELECT family_id FROM '.$table.' LIMIT 0');}
-            $this->db->all('SELECT id,user_id,state,recovery_attempts,next_retry_at,recovery_claim_until,operator_evidence_ref,operator_confirmed_at FROM password_session_operations LIMIT 0');
-            $legacy=$this->db->one('SELECT value FROM repository_metadata WHERE key=\'legacy_import_status\'');
-            if(($legacy['value']??'')==='required'){throw new \RuntimeException('Explicit legacy import required');}$components['postgres']='up';
-            $components['local-auth']='up';
-            // Search is an optional capability: its outage must not take identity
-            // or financial operations out of general readiness.
-            if(Env::get('OPENSEARCH_URL')!==''){
-                try{(new OpenSearch($this->db,new ShopRepository($this->db)))->ready();$components['opensearch']='up';}
-                catch(\Throwable){$components['opensearch']='down';}
-            }
-            if(Env::production() && (Env::get('PAYMENT_GATEWAY_URL')==='' || Env::get('PAYMENT_GATEWAY_API_KEY')==='' || Env::get('PAYMENT_WEBHOOK_SECRET')==='' || Env::get('PAYMENT_WEBHOOK_ALLOWED_CIDRS')==='')){throw new \RuntimeException('Production payment configuration missing');}
-            return $this->result(200,['status'=>'ok','components'=>$components,'capabilities'=>['catalog-cards-v1']],$headers);
-        }catch(\Throwable){error_log('Readiness dependency unavailable');$components['dependency']='down';return $this->result(503,['status'=>'unavailable','components'=>$components],$headers);}
+        $budget=new ReadinessBudget();
+        $readiness=(new ReadinessPolicy($budget))->evaluate(
+            new CoreReadinessProbe(Env::get('DATABASE_URL'),$budget),
+            static fn(): float=>hrtime(true)/1e9,
+            static fn(): bool=>connection_aborted()!==0,
+            Env::get('OPENSEARCH_URL')!=='',
+        );
+        if($readiness['status']!==200){error_log('Readiness dependency unavailable');}
+        return $this->result($readiness['status'],$readiness['data'],$headers);
     }
     private function media(string $path,array $headers): array
     {
